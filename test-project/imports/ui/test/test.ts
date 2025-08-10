@@ -70,7 +70,13 @@ Template.test.helpers({
    * Strings!
    * @returns An array of strings to demonstrate TypeScript features in Meteor templates
    */
-  arrayOfStrings() {
+  arrayOfStrings1() {
+    return ['TypeScript', 'Meteor', 'Blaze', 'Templates'];
+  },
+  arrayOfStrings2() {
+    return ['TypeScript', 'Meteor', 'Blaze', 'Templates'];
+  },
+  arrayOfStrings3() {
     return ['TypeScript', 'Meteor', 'Blaze', 'Templates'];
   }
 });

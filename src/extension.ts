@@ -57,7 +57,7 @@ function updateDecorationType() {
 export function activate(context: vscode.ExtensionContext) {
   // Register semantic token provider for Blaze blocks and expressions
   const legend = new vscode.SemanticTokensLegend([
-    'punctuation', 'blazeBlockHash', 'blazeBlockName', 'blazeBlockSingleArg', 'blazeBlockFirstArg', 'blazeBlockArgs', 'blazeBlockIn', 'blazeExpression'
+    'delimiter', 'blazeBlockHash', 'blazeBlockName', 'blazeBlockSingleArg', 'blazeBlockFirstArg', 'blazeBlockArgs', 'blazeBlockIn', 'blazeExpression'
   ]);
 
   context.subscriptions.push(
@@ -67,26 +67,49 @@ export function activate(context: vscode.ExtensionContext) {
         provideDocumentSemanticTokens(document) {
           const tokensBuilder = new vscode.SemanticTokensBuilder(legend);
           const text = document.getText();
-          const blockRegex = /\{\{[#/]?\w+.*?\}\}/g;
+          // Find all block helper ranges (start/end positions)
+          const blockRanges: Array<{ start: number, end: number }> = [];
+          const blockStartRegex = /\{\{#(\w+)/g;
+          const blockEndRegex = /\{\{\/(\w+)\}\}/g;
+          let blockMatch;
+          while ((blockMatch = blockStartRegex.exec(text)) !== null) {
+            const blockType = blockMatch[1];
+            const startIdx = blockMatch.index;
+            blockEndRegex.lastIndex = startIdx;
+            let endMatch;
+            while ((endMatch = blockEndRegex.exec(text)) !== null) {
+              if (endMatch[1] === blockType) {
+                blockRanges.push({ start: startIdx, end: endMatch.index + endMatch[0].length });
+                break;
+              }
+            }
+          }
+
+          // Only highlight Blaze expressions and block helper syntax
+          const blazeRegex = /\{\{[#/]?\w+.*?\}\}/g;
           let match;
-          while ((match = blockRegex.exec(text)) !== null) {
+          while ((match = blazeRegex.exec(text)) !== null) {
             const start = match.index;
             const end = start + match[0].length;
+            // Check if this {{...}} is inside a block helper range
+            let insideBlock = false;
+            for (const range of blockRanges) {
+              if (start > range.start && end < range.end) {
+                insideBlock = true;
+                break;
+              }
+            }
+            // Only highlight Blaze expressions and block helper syntax
             const startPos = document.positionAt(start);
             const length = end - start;
-            // Highlight brackets
-            tokensBuilder.push(startPos.line, startPos.character, 2, 0); // punctuation
-            // Highlight block type or expression
+            tokensBuilder.push(startPos.line, startPos.character, 2, 0); // delimiter
             if (match[0].startsWith('{{#') || match[0].startsWith('{{/')) {
-              // Highlight the # or /
               tokensBuilder.push(startPos.line, startPos.character + 2, 1, 1); // blazeBlockHash
-              // Highlight the block name (if, each, etc)
               const blockNameMatch = /^\{\{[#/](\w+)/.exec(match[0]);
               if (blockNameMatch) {
                 const blockNameStart = startPos.character + 3;
                 const blockNameLength = blockNameMatch[1].length;
                 tokensBuilder.push(startPos.line, blockNameStart, blockNameLength, 2); // blazeBlockName
-                // Highlight arguments after block name
                 const afterBlockName = match[0].slice(2 + 1 + blockNameLength, match[0].length - 2);
                 const argsMatch = /^\s*(.+)$/.exec(afterBlockName);
                 if (argsMatch && argsMatch[1].length > 0) {
@@ -95,14 +118,13 @@ export function activate(context: vscode.ExtensionContext) {
                   let offset = 0;
                   const blockTypes = ['if', 'each', 'unless', 'with', 'mrkdwn'];
                   if (argsTokens.length === 1 && argsTokens[0].length > 0) {
-                    // Only one argument: use blazeBlockSingleArg
                     tokensBuilder.push(startPos.line, argsStart, argsTokens[0].length, 3); // blazeBlockSingleArg
                   } else {
                     argsTokens.forEach((arg, i) => {
                       if (arg.length > 0) {
                         const argPos = argsMatch[1].indexOf(arg, offset);
-                        let tokenType = i === 0 ? 4 : 5; // blazeBlockFirstArg for first, blazeBlockArgs for rest
-                        if (arg === 'in' && blockTypes.includes(blockNameMatch[1])) { tokenType = 6; } // blazeBlockIn for 'in' keyword only in block types
+                        let tokenType = i === 0 ? 4 : 5;
+                        if (arg === 'in' && blockTypes.includes(blockNameMatch[1])) { tokenType = 6; }
                         tokensBuilder.push(startPos.line, argsStart + argPos, arg.length, tokenType);
                         offset = argPos + arg.length;
                       }
@@ -111,12 +133,11 @@ export function activate(context: vscode.ExtensionContext) {
                 }
               }
             } else {
-              // Only style the whole expression as blazeExpression, no argument styling, regardless of argument content
               tokensBuilder.push(startPos.line, startPos.character + 2, length - 4, 7); // blazeExpression
             }
-            // Highlight closing brackets
-            tokensBuilder.push(startPos.line, startPos.character + length - 2, 2, 0); // punctuation
+            tokensBuilder.push(startPos.line, startPos.character + length - 2, 2, 0); // delimiter
           }
+          // No tokens for any text outside of {{...}} blocks, including inside nested block helpers
           return tokensBuilder.build();
         }
       },
@@ -359,7 +380,12 @@ function updateBlockConditionDecorations(document: vscode.TextDocument) {
   // Use theme token colors if not provided
   let hashColor = blazeConfig.get<string>('hashColor', '');
   let nameColor = blazeConfig.get<string>('nameColor', '');
+  // Fallback to Blaze theme default if not provided
+  if (!nameColor) {
+    nameColor = '#f07dff'; // Blaze default for blazeBlockName
+  }
   let bracketColor = blazeConfig.get<string>('bracketColor', '');
+
 
   // Try to use theme color, but fallback to config color if theme color is not defined
   function getThemeOrConfigColor(scope: string, configColor: string) {

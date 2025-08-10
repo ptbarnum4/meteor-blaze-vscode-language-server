@@ -9,14 +9,14 @@
   // Block condition decoration overrides - distinctly different from defaults
   "editor.semanticTokenColorCustomizations": {
     "rules": {
-      "punctuation": { "foreground": "#FF6B35", "fontStyle": "bold" },
-      "blazeBlockHash": { "foreground": "#848484", "fontStyle": "bold" },
-      "blazeBlockName": { "foreground": "#ff7cfd", "fontStyle": "italic" },
-      "blazeBlockArgs": { "foreground": "#fffd7d", "fontStyle": "bold" },
-      "blazeBlockFirstArg": { "foreground": "#ffae00", "fontStyle": "bold" },
-      "blazeBlockSingleArg": { "foreground": "#fffd7d", "fontStyle": "bold" },
-      "blazeExpression": { "foreground": "#2ECC40" },
-      "blazeBlockIn": { "foreground": "#FF00AA", "fontStyle": "italic" }
+      "blazeBlockHash": { "foreground": "#808080", "fontStyle": "bold" },
+      "blazeBlockName": { "foreground": "#f177ff", "fontStyle": "italic bold" },
+      "blazeBlockArgs": { "foreground": "#fffec4", "fontStyle": "bold" },
+      "blazeBlockFirstArg": { "foreground": "#ffd16f", "fontStyle": "bold" },
+      "blazeBlockSingleArg": { "foreground": "#ffd16f", "fontStyle": "bold" },
+      "blazeExpression": { "foreground": "#ffd16f" },
+      "blazeBlockIn": { "foreground": "#00ffa2", "fontStyle": "italic bold" },
+      "delimiter": { "foreground": "#808080", "fontStyle": "bold" }
     }
   },
   "meteorLanguageServer.blockConditions": {
@@ -49,8 +49,10 @@
   // Language-specific settings
   "[html]": {
     "editor.defaultFormatter": "vscode.html-language-features",
-    "editor.suggest.insertMode": "replace"
+    "editor.suggest.insertMode": "replace",
+    "editor.bracketPairColorization.enabled": false // Disable bracket pair colorization for HTML
   },
+
   "[javascript]": {
     "editor.defaultFormatter": "vscode.typescript-language-features"
   },
