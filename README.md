@@ -156,14 +156,38 @@ The extension only activates language features when Meteor templates are detecte
 
 ## ⚙️ Configuration
 
-Configure the extension through VS Code settings:
+Configure the extension through VS Code settings. Use nested objects for advanced features:
 
 ```json
 {
   "meteorLanguageServer.maxNumberOfProblems": 100,
-  "meteorLanguageServer.trace.server": "off"
+  "meteorLanguageServer.trace.server": "off",
+  "meteorLanguageServer.blockConditions": {
+    "enabled": true,
+    "color": "editorCodeLens.foreground",
+    "fontStyle": "italic",
+    "margin": "0 0 0 1em",
+    "extend": [
+      { "type": "customBlock", "label": "Custom Block" }
+    ]
+  },
+  "meteorLanguageServer.blazeHelpers": {
+    "extend": [
+      { "name": "#myHelper", "doc": "My custom helper for Blaze templates" }
+    ]
+  }
 }
 ```
+
+### Block Condition Settings
+- **`enabled`** (boolean, default: `true`): Enable/disable inline condition hints for Blaze block helpers
+- **`color`** (string, default: `"editorCodeLens.foreground"`): Color for hints. Use theme color names (e.g., `"editorCodeLens.foreground"`) or hex colors (e.g., `"#888888"`)
+- **`fontStyle`** (string, default: `"italic"`): Font style for hints (`"normal"`, `"italic"`, or `"bold"`)
+- **`margin`** (string, default: `"0 0 0 1em"`): CSS margin for positioning hints
+- **`extend`** (array): Add custom block types for inline hints. Example: `[ { "type": "customBlock", "label": "Custom Block" } ]`
+
+### Blaze Helpers Settings
+- **`extend`** (array): Add custom helpers for completion and hover. Example: `[ { "name": "#myHelper", "doc": "My custom helper for Blaze templates" } ]`
 
 ## 🧪 Testing
 

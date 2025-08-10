@@ -6,12 +6,35 @@
       <span class="typescript-indicator">TypeScript Powered</span>
 
       {{#if showTypeInfo}}
-        <div class="type-info">
-          <p>Template helpers are typed!</p>
-          <p>Props: {{getPropInfo}}</p>
-          <p>Data: {{getDataInfo}}</p>
-        </div>
+      <div class="type-info">
+        <p>Template helpers are typed!</p>
+        <p>Props: {{getPropInfo}}</p>
+        <p>Data: {{getDataInfo}}</p>
+      </div>
       {{/if}}
+
+      {{#each string in strings}}
+      <p class="string-item">{{string}}</p>
+      {{/each}}
+
+      {{#with formattedUserCount}}
+      <p class="user-count">{{formattedUserCount}}</p>
+      {{/with}}
+
+      {{#unless arrayOfStrings}}
+      <ul class="string-list">
+        {{#each string in arrayOfStrings}}
+        <li class="string-list-item">{{string}}</li>
+        {{/each}}
+      </ul>
+      {{/unless}}
+
+      {{#mrkdwn text}}
+      <p class="markdown-content">{{markdownContent}}</p>
+      {{/mrkdwn}}
+
+
+
     </div>
   </div>
 </template>

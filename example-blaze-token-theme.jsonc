@@ -1,0 +1,28 @@
+{
+  // Example: VS Code settings for Blaze helper token coloring
+  // Extended blazeHelpers (from settings) are valid syntax:
+  // Example: {{#mrkdwn}} ... {{/mrkdwn}}
+  // Example: {{#myHelper}} ... {{/myHelper}}
+  "editor.tokenColorCustomizations": {
+    "textMateRules": [
+      {
+        "scope": "punctuation.definition.bracket.meteor",
+        "settings": {
+          "foreground": "#FFB300" // Bracket color (e.g. {{, }})
+        }
+      },
+      {
+        "scope": "constant.character.hash.meteor",
+        "settings": {
+          "foreground": "#FF6B35" // Hash color (e.g. # in #if)
+        }
+      },
+      {
+        "scope": "entity.name.tag.meteor keyword.control.meteor",
+        "settings": {
+          "foreground": "#007ACC" // Helper name color (e.g. if, each, unless)
+        }
+      }
+    ]
+  }
+}

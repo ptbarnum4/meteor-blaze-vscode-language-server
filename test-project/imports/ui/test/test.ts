@@ -65,6 +65,13 @@ Template.test.helpers({
   formattedUserCount() {
     const count = this.props?.userCount || 0;
     return count > 1 ? `${count} users` : `${count} user`;
+  },
+  /**
+   * Strings!
+   * @returns An array of strings to demonstrate TypeScript features in Meteor templates
+   */
+  arrayOfStrings() {
+    return ['TypeScript', 'Meteor', 'Blaze', 'Templates'];
   }
 });
 

@@ -1,0 +1,25 @@
+{
+  "name": "Blaze Default Token Colors",
+  "type": "dark",
+  "colors": {},
+  "tokenColors": [
+    {
+      "scope": "punctuation.definition.bracket.meteor",
+      "settings": {
+        "foreground": "#FFB300"
+      }
+    },
+    {
+      "scope": "constant.character.hash.meteor",
+      "settings": {
+        "foreground": "#FF6B35"
+      }
+    },
+    {
+      "scope": "entity.name.tag.meteor keyword.control.meteor",
+      "settings": {
+        "foreground": "#007ACC"
+      }
+    }
+  ]
+}

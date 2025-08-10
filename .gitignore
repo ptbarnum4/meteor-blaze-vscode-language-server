@@ -3,3 +3,12 @@ dist
 node_modules
 .vscode-test/
 *.vsix
+
+# Prevent example and test files
+example.*
+simple.*
+test/
+src/test/
+**/test/
+**/example/
+**/simple.*

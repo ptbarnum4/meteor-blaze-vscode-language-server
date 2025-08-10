@@ -1,0 +1,11 @@
+{
+  // Example: Provide custom colors for Blaze helper tokens via settings
+  "meteorLanguageServer.blazeHelpers": {
+    "hashColor": "#FF6B35",      // Color for # in #if, #each, etc.
+    "nameColor": "#007ACC",      // Color for helper name (if, each, unless, etc.)
+    "bracketColor": "#FFB300",   // Color for {{ and }} brackets
+    "extend": [
+      { "name": "#myHelper", "doc": "My custom helper for Blaze templates" }
+    ]
+  }
+}

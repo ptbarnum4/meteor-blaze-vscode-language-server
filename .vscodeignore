@@ -5,6 +5,15 @@ node_modules/**
 src/**
 test-project/**
 test-matching.js
+example/**
+example.**
+example.*
+simple.*
+test/**
+src/test/**
+**/test/**
+**/example/**
+**/simple.*
 .gitignore
 .yarnrc
 esbuild.js

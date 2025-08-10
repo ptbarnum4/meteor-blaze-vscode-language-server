@@ -42,6 +42,20 @@
     "languages": [
       {
         "id": "html",
+        "aliases": ["HTML", "html"],
+        "extensions": [".html"],
+        "configuration": "./language-configuration.json"
+      },
+      {
+        "id": "meteor-html",
+        "aliases": ["Meteor HTML", "meteor-html", "Meteor", "Blaze"],
+        "extensions": [],
+        "configuration": "./language-configuration.json"
+      },
+      {
+        "id": "meteor-handlebars",
+        "aliases": ["Meteor Handlebars", "meteor-handlebars", "Blaze Handlebars"],
+        "extensions": [".hbs"],
         "configuration": "./language-configuration.json"
       }
     ],
@@ -65,6 +79,13 @@
           "meta.helper.expression.meteor": "handlebars",
           "meta.helper.block.meteor": "handlebars"
         }
+      }
+    ],
+    "themes": [
+      {
+        "label": "Blaze Default Token Colors",
+        "uiTheme": "vs-dark",
+        "path": "./blaze-theme.json"
       }
     ],
     "commands": [
@@ -93,6 +114,105 @@
           ],
           "default": "off",
           "description": "Traces the communication between VS Code and the language server."
+        },
+        "meteorLanguageServer.blockConditions": {
+          "type": "object",
+          "default": {},
+          "description": "Settings for inline block condition hints.",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": true,
+              "description": "Enable inline condition hints for Blaze block helpers ({{/if}}, {{/each}}, etc.)"
+            },
+            "color": {
+              "type": "string",
+              "default": "editorCodeLens.foreground",
+              "description": "Color for inline condition hints. Can be a theme color name or hex color (e.g., '#888888')"
+            },
+            "fontStyle": {
+              "type": "string",
+              "enum": [
+                "normal",
+                "italic",
+                "bold"
+              ],
+              "default": "italic",
+              "description": "Font style for inline condition hints"
+            },
+            "margin": {
+              "type": "string",
+              "default": "0 0 0 1em",
+              "description": "CSS margin for inline condition hints"
+            },
+            "extend": {
+              "type": "array",
+              "default": [],
+              "description": "Extend block condition hints to custom block types. Each entry should be an object with 'type', 'label', and optional 'propNames'. Example: [{ type: 'custom', label: 'custom', propNames: ['foo', 'bar'] }]",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string"
+                  },
+                  "label": {
+                    "type": "string"
+                  },
+                  "propNames": {
+                    "type": "array",
+                    "items": { "type": "string" },
+                    "description": "Optional array of prop names for the block type."
+                  }
+                },
+                "required": [
+                  "type",
+                  "label"
+                ]
+              }
+            }
+          }
+        },
+        "meteorLanguageServer.blazeHelpers": {
+          "type": "object",
+          "default": {},
+          "description": "Settings for Blaze helpers.",
+          "properties": {
+            "extend": {
+              "type": "array",
+              "default": [],
+              "description": "Extend Blaze helpers for completion and hover. Each entry should be an object with 'name' and 'doc'. Example: [{ name: 'customHelper', doc: 'Custom helper description' }]",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "doc": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "name",
+                  "doc"
+                ]
+              }
+            },
+            "hashColor": {
+              "type": "string",
+              "default": "#FF6B35",
+              "description": "Custom color for the '#' in Blaze helpers (e.g., #if, #each). Use hex or theme color."
+            },
+            "nameColor": {
+              "type": "string",
+              "default": "#007ACC",
+              "description": "Custom color for the helper name in Blaze helpers. Use hex or theme color."
+            },
+            "bracketColor": {
+              "type": "string",
+              "default": "#888888",
+              "description": "Custom color for the brackets '{{' and '}}' in Blaze helpers. Use hex or theme color."
+            }
+          }
         }
       }
     }
@@ -105,6 +225,8 @@
     "watch:esbuild": "node esbuild.js --watch",
     "watch:tsc": "tsc --noEmit --watch --project tsconfig.json",
     "package": "npm run check-types && npm run lint && node esbuild.js --production",
+    "install:local": "code --install-extension meteor-blaze-vscode-language-server-0.0.1.vsix --force",
+    "package:local": "npm run package && npx @vscode/vsce package && npm run install:local",
     "compile-tests": "tsc -p . --outDir out",
     "watch-tests": "tsc -p . -w --outDir out",
     "pretest": "npm run compile-tests && npm run compile && npm run lint",

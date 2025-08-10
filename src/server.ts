@@ -19,9 +19,7 @@ import {
   DefinitionParams
 } from 'vscode-languageserver/node';
 
-import {
-  TextDocument
-} from 'vscode-languageserver-textdocument';
+import { TextDocument } from 'vscode-languageserver-textdocument';
 
 import * as fs from 'fs';
 import * as path from 'path';
@@ -40,14 +38,24 @@ interface TemplateInfo {
   file: string;
 }
 
+interface HelperInfo {
+  name: string;
+  jsdoc?: string;
+  returnType?: string;
+  parameters?: string;
+  signature?: string;
+}
+
 interface FileAnalysis {
   jsHelpers: Map<string, string[]>;
+  helperDetails: Map<string, HelperInfo[]>; // New: Store detailed helper information
   cssClasses: Map<string, string[]>;
   templates: Map<string, TemplateInfo>;
 }
 
 let fileAnalysis: FileAnalysis = {
   jsHelpers: new Map(),
+  helperDetails: new Map(),
   cssClasses: new Map(),
   templates: new Map()
 };
@@ -61,9 +69,7 @@ connection.onInitialize((params: InitializeParams) => {
   connection.console.log('Meteor Language Server initializing...');
   const capabilities = params.capabilities;
 
-  hasConfigurationCapability = !!(
-    capabilities.workspace && !!capabilities.workspace.configuration
-  );
+  hasConfigurationCapability = !!(capabilities.workspace && !!capabilities.workspace.configuration);
   hasWorkspaceFolderCapability = !!(
     capabilities.workspace && !!capabilities.workspace.workspaceFolders
   );
@@ -181,7 +187,10 @@ function containsMeteorTemplates(document: TextDocument): boolean {
 }
 
 // Check if cursor position is within handlebars expression
-function isWithinHandlebarsExpression(text: string, offset: number): { isWithin: boolean; expressionStart: number; expressionEnd: number; isTriple: boolean } {
+function isWithinHandlebarsExpression(
+  text: string,
+  offset: number
+): { isWithin: boolean; expressionStart: number; expressionEnd: number; isTriple: boolean } {
   // Look backwards for opening braces
   let start = -1;
   let isTriple = false;
@@ -261,31 +270,58 @@ function analyzeNeighboringFiles(document: TextDocument) {
       const fullPath = path.join(dir, file);
 
       // Analyze files with same base name OR files that match template names
-      const shouldAnalyze = fileBaseName === baseName ||
-                           templateNames.includes(fileBaseName) ||
-                           file.startsWith(baseName);
+      const shouldAnalyze =
+        fileBaseName === baseName ||
+        templateNames.includes(fileBaseName) ||
+        file.startsWith(baseName);
 
-      connection.console.log(`[DEBUG] File: ${file}, BaseName: ${fileBaseName}, ShouldAnalyze: ${shouldAnalyze}`);
-      connection.console.log(`[DEBUG]   - fileBaseName === baseName: ${fileBaseName === baseName} (${fileBaseName} === ${baseName})`);
-      connection.console.log(`[DEBUG]   - templateNames.includes(fileBaseName): ${templateNames.includes(fileBaseName)} (templateNames: ${JSON.stringify(templateNames)} includes ${fileBaseName})`);
-      connection.console.log(`[DEBUG]   - file.startsWith(baseName): ${file.startsWith(baseName)} (${file} starts with ${baseName})`);
+      connection.console.log(
+        `[DEBUG] File: ${file}, BaseName: ${fileBaseName}, ShouldAnalyze: ${shouldAnalyze}`
+      );
+      connection.console.log(
+        `[DEBUG]   - fileBaseName === baseName: ${
+          fileBaseName === baseName
+        } (${fileBaseName} === ${baseName})`
+      );
+      connection.console.log(
+        `[DEBUG]   - templateNames.includes(fileBaseName): ${templateNames.includes(
+          fileBaseName
+        )} (templateNames: ${JSON.stringify(templateNames)} includes ${fileBaseName})`
+      );
+      connection.console.log(
+        `[DEBUG]   - file.startsWith(baseName): ${file.startsWith(
+          baseName
+        )} (${file} starts with ${baseName})`
+      );
 
       if (file === 'nestedTemplate.ts') {
         connection.console.log(`[DEBUG] 🔍 SPECIAL CHECK FOR nestedTemplate.ts:`);
         connection.console.log(`[DEBUG]   - fileBaseName: "${fileBaseName}"`);
         connection.console.log(`[DEBUG]   - baseName: "${baseName}"`);
         connection.console.log(`[DEBUG]   - templateNames: ${JSON.stringify(templateNames)}`);
-        connection.console.log(`[DEBUG]   - templateNames.includes("${fileBaseName}"): ${templateNames.includes(fileBaseName)}`);
+        connection.console.log(
+          `[DEBUG]   - templateNames.includes("${fileBaseName}"): ${templateNames.includes(
+            fileBaseName
+          )}`
+        );
       }
       if (shouldAnalyze) {
         if (['.js', '.ts'].includes(ext)) {
           connection.console.log(`[DEBUG] Analyzing JavaScript/TypeScript file: ${fullPath}`);
           const result = analyzeJavaScriptFile(fullPath);
           const helpers = result.helpers;
+          const helperDetails = result.helperDetails;
           const extractedTemplateName = result.templateName;
 
           connection.console.log(`[DEBUG] Found helpers: ${JSON.stringify(helpers)}`);
-          connection.console.log(`[DEBUG] Extracted template name from code: ${extractedTemplateName}`);
+          connection.console.log(
+            `[DEBUG] Found helper details: ${JSON.stringify(
+              helperDetails.map(h => ({ name: h.name, hasJSDoc: !!h.jsdoc }))
+            )}`
+          );
+          connection.console.log(
+            `[DEBUG] Extracted template name from code: ${extractedTemplateName}`
+          );
 
           // Store helpers with directory-specific keys to ensure same-directory matching
           const dirKey = `${dir}/${baseName}`;
@@ -293,19 +329,27 @@ function analyzeNeighboringFiles(document: TextDocument) {
 
           fileAnalysis.jsHelpers.set(dirKey, helpers);
           fileAnalysis.jsHelpers.set(dirFileKey, helpers);
+          fileAnalysis.helperDetails.set(dirKey, helperDetails);
+          fileAnalysis.helperDetails.set(dirFileKey, helperDetails);
 
           // If we extracted a template name from the code, use that as a key too (with directory)
           if (extractedTemplateName) {
             const dirTemplateKey = `${dir}/${extractedTemplateName}`;
             fileAnalysis.jsHelpers.set(dirTemplateKey, helpers);
-            connection.console.log(`[DEBUG] Stored helpers under dir-specific template name: ${dirTemplateKey}`);
+            fileAnalysis.helperDetails.set(dirTemplateKey, helperDetails);
+            connection.console.log(
+              `[DEBUG] Stored helpers under dir-specific template name: ${dirTemplateKey}`
+            );
           }
 
           // Also store under template names found in HTML (with directory)
           templateNames.forEach(templateName => {
             const dirTemplateKey = `${dir}/${templateName}`;
             fileAnalysis.jsHelpers.set(dirTemplateKey, helpers);
-            connection.console.log(`[DEBUG] Stored helpers under dir-specific HTML template name: ${dirTemplateKey}`);
+            fileAnalysis.helperDetails.set(dirTemplateKey, helperDetails);
+            connection.console.log(
+              `[DEBUG] Stored helpers under dir-specific HTML template name: ${dirTemplateKey}`
+            );
           });
         } else if (['.css', '.less'].includes(ext)) {
           connection.console.log(`[DEBUG] Analyzing CSS/LESS file: ${fullPath}`);
@@ -331,10 +375,15 @@ function analyzeNeighboringFiles(document: TextDocument) {
   }
 }
 
-function analyzeJavaScriptFile(filePath: string): { helpers: string[], templateName?: string } {
+function analyzeJavaScriptFile(filePath: string): {
+  helpers: string[];
+  helperDetails: HelperInfo[];
+  templateName?: string;
+} {
   try {
     const content = fs.readFileSync(filePath, 'utf8');
     const helpers: string[] = [];
+    const helperDetails: HelperInfo[] = [];
     let extractedTemplateName: string | undefined;
 
     // Find Template.name.helpers() calls with proper brace matching
@@ -348,7 +397,9 @@ function analyzeJavaScriptFile(filePath: string): { helpers: string[], templateN
         extractedTemplateName = templateNameFromCode;
       }
 
-      connection.console.log(`[DEBUG] Found Template.${templateNameFromCode}.helpers() in ${filePath}`);
+      connection.console.log(
+        `[DEBUG] Found Template.${templateNameFromCode}.helpers() in ${filePath}`
+      );
 
       const startIndex = match.index + match[0].length - 1; // Start at the opening brace
       let braceCount = 1;
@@ -368,38 +419,138 @@ function analyzeJavaScriptFile(filePath: string): { helpers: string[], templateN
         // Extract the content between braces
         const helpersContent = content.substring(startIndex + 1, endIndex - 1);
 
-        // Extract helper function names (multiple patterns to cover different syntax)
+        // Extract helper function names and details with enhanced patterns
         const patterns = [
-          // Method syntax: methodName() {
-          /(\w+)\s*\([^)]*\)\s*\{/g,
-          // TypeScript method syntax: methodName(): ReturnType {
-          /(\w+)\s*\([^)]*\)\s*:\s*[^{]*\{/g,
-          // Property syntax: methodName: function() {
-          /(\w+)\s*:\s*function\s*\([^)]*\)\s*\{/g,
-          // Arrow function syntax: methodName: () => {
-          /(\w+)\s*:\s*\([^)]*\)\s*=>\s*[\{\.]/g,
-          // Arrow function without parens: methodName: arg => {
-          /(\w+)\s*:\s*\w+\s*=>\s*[\{\.]/g
+          // TypeScript method syntax with JSDoc: methodName(): ReturnType {
+          {
+            regex: /(\/\*\*[\s\S]*?\*\/\s*)?(\w+)\s*\([^)]*\)\s*:\s*([^{]*)\{/g,
+            hasJSDoc: true,
+            hasReturnType: true
+          },
+          // Method syntax with JSDoc: methodName() {
+          {
+            regex: /(\/\*\*[\s\S]*?\*\/\s*)?(\w+)\s*\(([^)]*)\)\s*\{/g,
+            hasJSDoc: true,
+            hasReturnType: false
+          },
+          // Property syntax with JSDoc: methodName: function() {
+          {
+            regex: /(\/\*\*[\s\S]*?\*\/\s*)?(\w+)\s*:\s*function\s*\(([^)]*)\)\s*\{/g,
+            hasJSDoc: true,
+            hasReturnType: false
+          },
+          // Arrow function syntax with JSDoc: methodName: () => {
+          {
+            regex: /(\/\*\*[\s\S]*?\*\/\s*)?(\w+)\s*:\s*\(([^)]*)\)\s*=>\s*[\{\.]/g,
+            hasJSDoc: true,
+            hasReturnType: false
+          }
         ];
 
         patterns.forEach(pattern => {
           let helperMatch;
+          while ((helperMatch = pattern.regex.exec(helpersContent)) !== null) {
+            const jsdocComment = pattern.hasJSDoc ? helperMatch[1] : undefined;
+            const helperName = pattern.hasJSDoc ? helperMatch[2] : helperMatch[1];
+            const parametersOrReturnType = pattern.hasJSDoc ? helperMatch[3] : helperMatch[2];
+            const returnType = pattern.hasReturnType ? parametersOrReturnType : undefined;
+            const parameters = !pattern.hasReturnType ? parametersOrReturnType : helperMatch[4];
+
+            if (!helpers.includes(helperName)) {
+              helpers.push(helperName);
+
+              // Parse JSDoc comment
+              let parsedJSDoc = '';
+              let extractedReturnType = returnType;
+              let extractedParameters = parameters;
+
+              if (jsdocComment) {
+                // Extract description from JSDoc
+                const descMatch = jsdocComment.match(/\/\*\*\s*([\s\S]*?)\s*(?:@|\*\/)/);
+                if (descMatch) {
+                  parsedJSDoc = descMatch[1].replace(/\s*\*\s?/g, ' ').trim();
+                }
+
+                // Extract @returns tag
+                const returnsMatch = jsdocComment.match(/@returns?\s+\{([^}]+)\}\s*([^@*]*)/);
+                if (returnsMatch && !extractedReturnType) {
+                  extractedReturnType = returnsMatch[1];
+                  if (returnsMatch[2].trim()) {
+                    parsedJSDoc += (parsedJSDoc ? ' ' : '') + `Returns: ${returnsMatch[2].trim()}`;
+                  }
+                }
+
+                // Extract @param tags
+                const paramMatches = jsdocComment.matchAll(
+                  /@param\s+\{([^}]+)\}\s+(\w+)\s*([^@*]*)/g
+                );
+                const paramDescriptions: string[] = [];
+                for (const paramMatch of paramMatches) {
+                  const paramType = paramMatch[1];
+                  const paramName = paramMatch[2];
+                  const paramDesc = paramMatch[3].trim();
+                  paramDescriptions.push(
+                    `${paramName}: ${paramType}${paramDesc ? ` - ${paramDesc}` : ''}`
+                  );
+                }
+                if (paramDescriptions.length > 0) {
+                  extractedParameters = paramDescriptions.join(', ');
+                }
+              }
+
+              const helperInfo: HelperInfo = {
+                name: helperName,
+                jsdoc: parsedJSDoc || undefined,
+                returnType: extractedReturnType?.trim() || undefined,
+                parameters: extractedParameters?.trim() || undefined,
+                signature: `${helperName}(${extractedParameters || ''})${
+                  extractedReturnType ? `: ${extractedReturnType}` : ''
+                }`
+              };
+
+              helperDetails.push(helperInfo);
+            }
+          }
+        });
+
+        // Fallback: simple patterns for helpers without JSDoc
+        const simplePatterns = [
+          /(\w+)\s*\([^)]*\)\s*\{/g,
+          /(\w+)\s*:\s*function\s*\([^)]*\)\s*\{/g,
+          /(\w+)\s*:\s*\([^)]*\)\s*=>\s*[\{\.]/g,
+          /(\w+)\s*:\s*\w+\s*=>\s*[\{\.]/g
+        ];
+
+        simplePatterns.forEach(pattern => {
+          let helperMatch;
           while ((helperMatch = pattern.exec(helpersContent)) !== null) {
-            if (!helpers.includes(helperMatch[1])) {
-              helpers.push(helperMatch[1]);
+            const helperName = helperMatch[1];
+            if (!helpers.includes(helperName)) {
+              helpers.push(helperName);
+              helperDetails.push({
+                name: helperName,
+                signature: `${helperName}()`
+              });
             }
           }
         });
       }
     }
 
-    connection.console.log(`[DEBUG] Extracted helpers from ${filePath}: ${JSON.stringify(helpers)}`);
+    connection.console.log(
+      `[DEBUG] Extracted helpers from ${filePath}: ${JSON.stringify(helpers)}`
+    );
+    connection.console.log(
+      `[DEBUG] Extracted helper details: ${JSON.stringify(
+        helperDetails.map(h => ({ name: h.name, hasJSDoc: !!h.jsdoc, returnType: h.returnType }))
+      )}`
+    );
     connection.console.log(`[DEBUG] Extracted template name: ${extractedTemplateName}`);
 
-    return { helpers, templateName: extractedTemplateName };
+    return { helpers, helperDetails, templateName: extractedTemplateName };
   } catch (error) {
     console.error(`Error analyzing JavaScript/TypeScript file ${filePath}:`, error);
-    return { helpers: [] };
+    return { helpers: [], helperDetails: [] };
   }
 }
 
@@ -453,7 +604,7 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 }
 
 connection.onCompletion(
-  (textDocumentPosition: TextDocumentPositionParams): CompletionItem[] => {
+  async (textDocumentPosition: TextDocumentPositionParams): Promise<CompletionItem[]> => {
     connection.console.log('Completion requested');
     const document = documents.get(textDocumentPosition.textDocument.uri);
     if (!document) {
@@ -481,7 +632,9 @@ connection.onCompletion(
       return [];
     }
 
-    connection.console.log(`Within handlebars expression: ${handlebarsInfo.isTriple ? 'triple' : 'double'} braces`);
+    connection.console.log(
+      `Within handlebars expression: ${handlebarsInfo.isTriple ? 'triple' : 'double'} braces`
+    );
 
     const completions: CompletionItem[] = [];
 
@@ -492,24 +645,31 @@ connection.onCompletion(
 
     // Check if we're in a template block and get template name
     const beforeCursor = text.substring(0, offset);
-    const templateMatch = beforeCursor.match(/<template\s+name=["']([^"']+)["'][^>]*>(?:(?!<\/template>)[\s\S])*$/);
+    const templateMatch = beforeCursor.match(
+      /<template\s+name=["']([^"']+)["'][^>]*>(?:(?!<\/template>)[\s\S])*$/
+    );
     const currentTemplateName = templateMatch ? templateMatch[1] : null;
 
     connection.console.log(`Current template: ${currentTemplateName}`);
 
     if (currentTemplateName) {
       // Add helpers from analyzed files using directory-specific lookup strategies
-      const dirLookupKeys = [
-        `${dir}/${baseName}`,
-        `${dir}/${currentTemplateName}`
-      ].filter(Boolean);
+      const dirLookupKeys = [`${dir}/${baseName}`, `${dir}/${currentTemplateName}`].filter(Boolean);
 
-      connection.console.log(`Looking up helpers with directory-specific keys: ${JSON.stringify(dirLookupKeys)}`);
-      connection.console.log(`[COMPLETION DEBUG] Available helpers map keys: ${JSON.stringify(Array.from(fileAnalysis.jsHelpers.keys()))}`);
+      connection.console.log(
+        `Looking up helpers with directory-specific keys: ${JSON.stringify(dirLookupKeys)}`
+      );
+      connection.console.log(
+        `[COMPLETION DEBUG] Available helpers map keys: ${JSON.stringify(
+          Array.from(fileAnalysis.jsHelpers.keys())
+        )}`
+      );
 
       dirLookupKeys.forEach(key => {
         const helpers = fileAnalysis.jsHelpers.get(key as string);
-        connection.console.log(`🔍 LOOKUP KEY: "${key}" → HELPERS: ${helpers ? JSON.stringify(helpers) : 'NONE FOUND'}`);
+        connection.console.log(
+          `🔍 LOOKUP KEY: "${key}" → HELPERS: ${helpers ? JSON.stringify(helpers) : 'NONE FOUND'}`
+        );
         if (helpers) {
           helpers.forEach(helper => {
             // Avoid duplicates
@@ -526,8 +686,14 @@ connection.onCompletion(
         }
       });
 
-      // Add built-in Blaze helpers
-      const blazeHelpers = [
+      // Fetch config for blockConditions and blazeHelpers
+      let blockTypes = [
+        { type: 'if', label: 'if' },
+        { type: 'each', label: 'each' },
+        { type: 'unless', label: 'unless' },
+        { type: 'with', label: 'with' }
+      ];
+      let blazeHelpers = [
         { name: '#each', doc: 'Iterate over a list' },
         { name: '#if', doc: 'Conditional rendering' },
         { name: '#unless', doc: 'Inverse conditional rendering' },
@@ -539,15 +705,70 @@ connection.onCompletion(
         { name: '@last', doc: 'True if last item in #each loop' },
         { name: 'this', doc: 'Current data context' }
       ];
-
-      blazeHelpers.forEach(helper => {
-        completions.push({
-          label: helper.name,
-          kind: CompletionItemKind.Keyword,
-          detail: 'Blaze helper',
-          documentation: helper.doc
+      try {
+        const config = await connection.workspace.getConfiguration('meteorLanguageServer');
+        let hashColor = '#FF6B35';
+        let nameColor = '#007ACC';
+        if (typeof config?.blazeHelpers?.hashColor === 'string') {
+          hashColor = config.blazeHelpers.hashColor;
+        }
+        if (typeof config?.blazeHelpers?.nameColor === 'string') {
+          nameColor = config.blazeHelpers.nameColor;
+        }
+        // Store for use in completions and hover
+        blazeHelpers.forEach(helper => {
+          let label = helper.name;
+          let doc = helper.doc;
+          // For completion, add color info in documentation
+          if (label.startsWith('#')) {
+            doc = `$(color) <span style='color:${hashColor}'>#</span><span style='color:${nameColor}'>${label.slice(
+              1
+            )}</span> — ${helper.doc}`;
+          }
+          completions.push({
+            label: helper.name,
+            kind: CompletionItemKind.Keyword,
+            detail: 'Blaze helper',
+            documentation: { kind: MarkupKind.Markdown, value: doc }
+          });
         });
-      });
+
+        // Add propNames completions for custom blocks
+        // Merge custom blocks from config
+        let customBlocks = [];
+        if (Array.isArray(config?.blockConditions?.extend)) {
+          customBlocks = config.blockConditions.extend;
+        }
+        const allBlocks = [...blockTypes, ...customBlocks];
+
+        // Find if cursor is inside a block
+        for (const block of allBlocks) {
+          if (!block.propNames || block.propNames.length === 0) { continue; }
+          // Find all block ranges
+          const blockBeginRegex = new RegExp(`\{\{\s*#${block.type}(?:\s+[^}]*)?\}\}`, 'g');
+          let match;
+          while ((match = blockBeginRegex.exec(text)) !== null) {
+            const start = match.index;
+            const endRegex = new RegExp(`\{\{\s*\/${block.type}\s*\}\}`, 'g');
+            endRegex.lastIndex = blockBeginRegex.lastIndex;
+            const endMatch = endRegex.exec(text);
+            const end = endMatch ? endMatch.index + endMatch[0].length : text.length;
+            if (offset >= start && offset <= end) {
+              // Inside this block, suggest propNames
+              block.propNames.forEach((p: string) => {
+                completions.push({
+                  label: p,
+                  kind: CompletionItemKind.Property,
+                  detail: `Custom property for block #${block.type}`
+                });
+              });
+              break;
+            }
+          }
+        }
+      } catch (e) {
+        // Ignore config errors
+      }
     }
 
     connection.console.log(`Returning ${completions.length} completions`);
@@ -555,14 +776,12 @@ connection.onCompletion(
   }
 );
 
-connection.onCompletionResolve(
-  (item: CompletionItem): CompletionItem => {
-    return item;
-  }
-);
+connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
+  return item;
+});
 
 connection.onHover(
-  (textDocumentPosition: TextDocumentPositionParams): Hover | null => {
+  async (textDocumentPosition: TextDocumentPositionParams): Promise<Hover | null> => {
     connection.console.log('Hover requested');
     const document = documents.get(textDocumentPosition.textDocument.uri);
     if (!document) {
@@ -586,7 +805,9 @@ connection.onHover(
 
     // Check if we're in a template block and get template name
     const beforeCursor = text.substring(0, offset);
-    const templateMatch = beforeCursor.match(/<template\s+name=["']([^"']+)["'][^>]*>(?:(?!<\/template>)[\s\S])*$/);
+    const templateMatch = beforeCursor.match(
+      /<template\s+name=["']([^"']+)["'][^>]*>(?:(?!<\/template>)[\s\S])*$/
+    );
     const currentTemplateName = templateMatch ? templateMatch[1] : null;
 
     if (!currentTemplateName) {
@@ -618,38 +839,61 @@ connection.onHover(
     connection.console.log(`[HOVER DEBUG] Base name: ${baseName}`);
 
     // Look for this helper in analyzed files using directory-specific keys
-    const dirLookupKeys = [
-      `${dir}/${baseName}`,
-      `${dir}/${currentTemplateName}`
-    ].filter(Boolean);
+    const dirLookupKeys = [`${dir}/${baseName}`, `${dir}/${currentTemplateName}`].filter(Boolean);
 
     connection.console.log(`[HOVER DEBUG] Lookup keys: ${JSON.stringify(dirLookupKeys)}`);
-    connection.console.log(`[HOVER DEBUG] Available helpers map keys: ${JSON.stringify(Array.from(fileAnalysis.jsHelpers.keys()))}`);
+    connection.console.log(
+      `[HOVER DEBUG] Available helpers map keys: ${JSON.stringify(
+        Array.from(fileAnalysis.jsHelpers.keys())
+      )}`
+    );
 
     for (const key of dirLookupKeys) {
       const helpers = fileAnalysis.jsHelpers.get(key as string);
-      connection.console.log(`[HOVER DEBUG] Key "${key}" → Helpers: ${helpers ? JSON.stringify(helpers) : 'NONE'}`);
+      const helperDetails = fileAnalysis.helperDetails.get(key as string);
+      connection.console.log(
+        `[HOVER DEBUG] Key "${key}" → Helpers: ${helpers ? JSON.stringify(helpers) : 'NONE'}`
+      );
       if (helpers && helpers.includes(word)) {
+        // Find the detailed information for this helper
+        const helperInfo = helperDetails?.find(h => h.name === word);
+
         // Get template file info
         const templateFileName = path.basename(filePath);
 
-        const hoverContent = [
-          `**${word}** - Template Helper`,
-          ``,
-          `**Template:** ${currentTemplateName}`,
-          ``,
-          `**Template File:** ${templateFileName}`,
-          ``,
-          `**Source:** Finding actual file...`,
-          ``,
-          `This is a helper function defined in the template's JavaScript/TypeScript file.`,
-          ``,
-          `**Usage:** \`{{${word}}}\``
-        ];
+        const hoverContent = [`**${word}** - Template Helper`, ``];
 
-        // Try to find additional context from the source file
+        // Add JSDoc description if available
+        if (helperInfo?.jsdoc) {
+          hoverContent.push(`**Description:** ${helperInfo.jsdoc}`);
+          hoverContent.push(``);
+        }
+
+        // Add signature information
+        if (helperInfo?.signature) {
+          hoverContent.push(`**Signature:** \`${helperInfo.signature}\``);
+          hoverContent.push(``);
+        }
+
+        // Add return type if available
+        if (helperInfo?.returnType) {
+          hoverContent.push(`**Returns:** \`${helperInfo.returnType}\``);
+          hoverContent.push(``);
+        }
+
+        // Add parameters if available
+        if (helperInfo?.parameters) {
+          hoverContent.push(`**Parameters:** ${helperInfo.parameters}`);
+          hoverContent.push(``);
+        }
+
+        hoverContent.push(`**Template:** ${currentTemplateName}`);
+        hoverContent.push(``);
+        hoverContent.push(`**Template File:** ${templateFileName}`);
+        hoverContent.push(``);
+
+        // Try to find the source file
         let actualSourceFile = 'Unknown';
-        let foundDefinition = false;
         try {
           // Extract filename from directory-specific key (e.g., "/path/to/test" -> "test")
           const keyParts = key.split('/');
@@ -665,43 +909,22 @@ connection.onHover(
             path.join(dir, `${baseName}.ts`)
           ];
 
-          connection.console.log(`[HOVER DEBUG] Checking possible files: ${JSON.stringify(possibleFiles)}`);
-
           for (const file of possibleFiles) {
-            connection.console.log(`[HOVER DEBUG] Checking if file exists: ${file}`);
             if (require('fs').existsSync(file)) {
-              connection.console.log(`[HOVER DEBUG] Found file: ${file}`);
-              actualSourceFile = path.basename(file); // This includes the full filename with extension
-              const content = require('fs').readFileSync(file, 'utf8');
-              const helperRegex = new RegExp(`${word}\\s*[:=]?\\s*(?:function\\s*\\(|\\([^)]*\\)\\s*=>|\\([^)]*\\)\\s*\\{)`, 'g');
-              const match = helperRegex.exec(content);
-              if (match) {
-                foundDefinition = true;
-                hoverContent[6] = `**Source:** ${actualSourceFile}`;
-                hoverContent.push(``, `**Definition found in:** \`${actualSourceFile}\``);
-                break;
-              } else {
-                // File exists but definition not found, still update source but note it
-                hoverContent[6] = `**Source:** ${actualSourceFile} (helper not found in file)`;
-              }
-            } else {
-              connection.console.log(`[HOVER DEBUG] File does not exist: ${file}`);
+              actualSourceFile = path.basename(file);
+              break;
             }
           }
-
-          // If no file found at all, try to infer from the key
-          if (actualSourceFile === 'Unknown') {
-            hoverContent[6] = `**Source:** ${keyBaseName}.js/ts (checked: ${currentTemplateName}, ${baseName}, ${keyBaseName} - none found)`;
-          } else if (!foundDefinition && actualSourceFile !== 'Unknown') {
-            // File exists but helper not found in it
-            hoverContent[6] = `**Source:** ${actualSourceFile} (helper not located)`;
-          }
         } catch (error) {
-          // Ignore file read errors
           const keyParts = key.split('/');
           const keyBaseName = keyParts[keyParts.length - 1];
-          hoverContent[6] = `**Source:** ${keyBaseName} (file read error: ${error})`;
+          actualSourceFile = `${keyBaseName}.js/ts`;
         }
+
+        hoverContent.push(`**Source:** ${actualSourceFile}\n`);
+        hoverContent.push(`**Usage:** \`{{${word}}}\``);
+
+        // No additional generic text needed - the structured information above is sufficient
 
         return {
           contents: {
@@ -713,146 +936,169 @@ connection.onHover(
       }
     }
 
-    // Check if it's a built-in Blaze helper
-    const blazeHelpers: { [key: string]: string } = {
-      '#each': 'Iterates over a list or cursor, creating a new data context for each item',
-      '#if': 'Conditionally renders content based on a truthy expression',
-      '#unless': 'Conditionally renders content based on a falsy expression (opposite of if)',
-      '#with': 'Changes the data context for the block content',
-      '#let': 'Defines local template variables',
-      '@index': 'The current index in an #each loop (0-based)',
-      '@key': 'The current key in an #each loop over an object',
-      '@first': 'True if this is the first item in an #each loop',
-      '@last': 'True if this is the last item in an #each loop',
-      'this': 'References the current data context'
-    };
-
-    if (blazeHelpers[word]) {
-      return {
-        contents: {
-          kind: MarkupKind.Markdown,
-          value: [
-            `**${word}** - Built-in Blaze Helper`,
-            ``,
-            blazeHelpers[word],
-            ``,
-            `**Usage:** \`{{${word}}}\` or \`{{#${word}}}...{{/${word}}}\``
-          ].join('\n')
-        },
-        range: wordRange
-      };
+    // Check if it's a built-in or custom Blaze helper
+    let blazeHelpers = [
+      {
+        name: '#each',
+        doc: 'Iterates over a list or cursor, creating a new data context for each item'
+      },
+      { name: '#if', doc: 'Conditionally renders content based on a truthy expression' },
+      {
+        name: '#unless',
+        doc: 'Conditionally renders content based on a falsy expression (opposite of if)'
+      },
+      { name: '#with', doc: 'Changes the data context for the block content' },
+      { name: '#let', doc: 'Defines local template variables' },
+      { name: '@index', doc: 'The current index in an #each loop (0-based)' },
+      { name: '@key', doc: 'The current key in an #each loop over an object' },
+      { name: '@first', doc: 'True if this is the first item in an #each loop' },
+      { name: '@last', doc: 'True if this is the last item in an #each loop' },
+      { name: 'this', doc: 'References the current data context' }
+    ];
+    try {
+      const config = await connection.workspace.getConfiguration('meteorLanguageServer');
+      let hashColor = '#FF6B35';
+      let nameColor = '#007ACC';
+      if (typeof config?.blazeHelpers?.hashColor === 'string') {
+        hashColor = config.blazeHelpers.hashColor;
+      }
+      if (typeof config?.blazeHelpers?.nameColor === 'string') {
+        nameColor = config.blazeHelpers.nameColor;
+      }
+      const foundHelper = blazeHelpers.find(h => h.name === word);
+      if (foundHelper) {
+        let coloredLabel = word;
+        if (word.startsWith('#')) {
+          coloredLabel = `<span style='color:${hashColor}'>#</span><span style='color:${nameColor}'>${word.slice(
+            1
+          )}</span>`;
+        }
+        return {
+          contents: {
+            kind: MarkupKind.Markdown,
+            value: [
+              `${coloredLabel} - Blaze Helper`,
+              ``,
+              foundHelper.doc,
+              ``,
+              `**Usage:** \`{{${word}}}\` or \`{{#${word}}}...{{/${word}}}\``
+            ].join('\n')
+          },
+          range: wordRange
+        };
+      }
+    } catch (e) {
+      // Ignore config errors
     }
 
     return null;
   }
 );
 
-connection.onDefinition(
-  (params: DefinitionParams): Location[] | null => {
-    connection.console.log('Definition requested');
-    const document = documents.get(params.textDocument.uri);
-    if (!document) {
-      connection.console.log('No document found for definition');
-      return null;
-    }
+connection.onDefinition((params: DefinitionParams): Location[] | null => {
+  connection.console.log('Definition requested');
+  const document = documents.get(params.textDocument.uri);
+  if (!document) {
+    connection.console.log('No document found for definition');
+    return null;
+  }
 
-    // Only provide definitions if this HTML/Handlebars file contains templates
-    if (!containsMeteorTemplates(document)) {
-      connection.console.log('No Meteor templates found for definition');
-      return null;
-    }
+  // Only provide definitions if this HTML/Handlebars file contains templates
+  if (!containsMeteorTemplates(document)) {
+    connection.console.log('No Meteor templates found for definition');
+    return null;
+  }
 
-    const text = document.getText();
-    const offset = document.offsetAt(params.position);
-    const filePath = document.uri.replace('file://', '');
-    const dir = path.dirname(filePath);
-    const baseName = path.basename(filePath, path.extname(filePath));
+  const text = document.getText();
+  const offset = document.offsetAt(params.position);
+  const filePath = document.uri.replace('file://', '');
+  const dir = path.dirname(filePath);
+  const baseName = path.basename(filePath, path.extname(filePath));
 
-    // Check if we're in a template block and get template name
-    const beforeCursor = text.substring(0, offset);
-    const templateMatch = beforeCursor.match(/<template\s+name=["']([^"']+)["'][^>]*>(?:(?!<\/template>)[\s\S])*$/);
-    const currentTemplateName = templateMatch ? templateMatch[1] : null;
+  // Check if we're in a template block and get template name
+  const beforeCursor = text.substring(0, offset);
+  const templateMatch = beforeCursor.match(
+    /<template\s+name=["']([^"']+)["'][^>]*>(?:(?!<\/template>)[\s\S])*$/
+  );
+  const currentTemplateName = templateMatch ? templateMatch[1] : null;
 
-    if (!currentTemplateName) {
-      return null; // Only provide definitions inside templates
-    }
+  if (!currentTemplateName) {
+    return null; // Only provide definitions inside templates
+  }
 
-    // Check if we're inside a handlebars expression
-    const handlebarsInfo = isWithinHandlebarsExpression(text, offset);
-    if (!handlebarsInfo.isWithin) {
-      connection.console.log('Cursor not within handlebars expression for definition');
-      return null;
-    }
+  // Check if we're inside a handlebars expression
+  const handlebarsInfo = isWithinHandlebarsExpression(text, offset);
+  if (!handlebarsInfo.isWithin) {
+    connection.console.log('Cursor not within handlebars expression for definition');
+    return null;
+  }
 
-    // Get word at current position
-    const wordRange = getWordRangeAtPosition(document, params.position);
-    if (!wordRange) {
-      return null;
-    }
+  // Get word at current position
+  const wordRange = getWordRangeAtPosition(document, params.position);
+  if (!wordRange) {
+    return null;
+  }
 
-    const word = text.substring(
-      document.offsetAt(wordRange.start),
-      document.offsetAt(wordRange.end)
-    );
+  const word = text.substring(document.offsetAt(wordRange.start), document.offsetAt(wordRange.end));
 
-    connection.console.log(`Looking for definition of "${word}" within handlebars expression`);
+  connection.console.log(`Looking for definition of "${word}" within handlebars expression`);
 
-    // Look for this helper in analyzed files using directory-specific keys
-    const dirLookupKeys = [
-      `${dir}/${baseName}`,
-      `${dir}/${currentTemplateName}`
-    ].filter(Boolean);
+  // Look for this helper in analyzed files using directory-specific keys
+  const dirLookupKeys = [`${dir}/${baseName}`, `${dir}/${currentTemplateName}`].filter(Boolean);
 
-    for (const key of dirLookupKeys) {
-      const helpers = fileAnalysis.jsHelpers.get(key as string);
-      if (helpers && helpers.includes(word)) {
-        try {
-          // Extract filename from directory-specific key
-          const keyParts = key.split('/');
-          const keyBaseName = keyParts[keyParts.length - 1];
+  for (const key of dirLookupKeys) {
+    const helpers = fileAnalysis.jsHelpers.get(key as string);
+    if (helpers && helpers.includes(word)) {
+      try {
+        // Extract filename from directory-specific key
+        const keyParts = key.split('/');
+        const keyBaseName = keyParts[keyParts.length - 1];
 
-          // Try multiple possible file names based on template name and HTML file base name
-          const possibleFiles = [
-            path.join(dir, `${keyBaseName}.js`),
-            path.join(dir, `${keyBaseName}.ts`),
-            path.join(dir, `${currentTemplateName}.js`),
-            path.join(dir, `${currentTemplateName}.ts`),
-            path.join(dir, `${baseName}.js`),
-            path.join(dir, `${baseName}.ts`)
-          ];
+        // Try multiple possible file names based on template name and HTML file base name
+        const possibleFiles = [
+          path.join(dir, `${keyBaseName}.js`),
+          path.join(dir, `${keyBaseName}.ts`),
+          path.join(dir, `${currentTemplateName}.js`),
+          path.join(dir, `${currentTemplateName}.ts`),
+          path.join(dir, `${baseName}.js`),
+          path.join(dir, `${baseName}.ts`)
+        ];
 
-          for (const file of possibleFiles) {
-            if (require('fs').existsSync(file)) {
-              const content = require('fs').readFileSync(file, 'utf8');
+        for (const file of possibleFiles) {
+          if (require('fs').existsSync(file)) {
+            const content = require('fs').readFileSync(file, 'utf8');
 
-              // Find the helper definition in the file
-              const lines = content.split('\n');
-              for (let i = 0; i < lines.length; i++) {
-                const line = lines[i];
-                const helperRegex = new RegExp(`\\b${word}\\s*[:=]?\\s*(?:function\\s*\\(|\\([^)]*\\)\\s*=>|\\([^)]*\\)\\s*\\{)`);
-                const match = helperRegex.exec(line);
-                if (match) {
-                  connection.console.log(`Found definition of "${word}" at line ${i + 1} in ${file}`);
-                  return [{
+            // Find the helper definition in the file
+            const lines = content.split('\n');
+            for (let i = 0; i < lines.length; i++) {
+              const line = lines[i];
+              const helperRegex = new RegExp(
+                `\\b${word}\\s*[:=]?\\s*(?:function\\s*\\(|\\([^)]*\\)\\s*=>|\\([^)]*\\)\\s*\\{)`
+              );
+              const match = helperRegex.exec(line);
+              if (match) {
+                connection.console.log(`Found definition of "${word}" at line ${i + 1} in ${file}`);
+                return [
+                  {
                     uri: `file://${file}`,
                     range: {
                       start: { line: i, character: match.index || 0 },
                       end: { line: i, character: (match.index || 0) + word.length }
                     }
-                  }];
-                }
+                  }
+                ];
               }
             }
           }
-        } catch (error) {
-          connection.console.log(`Error finding definition: ${error}`);
         }
+      } catch (error) {
+        connection.console.log(`Error finding definition: ${error}`);
       }
     }
-
-    return null;
   }
-);
+
+  return null;
+});
 
 function getWordRangeAtPosition(document: TextDocument, position: Position): Range | null {
   const text = document.getText();

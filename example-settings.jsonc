@@ -1,0 +1,25 @@
+{
+  // Meteor/Blaze Language Server Example Settings
+
+  // Basic language server settings
+  "meteorLanguageServer.maxNumberOfProblems": 100,
+  "meteorLanguageServer.trace.server": "off",
+
+  // Block condition decoration settings
+  "meteorLanguageServer.blockConditions": {
+    "enabled": true,
+    "color": "#FF6B35",
+    "fontStyle": "bold",
+    "margin": "0 0 0 2em",
+    "extend": [
+      { "type": "customBlock", "label": "Custom Block" }
+    ]
+  },
+
+  // Blaze helper settings
+  "meteorLanguageServer.blazeHelpers": {
+    "extend": [
+      { "name": "#myHelper", "doc": "My custom helper for Blaze templates" }
+    ]
+  }
+}

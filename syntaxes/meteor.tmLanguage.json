@@ -60,40 +60,44 @@
       "patterns": [
         {
           "name": "meta.helper.block.meteor",
-          "begin": "(\\{\\{#)(each|if|unless|with)\\b",
-          "end": "(\\{\\{/)(\\2)(\\}\\})",
+            "begin": "(\\{\\{)(#)([a-zA-Z0-9_-]+)\\b",
+            "end": "(\\{\\{/)([a-zA-Z0-9_-]+)(\\}\\})",
           "beginCaptures": {
-            "1": { "name": "punctuation.definition.tag.begin.meteor" },
-            "2": { "name": "entity.name.tag.meteor keyword.control.meteor" }
+            "1": { "name": "punctuation.definition.bracket.meteor" },
+            "2": { "name": "constant.character.hash.meteor" },
+            "3": { "name": "entity.name.tag.meteor keyword.control.meteor" }
           },
           "endCaptures": {
-            "1": { "name": "punctuation.definition.tag.begin.meteor" },
+            "1": { "name": "punctuation.definition.bracket.meteor" },
             "2": { "name": "entity.name.tag.meteor keyword.control.meteor" },
-            "3": { "name": "punctuation.definition.tag.end.meteor" }
+            "3": { "name": "punctuation.definition.bracket.meteor" }
           },
           "patterns": [
-            {
-              "include": "#blaze-expressions"
-            },
-            {
-              "include": "#html-content"
-            }
+            { "include": "#blaze-expressions" },
+            { "include": "#html-content" }
           ]
+        },
+        {
+          "name": "meta.helper.else.meteor",
+          "match": "(\\{\\{)(else)(\\}\\})",
+          "captures": {
+            "1": { "name": "punctuation.definition.bracket.meteor" },
+            "2": { "name": "entity.name.tag.meteor keyword.control.meteor" },
+            "3": { "name": "punctuation.definition.bracket.meteor" }
+          }
         },
         {
           "name": "meta.helper.expression.meteor",
           "begin": "(\\{\\{)",
           "end": "(\\}\\})",
           "beginCaptures": {
-            "1": { "name": "punctuation.definition.tag.begin.meteor" }
+            "1": { "name": "punctuation.definition.bracket.meteor" }
           },
           "endCaptures": {
-            "1": { "name": "punctuation.definition.tag.end.meteor" }
+            "1": { "name": "punctuation.definition.bracket.meteor" }
           },
           "patterns": [
-            {
-              "include": "#blaze-expressions"
-            }
+            { "include": "#blaze-expressions" }
           ]
         }
       ]
@@ -135,47 +139,12 @@
             "1": { "name": "punctuation.definition.tag.end.html" }
           },
           "patterns": [
-            {
-              "include": "#html-attributes"
-            }
+            { "include": "#html-attributes" }
           ]
         },
         {
           "name": "meta.tag.any.html",
-          "match": "(</)([a-zA-Z0-9:-]+)(>)",
-          "captures": {
-            "1": { "name": "punctuation.definition.tag.begin.html" },
-            "2": { "name": "entity.name.tag.html" },
-            "3": { "name": "punctuation.definition.tag.end.html" }
-          }
-        }
-      ]
-    },
-    "html-attributes": {
-      "patterns": [
-        {
-          "name": "entity.other.attribute-name.html",
-          "match": "\\b[a-zA-Z0-9:-]+(?=\\s*=)"
-        },
-        {
-          "name": "string.quoted.double.html",
-          "begin": "\"",
-          "end": "\"",
-          "patterns": [
-            {
-              "include": "#blaze-helpers"
-            }
-          ]
-        },
-        {
-          "name": "string.quoted.single.html",
-          "begin": "'",
-          "end": "'",
-          "patterns": [
-            {
-              "include": "#blaze-helpers"
-            }
-          ]
+          "match": "(</)([a-zA-Z0-9:-]+)(>)"
         }
       ]
     },

@@ -45,8 +45,8 @@
       "patterns": [
         {
           "name": "meta.helper.block.meteor",
-          "begin": "(\\{\\{#)(each|if|unless|with|let)\\b",
-          "end": "(\\{\\{/)(\\2)(\\}\\})",
+          "begin": "(\\{\\{#)([a-zA-Z0-9_-]+)\\b",
+          "end": "(\\{\\{/)([a-zA-Z0-9_-]+)(\\\\}\\\\})",
           "beginCaptures": {
             "1": { "name": "punctuation.definition.tag.begin.meteor" },
             "2": { "name": "entity.name.tag.meteor keyword.control.meteor" }
