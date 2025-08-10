@@ -26,20 +26,19 @@
       {{/with}}
 
       {{#unless arrayOfStrings aString}}
+
       <ul class="string-list">
-        {{#each string in arrayOfStrings}}
+        {{#each string in arrayOfStrings1}}
         <li class="string-list-item">{{string}}</li>
-        {{#each string in arrayOfStrings}}
+        {{#each string in arrayOfStrings2}}
         <li class="string-list-item">{{string}}</li>
         {{/each}}
         {{this}}
         {{/each}}
       </ul>
       {{/unless}}
-
-      {{#mrkdwn text}}
-      <p class="markdown-content">{{markdownContent}}</p>
-      {{/mrkdwn}}
+      {{#mrkdwn text}}{{/mrkdwn}}
+      {{#mrkdwn text}}{{markdownContent}}</p>{{/mrkdwn}}
     </div>
   </div>
 </template>

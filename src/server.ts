@@ -693,6 +693,8 @@ connection.onCompletion(
         { type: 'unless', label: 'unless' },
         { type: 'with', label: 'with' }
       ];
+
+      // Built-in blaze helpers
       let blazeHelpers = [
         { name: '#each', doc: 'Iterate over a list' },
         { name: '#if', doc: 'Conditional rendering' },
@@ -715,12 +717,37 @@ connection.onCompletion(
         if (typeof config?.blazeHelpers?.nameColor === 'string') {
           nameColor = config.blazeHelpers.nameColor;
         }
-        // Store for use in completions and hover
+        // Merge extended blazeHelpers from config
+        let extendedHelpers = [];
+        if (Array.isArray(config?.blazeHelpers?.extend)) {
+          extendedHelpers = config.blazeHelpers.extend
+            .map((h: any) => {
+              if (typeof h === 'string') {
+                return { name: h, doc: '' };
+              } else if (typeof h === 'object' && h !== null && typeof h.name === 'string') {
+                return { name: h.name, doc: h.doc || '' };
+              }
+              return null;
+            })
+            .filter(Boolean);
+        }
+        blazeHelpers = [...blazeHelpers, ...extendedHelpers];
+
         blazeHelpers.forEach(helper => {
           let label = helper.name;
           let doc = helper.doc;
-          // For completion, add color info in documentation
+          // Suggest helpers prefixed with '#' if cursor is inside empty handlebars brackets (e.g., '{{}}', '{{#}}')
           if (label.startsWith('#')) {
+            // Find the text before and after the cursor
+            const beforeCursor = text.substring(0, offset);
+            const afterCursor = text.substring(offset);
+            // Check if cursor is inside '{{}}' or '{{#}}' (empty brackets)
+            const insideEmptyBrackets =
+              /\{\{\s*\}\}/.test(beforeCursor + afterCursor) ||
+              /\{\{#\s*\}\}/.test(beforeCursor + afterCursor);
+            if (!insideEmptyBrackets) {
+              return; // Do not suggest this helper
+            }
             doc = `$(color) <span style='color:${hashColor}'>#</span><span style='color:${nameColor}'>${label.slice(
               1
             )}</span> — ${helper.doc}`;
@@ -743,7 +770,9 @@ connection.onCompletion(
 
         // Find if cursor is inside a block
         for (const block of allBlocks) {
-          if (!block.propNames || block.propNames.length === 0) { continue; }
+          if (!block.propNames || block.propNames.length === 0) {
+            continue;
+          }
           // Find all block ranges
           const blockBeginRegex = new RegExp(`\{\{\s*#${block.type}(?:\s+[^}]*)?\}\}`, 'g');
           let match;
@@ -937,23 +966,58 @@ connection.onHover(
     }
 
     // Check if it's a built-in or custom Blaze helper
+    // Built-in blaze helpers
     let blazeHelpers = [
       {
         name: '#each',
-        doc: 'Iterates over a list or cursor, creating a new data context for each item'
+        doc: 'Iterates over a list or cursor, creating a new data context for each item',
+        usage: '{{#each items}}...{{/each}}'
       },
-      { name: '#if', doc: 'Conditionally renders content based on a truthy expression' },
+      {
+        name: '#if',
+        doc: 'Conditionally renders content based on a truthy expression',
+        usage: '{{#if condition}}...{{/if}}'
+      },
       {
         name: '#unless',
-        doc: 'Conditionally renders content based on a falsy expression (opposite of if)'
+        doc: 'Conditionally renders content based on a falsy expression (opposite of if)',
+        usage: '{{#unless condition}}...{{/unless}}'
       },
-      { name: '#with', doc: 'Changes the data context for the block content' },
-      { name: '#let', doc: 'Defines local template variables' },
-      { name: '@index', doc: 'The current index in an #each loop (0-based)' },
-      { name: '@key', doc: 'The current key in an #each loop over an object' },
-      { name: '@first', doc: 'True if this is the first item in an #each loop' },
-      { name: '@last', doc: 'True if this is the last item in an #each loop' },
-      { name: 'this', doc: 'References the current data context' }
+      {
+        name: '#with',
+        doc: 'Changes the data context for the block content',
+        usage: '{{#with context}}...{{/with}}'
+      },
+      {
+        name: '#let',
+        doc: 'Defines local template variables',
+        usage: '{{#let vars}}...{{/let}}'
+      },
+      {
+        name: '@index',
+        doc: 'The current index in an #each loop (0-based)',
+        usage: '{{@index}}'
+      },
+      {
+        name: '@key',
+        doc: 'The current key in an #each loop over an object',
+        usage: '{{@key}}'
+      },
+      {
+        name: '@first',
+        doc: 'True if this is the first item in an #each loop',
+        usage: '{{@first}}'
+      },
+      {
+        name: '@last',
+        doc: 'True if this is the last item in an #each loop',
+        usage: '{{@last}}'
+      },
+      {
+        name: 'this',
+        doc: 'References the current data context',
+        usage: '{{this}}'
+      }
     ];
     try {
       const config = await connection.workspace.getConfiguration('meteorLanguageServer');
@@ -965,6 +1029,26 @@ connection.onHover(
       if (typeof config?.blazeHelpers?.nameColor === 'string') {
         nameColor = config.blazeHelpers.nameColor;
       }
+      // Merge extended blazeHelpers from config
+      let extendedHelpers = [];
+      if (Array.isArray(config?.blazeHelpers?.extend)) {
+        extendedHelpers = config.blazeHelpers.extend
+          .map((h: any) => {
+            if (typeof h === 'string') {
+              return { name: h, doc: '', usage: `{{${h}}}` };
+            } else if (typeof h === 'object' && h !== null && typeof h.name === 'string') {
+              return {
+                name: h.name,
+                doc: h.doc || '',
+                usage: h.usage || `{{${h.name}}}`
+              };
+            }
+            return null;
+          })
+          .filter(Boolean);
+      }
+      blazeHelpers = [...blazeHelpers, ...extendedHelpers];
+
       const foundHelper = blazeHelpers.find(h => h.name === word);
       if (foundHelper) {
         let coloredLabel = word;
@@ -973,16 +1057,19 @@ connection.onHover(
             1
           )}</span>`;
         }
+        let hoverLines = [`${coloredLabel} - Blaze Helper`, ``];
+        if (foundHelper.doc) {
+          hoverLines.push(foundHelper.doc, ``);
+        }
+        if (foundHelper.usage) {
+          hoverLines.push(`**Usage:** \`${foundHelper.usage}\``);
+        } else {
+          hoverLines.push(`**Usage:** \`{{${word}}}\` or \`{{#${word}}}...{{/${word}}}\``);
+        }
         return {
           contents: {
             kind: MarkupKind.Markdown,
-            value: [
-              `${coloredLabel} - Blaze Helper`,
-              ``,
-              foundHelper.doc,
-              ``,
-              `**Usage:** \`{{${word}}}\` or \`{{#${word}}}...{{/${word}}}\``
-            ].join('\n')
+            value: hoverLines.join('\n')
           },
           range: wordRange
         };
@@ -1107,12 +1194,14 @@ function getWordRangeAtPosition(document: TextDocument, position: Position): Ran
   let start = offset;
   let end = offset;
 
-  // Find word boundaries
-  while (start > 0 && /\w/.test(text.charAt(start - 1))) {
+  // Match valid Blaze helper characters: #, @, letters, numbers, and underscores
+  const validChar = /[#@a-zA-Z0-9_]/;
+
+  while (start > 0 && validChar.test(text.charAt(start - 1))) {
     start--;
   }
 
-  while (end < text.length && /\w/.test(text.charAt(end))) {
+  while (end < text.length && validChar.test(text.charAt(end))) {
     end++;
   }
 
