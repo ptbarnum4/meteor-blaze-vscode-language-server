@@ -1,0 +1,156 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Meteor HTML",
+  "scopeName": "text.html.meteor",
+  "patterns": [
+    {
+      "include": "#template-blocks"
+    },
+    {
+      "include": "text.html.basic"
+    }
+  ],
+  "repository": {
+    "template-blocks": {
+      "patterns": [
+        {
+          "name": "meta.template.meteor",
+          "begin": "(<template\\s+name=)([\"'])([^\"']+)\\2(>)",
+          "end": "(</template>)",
+          "beginCaptures": {
+            "1": { "name": "punctuation.definition.tag.begin.html" },
+            "2": { "name": "punctuation.definition.string.begin.html" },
+            "3": { "name": "string.quoted.double.html entity.name.tag.template.meteor" },
+            "4": { "name": "punctuation.definition.string.end.html" },
+            "5": { "name": "punctuation.definition.tag.end.html" }
+          },
+          "endCaptures": {
+            "1": { "name": "punctuation.definition.tag.html" }
+          },
+          "patterns": [
+            {
+              "include": "#blaze-helpers"
+            },
+            {
+              "include": "#meteor-events"
+            },
+            {
+              "include": "text.html.basic"
+            }
+          ]
+        }
+      ]
+    },
+    "blaze-helpers": {
+      "patterns": [
+        {
+          "name": "meta.helper.block.meteor",
+          "begin": "(\\{\\{#)(each|if|unless|with|let)\\b",
+          "end": "(\\{\\{/)(\\2)(\\}\\})",
+          "beginCaptures": {
+            "1": { "name": "punctuation.definition.tag.begin.meteor" },
+            "2": { "name": "entity.name.tag.meteor keyword.control.meteor" }
+          },
+          "endCaptures": {
+            "1": { "name": "punctuation.definition.tag.begin.meteor" },
+            "2": { "name": "entity.name.tag.meteor keyword.control.meteor" },
+            "3": { "name": "punctuation.definition.tag.end.meteor" }
+          },
+          "patterns": [
+            {
+              "include": "#blaze-expressions"
+            },
+            {
+              "include": "#blaze-helpers"
+            },
+            {
+              "include": "text.html.basic"
+            }
+          ]
+        },
+        {
+          "name": "meta.helper.expression.meteor",
+          "begin": "(\\{\\{\\{)",
+          "end": "(\\}\\}\\})",
+          "beginCaptures": {
+            "1": { "name": "punctuation.definition.tag.begin.meteor" }
+          },
+          "endCaptures": {
+            "1": { "name": "punctuation.definition.tag.end.meteor" }
+          },
+          "patterns": [
+            {
+              "include": "#blaze-expressions"
+            }
+          ]
+        },
+        {
+          "name": "meta.helper.expression.meteor",
+          "begin": "(\\{\\{)",
+          "end": "(\\}\\})",
+          "beginCaptures": {
+            "1": { "name": "punctuation.definition.tag.begin.meteor" }
+          },
+          "endCaptures": {
+            "1": { "name": "punctuation.definition.tag.end.meteor" }
+          },
+          "patterns": [
+            {
+              "include": "#blaze-expressions"
+            }
+          ]
+        }
+      ]
+    },
+    "blaze-expressions": {
+      "patterns": [
+        {
+          "name": "variable.other.helper.meteor",
+          "match": "\\b(this|@index|@key|@first|@last)\\b"
+        },
+        {
+          "name": "entity.name.function.helper.meteor",
+          "match": "\\b[a-zA-Z_][a-zA-Z0-9_]*(?=\\s)"
+        },
+        {
+          "name": "variable.other.property.meteor",
+          "match": "\\b[a-zA-Z_][a-zA-Z0-9_]*\\b"
+        },
+        {
+          "name": "keyword.operator.meteor",
+          "match": "\\."
+        },
+        {
+          "name": "string.quoted.single.meteor",
+          "begin": "'",
+          "end": "'",
+          "patterns": [
+            {
+              "name": "constant.character.escape.meteor",
+              "match": "\\\\."
+            }
+          ]
+        },
+        {
+          "name": "string.quoted.double.meteor",
+          "begin": "\"",
+          "end": "\"",
+          "patterns": [
+            {
+              "name": "constant.character.escape.meteor",
+              "match": "\\\\."
+            }
+          ]
+        }
+      ]
+    },
+    "meteor-events": {
+      "patterns": [
+        {
+          "name": "entity.other.attribute-name.event.meteor",
+          "match": "\\b(click|submit|change|keyup|keydown|mouseenter|mouseleave|focus|blur)\\b(?=\\s*=)"
+        }
+      ]
+    }
+  }
+}

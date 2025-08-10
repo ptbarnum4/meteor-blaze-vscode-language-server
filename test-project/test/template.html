@@ -1,0 +1,18 @@
+<template name="test">
+  <div id="test">
+    <h1>TypeScript Meteor Template</h1>
+    <div class="test-content">
+      <p class="helper-text">{{testText}}</p>
+      <span class="typescript-indicator">TypeScript Powered</span>
+
+      {{#if showTypeInfo}}
+        <div class="type-info">
+          <p>Template helpers are typed!</p>
+          <p>Props: {{getPropInfo}}</p>
+          <p>Data: {{getDataInfo}}</p>
+
+        </div>
+      {{/if}}
+    </div>
+  </div>
+</template>

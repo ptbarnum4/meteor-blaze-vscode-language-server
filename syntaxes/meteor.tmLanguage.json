@@ -1,0 +1,232 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Meteor",
+  "scopeName": "source.meteor",
+  "patterns": [
+    {
+      "include": "#template-blocks"
+    },
+    {
+      "include": "#keywords"
+    },
+    {
+      "include": "#strings"
+    },
+    {
+      "include": "#comments"
+    },
+    {
+      "include": "#numbers"
+    },
+    {
+      "include": "#functions"
+    },
+    {
+      "include": "#variables"
+    },
+    {
+      "include": "#html-content"
+    }
+  ],
+  "repository": {
+    "template-blocks": {
+      "patterns": [
+        {
+          "name": "meta.template.meteor",
+          "begin": "(<template\\s+name=)([\"'])([^\"']+)\\2(>)",
+          "end": "(</template>)",
+          "beginCaptures": {
+            "1": { "name": "punctuation.definition.tag.begin.html" },
+            "2": { "name": "punctuation.definition.string.begin.html" },
+            "3": { "name": "string.quoted.double.html entity.name.tag.template.meteor" },
+            "4": { "name": "punctuation.definition.string.end.html" },
+            "5": { "name": "punctuation.definition.tag.end.html" }
+          },
+          "endCaptures": {
+            "1": { "name": "punctuation.definition.tag.html" }
+          },
+          "patterns": [
+            {
+              "include": "#blaze-helpers"
+            },
+            {
+              "include": "#html-content"
+            }
+          ]
+        }
+      ]
+    },
+    "blaze-helpers": {
+      "patterns": [
+        {
+          "name": "meta.helper.block.meteor",
+          "begin": "(\\{\\{#)(each|if|unless|with)\\b",
+          "end": "(\\{\\{/)(\\2)(\\}\\})",
+          "beginCaptures": {
+            "1": { "name": "punctuation.definition.tag.begin.meteor" },
+            "2": { "name": "entity.name.tag.meteor keyword.control.meteor" }
+          },
+          "endCaptures": {
+            "1": { "name": "punctuation.definition.tag.begin.meteor" },
+            "2": { "name": "entity.name.tag.meteor keyword.control.meteor" },
+            "3": { "name": "punctuation.definition.tag.end.meteor" }
+          },
+          "patterns": [
+            {
+              "include": "#blaze-expressions"
+            },
+            {
+              "include": "#html-content"
+            }
+          ]
+        },
+        {
+          "name": "meta.helper.expression.meteor",
+          "begin": "(\\{\\{)",
+          "end": "(\\}\\})",
+          "beginCaptures": {
+            "1": { "name": "punctuation.definition.tag.begin.meteor" }
+          },
+          "endCaptures": {
+            "1": { "name": "punctuation.definition.tag.end.meteor" }
+          },
+          "patterns": [
+            {
+              "include": "#blaze-expressions"
+            }
+          ]
+        }
+      ]
+    },
+    "blaze-expressions": {
+      "patterns": [
+        {
+          "name": "variable.other.helper.meteor",
+          "match": "\\b[a-zA-Z_][a-zA-Z0-9_]*\\b"
+        },
+        {
+          "name": "keyword.operator.meteor",
+          "match": "\\."
+        },
+        {
+          "name": "string.quoted.single.meteor",
+          "begin": "'",
+          "end": "'",
+          "patterns": [
+            {
+              "name": "constant.character.escape.meteor",
+              "match": "\\\\."
+            }
+          ]
+        }
+      ]
+    },
+    "html-content": {
+      "patterns": [
+        {
+          "name": "meta.tag.any.html",
+          "begin": "(<)([a-zA-Z0-9:-]+)",
+          "end": "(>)",
+          "beginCaptures": {
+            "1": { "name": "punctuation.definition.tag.begin.html" },
+            "2": { "name": "entity.name.tag.html" }
+          },
+          "endCaptures": {
+            "1": { "name": "punctuation.definition.tag.end.html" }
+          },
+          "patterns": [
+            {
+              "include": "#html-attributes"
+            }
+          ]
+        },
+        {
+          "name": "meta.tag.any.html",
+          "match": "(</)([a-zA-Z0-9:-]+)(>)",
+          "captures": {
+            "1": { "name": "punctuation.definition.tag.begin.html" },
+            "2": { "name": "entity.name.tag.html" },
+            "3": { "name": "punctuation.definition.tag.end.html" }
+          }
+        }
+      ]
+    },
+    "html-attributes": {
+      "patterns": [
+        {
+          "name": "entity.other.attribute-name.html",
+          "match": "\\b[a-zA-Z0-9:-]+(?=\\s*=)"
+        },
+        {
+          "name": "string.quoted.double.html",
+          "begin": "\"",
+          "end": "\"",
+          "patterns": [
+            {
+              "include": "#blaze-helpers"
+            }
+          ]
+        },
+        {
+          "name": "string.quoted.single.html",
+          "begin": "'",
+          "end": "'",
+          "patterns": [
+            {
+              "include": "#blaze-helpers"
+            }
+          ]
+        }
+      ]
+    },
+    "keywords": {
+      "patterns": [
+        {
+          "name": "keyword.control.meteor",
+          "match": "\\b(Meteor|Template|Session|Tracker|ReactiveVar|ReactiveDict|Deps|Blaze|Package|Npm|Cordova|DDP|EJSON|Match|check|Random|Accounts|Roles)\\b"
+        },
+        {
+          "name": "keyword.other.meteor",
+          "match": "\\b(isClient|isServer|isCordova|startup|publish|subscribe|methods|call|apply|onConnection|onReconnect|disconnect|status|reconnect|loginWith|logout|createUser|changePassword|forgotPassword|resetPassword|verifyEmail|user|userId|loggingIn|loginServicesConfigured)\\b"
+        }
+      ]
+    },
+    "strings": {
+      "name": "string.quoted.double.meteor",
+      "begin": "\"",
+      "end": "\"",
+      "patterns": [
+        {
+          "name": "constant.character.escape.meteor",
+          "match": "\\\\."
+        }
+      ]
+    },
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.double-slash.meteor",
+          "begin": "//",
+          "end": "$"
+        },
+        {
+          "name": "comment.block.meteor",
+          "begin": "/\\*",
+          "end": "\\*/"
+        }
+      ]
+    },
+    "numbers": {
+      "name": "constant.numeric.meteor",
+      "match": "\\b\\d+(\\.\\d+)?\\b"
+    },
+    "functions": {
+      "name": "entity.name.function.meteor",
+      "match": "\\b[a-zA-Z_][a-zA-Z0-9_]*(?=\\s*\\()"
+    },
+    "variables": {
+      "name": "variable.other.meteor",
+      "match": "\\b[a-zA-Z_][a-zA-Z0-9_]*\\b"
+    }
+  }
+}
