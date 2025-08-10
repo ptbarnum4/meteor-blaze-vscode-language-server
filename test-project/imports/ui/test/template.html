@@ -3,15 +3,18 @@
     <h1>TypeScript Meteor Template</h1>
     <div class="test-content">
       <p class="helper-text">{{testText}}</p>
-      <span class="typescript-indicator">TypeScript Powered</span>
+      <span class="typescript-indicator">TypeScript Powered: {{testText}}</span>
 
-      {{#if showTypeInfo}}
+      {{arrayOfStrings}}
+
+      {{#if showTypeInf getDataInfo}}
       <div class="type-info">
         <p>Template helpers are typed!</p>
         <p>Props: {{getPropInfo}}</p>
         <p>Data: {{getDataInfo}}</p>
       </div>
       {{/if}}
+
 
       {{#each string in strings}}
       <p class="string-item">{{string}}</p>

@@ -7,7 +7,18 @@
   "meteorLanguageServer.trace.server": "messages",
 
   // Block condition decoration overrides - distinctly different from defaults
-
+  "editor.semanticTokenColorCustomizations": {
+    "rules": {
+      "punctuation": { "foreground": "#FF6B35", "fontStyle": "bold" },
+      "blazeBlockHash": { "foreground": "#848484", "fontStyle": "bold" },
+      "blazeBlockName": { "foreground": "#ff7cfd", "fontStyle": "italic" },
+      "blazeBlockArgs": { "foreground": "#fffd7d", "fontStyle": "bold" },
+      "blazeBlockFirstArg": { "foreground": "#ffae00", "fontStyle": "bold" },
+      "blazeBlockSingleArg": { "foreground": "#fffd7d", "fontStyle": "bold" },
+      "blazeExpression": { "foreground": "#2ECC40" },
+      "blazeBlockIn": { "foreground": "#FF00AA", "fontStyle": "italic" }
+    }
+  },
   "meteorLanguageServer.blockConditions": {
     "extend": [
       {
@@ -23,27 +34,11 @@
 
   "meteorLanguageServer.blazeHelpers": {
     "extend": [{ "name": "#mrkdwn", "doc": "Custom markdown block" }]
-    // "hashColor": "#FF6B35",
-    // "nameColor": "#007ACC",
+    // "hashColor": "#FF6B35"
+    // "nameColor": "#007ACC"
     // "bracketColor": "#FF4500"
   },
-  // Example VS Code theme token color customization for Blaze helpers
-  // "editor.tokenColorCustomizations": {
-  //   "textMateRules": [
-  //     {
-  //       "scope": "punctuation.definition.bracket.meteor",
-  //       "settings": { "foreground": "#FFB300" }
-  //     },
-  //     {
-  //       "scope": "constant.character.hash.meteor",
-  //       "settings": { "foreground": "#FF6B35" }
-  //     },
-  //     {
-  //       "scope": "entity.name.tag.meteor keyword.control.meteor",
-  //       "settings": { "foreground": "#007ACC" }
-  //     }
-  //   ]
-  // },
+
   // Additional VS Code settings for better development experience
   "editor.formatOnSave": true,
   "editor.tabSize": 2,

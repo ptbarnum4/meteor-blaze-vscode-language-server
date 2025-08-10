@@ -48,6 +48,7 @@
           },
           "patterns": [
             { "include": "#blaze-expressions" },
+            { "include": "text.html.handlebars" },
             { "include": "text.html.basic" }
           ]
         },
@@ -62,59 +63,23 @@
             "1": { "name": "punctuation.definition.tag.end.meteor" }
           },
           "patterns": [
-            { "include": "#blaze-expressions" }
+            { "include": "#blaze-expressions" },
+            { "include": "text.html.handlebars" }
           ]
         }
       ]
     },
     "blaze-expressions": {
       "patterns": [
-        {
-          "name": "variable.other.helper.meteor",
-          "match": "\\b(this|@index|@key|@first|@last)\\b"
-        },
-        {
-          "name": "entity.name.function.helper.meteor",
-          "match": "\\b[a-zA-Z_][a-zA-Z0-9_]*(?=\\s)"
-        },
-        {
-          "name": "variable.other.property.meteor",
-          "match": "\\b[a-zA-Z_][a-zA-Z0-9_]*\\b"
-        },
-        {
-          "name": "keyword.operator.meteor",
-          "match": "\\\\."
-        },
-        {
-          "name": "string.quoted.single.meteor",
-          "begin": "'",
-          "end": "'",
-          "patterns": [
-            {
-              "name": "constant.character.escape.meteor",
-              "match": "\\\\."
-            }
-          ]
-        },
-        {
-          "name": "string.quoted.double.meteor",
-          "begin": "\"",
-          "end": "\"",
-          "patterns": [
-            {
-              "name": "constant.character.escape.meteor",
-              "match": "\\\\."
-            }
-          ]
-        }
+        { "name": "variable.other.helper.meteor", "match": "\\b(this|@index|@key|@first|@last)\\b" },
+        { "name": "entity.name.function.helper.meteor", "match": "\\b[a-zA-Z_][a-zA-Z0-9_]*(?=\\s)" },
+        { "name": "variable.other.property.meteor", "match": "\\b[a-zA-Z_][a-zA-Z0-9_]*\\b" },
+        { "name": "keyword.operator.meteor", "match": "\\\\." }
       ]
     },
     "meteor-events": {
       "patterns": [
-        {
-          "name": "entity.other.attribute-name.event.meteor",
-          "match": "\\b(click|submit|change|keyup|keydown|mouseenter|mouseleave|focus|blur)\\b(?=\\s*=)"
-        }
+        { "name": "entity.other.attribute-name.event.meteor", "match": "\\b(click|submit|change|keyup|keydown|mouseenter|mouseleave|focus|blur)\\b(?=\\s*=)" }
       ]
     }
   }
