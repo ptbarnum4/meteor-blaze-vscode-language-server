@@ -92,7 +92,7 @@ Template.myTemplate.helpers({
 
 ### Manual Installation
 1. Download the latest `.vsix` file from releases
-2. Run `code --install-extension meteor-language-server-x.x.x.vsix`
+2. Run `code --install-extension meteor-blaze-vscode-language-server-x.x.x.vsix`
 
 ## 🔧 Development
 
@@ -204,6 +204,6 @@ MIT License - see LICENSE file for details.
 
 ## 🐛 Issues & Support
 
-- Report bugs on [GitHub Issues](https://github.com/your-username/meteor-language-server/issues)
+- Report bugs on [GitHub Issues](https://github.com/ptbarnum4/meteor-blaze-vscode-language-server/issues)
 - Feature requests welcome
 - Check existing issues before creating new ones

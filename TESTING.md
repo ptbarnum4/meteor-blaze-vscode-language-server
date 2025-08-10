@@ -1,12 +1,12 @@
 # How to Test Your Meteor Language Server Extension
 
-You now have an enhanced language server extension (`meteor-language-server-0.0.1.vsix`) that supports both JavaScript and TypeScript Meteor templates, plus LESS styling. Here are the testing methods:
+You now have an enhanced language server extension (`meteor-blaze-vscode-language-server-0.0.1.vsix`) that supports both JavaScript and TypeScript Meteor templates, plus LESS styling. Here are the testing methods:
 
 ## Method 1: Install the Extension Globally
 
 1. **Install the extension**:
    ```bash
-   code --install-extension meteor-language-server-0.0.1.vsix
+   code --install-extension meteor-blaze-vscode-language-server-0.0.1.vsix
    ```
 
 2. **Open any project** with HTML files containing Meteor templates
@@ -161,7 +161,7 @@ The language server now looks for helpers specific to template names and provide
 
 To remove the extension:
 ```bash
-code --uninstall-extension meteor-language-server
+code --uninstall-extension meteor-blaze-vscode-language-server
 ```
 
 Or through VS Code: Extensions → Installed → Find "Meteor Language Server" → Uninstall

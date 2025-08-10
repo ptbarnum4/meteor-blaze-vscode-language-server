@@ -1,6 +1,5 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
-
 import {
   LanguageClient,
   LanguageClientOptions,
@@ -64,7 +63,7 @@ export function activate(context: vscode.ExtensionContext) {
   );
 
   // Register restart command
-  const restartCommand = vscode.commands.registerCommand('meteor-language-server.restart', async () => {
+  const restartCommand = vscode.commands.registerCommand('meteor-blaze-vscode-language-server.restart', async () => {
     if (client) {
       await client.stop();
       client.start();

@@ -58,7 +58,7 @@ Configure the extension through VS Code settings:
 
 ```bash
 git clone <repository-url>
-cd meteor-language-server
+cd meteor-blaze-vscode-language-server
 npm install
 ```
 

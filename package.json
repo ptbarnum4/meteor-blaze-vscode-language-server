@@ -1,8 +1,29 @@
 {
-  "name": "meteor-language-server",
+  "name": "meteor-blaze-vscode-language-server",
   "displayName": "Meteor Language Server",
   "description": "A language server for the Meteor framework providing syntax highlighting, diagnostics, and code completion",
   "version": "0.0.1",
+  "author": "ptbarnum4",
+  "license": "MIT",
+  "homepage": "https://github.com/ptbarnum4/meteor-blaze-vscode-language-server#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ptbarnum4/meteor-blaze-vscode-language-server.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ptbarnum4/meteor-blaze-vscode-language-server/issues"
+  },
+  "keywords": [
+    "meteor",
+    "blaze",
+    "handlebars",
+    "template",
+    "language-server",
+    "vscode",
+    "typescript",
+    "javascript",
+    "html"
+  ],
   "engines": {
     "vscode": "^1.74.0"
   },
@@ -48,7 +69,7 @@
     ],
     "commands": [
       {
-        "command": "meteor-language-server.restart",
+        "command": "meteor-blaze-vscode-language-server.restart",
         "title": "Restart Meteor Language Server"
       }
     ],

@@ -1,7 +1,7 @@
 {
-  "name": "meteor-language-server-test-project",
+  "name": "meteor-blaze-vscode-language-server-test-project",
   "version": "1.0.0",
-  "description": "Test project for Meteor Language Server extension",
+  "description": "Test project for Meteor Blaze VS Code Language Server extension",
   "scripts": {
     "dev": "meteor",
     "start": "meteor",
