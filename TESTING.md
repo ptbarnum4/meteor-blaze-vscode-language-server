@@ -164,4 +164,4 @@ To remove the extension:
 code --uninstall-extension meteor-blaze-vscode-language-server
 ```
 
-Or through VS Code: Extensions → Installed → Find "Meteor Language Server" → Uninstall
+Or through VS Code: Extensions → Installed → Find "Meteor/Blaze HTML Language Server" → Uninstall

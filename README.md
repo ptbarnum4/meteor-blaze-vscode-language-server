@@ -1,4 +1,4 @@
-# Meteor Language Server
+# Meteor/Blaze HTML Language Server
 
 A VS Code extension that provides language support for Meteor/Blaze templates within HTML files. The extension detects Meteor templates embedded in HTML files and provides intelligent features like syntax highlighting, code completion, hover information, go-to-definition, and cross-file analysis.
 
@@ -87,7 +87,7 @@ Template.myTemplate.helpers({
 ### From VS Code Marketplace
 1. Open VS Code
 2. Go to Extensions (Ctrl/Cmd + Shift + X)
-3. Search for "Meteor Language Server"
+3. Search for "Meteor/Blaze HTML Language Server"
 4. Click Install
 
 ### Manual Installation

@@ -10,7 +10,7 @@ import {
 let client: LanguageClient;
 
 export function activate(context: vscode.ExtensionContext) {
-  console.log('Meteor Language Server extension activating...');
+  console.log('Meteor/Blaze HTML Language Server extension activating...');
 
   // The server is implemented in node
   const serverModule = context.asAbsolutePath(path.join('dist', 'server.js'));
@@ -57,7 +57,7 @@ export function activate(context: vscode.ExtensionContext) {
   // Create the language client and start the client
   client = new LanguageClient(
     'meteorLanguageServer',
-    'Meteor Language Server',
+    'Meteor/Blaze HTML Language Server',
     serverOptions,
     clientOptions
   );
@@ -67,7 +67,7 @@ export function activate(context: vscode.ExtensionContext) {
     if (client) {
       await client.stop();
       client.start();
-      vscode.window.showInformationMessage('Meteor Language Server restarted');
+      vscode.window.showInformationMessage('Meteor/Blaze HTML Language Server restarted');
     }
   });
 
@@ -77,8 +77,8 @@ export function activate(context: vscode.ExtensionContext) {
   client.start();
 
   // Log activation
-  console.log('Meteor Language Server is now active!');
-  vscode.window.showInformationMessage('Meteor Language Server activated!');
+  console.log('Meteor/Blaze HTML Language Server is now active!');
+  vscode.window.showInformationMessage('Meteor/Blaze HTML Language Server activated!');
 }
 
 export function deactivate(): Thenable<void> | undefined {

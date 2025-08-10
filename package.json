@@ -1,6 +1,6 @@
 {
   "name": "meteor-blaze-vscode-language-server",
-  "displayName": "Meteor Language Server",
+  "displayName": "Meteor/Blaze HTML Language Server",
   "description": "A language server for the Meteor framework providing syntax highlighting, diagnostics, and code completion",
   "version": "0.0.1",
   "author": "ptbarnum4",
@@ -70,12 +70,12 @@
     "commands": [
       {
         "command": "meteor-blaze-vscode-language-server.restart",
-        "title": "Restart Meteor Language Server"
+        "title": "Restart Meteor/Blaze HTML Language Server"
       }
     ],
     "configuration": {
       "type": "object",
-      "title": "Meteor Language Server",
+      "title": "Meteor/Blaze HTML Language Server",
       "properties": {
         "meteorLanguageServer.maxNumberOfProblems": {
           "scope": "resource",
