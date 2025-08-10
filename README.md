@@ -1,17 +1,23 @@
 # Meteor Language Server
 
-A VS Code extension that provides language support for Meteor/Blaze templates within HTML files. The extension detects Meteor templates embedded in HTML files and provides intelligent features like syntax highlighting, code completion, and cross-file analysis.
+A VS Code extension that provides language support for Meteor/Blaze templates within HTML files. The extension detects Meteor templates embedded in HTML files and provides intelligent features like syntax highlighting, code completion, hover information, go-to-definition, and cross-file analysis.
 
-## Features
+## ✨ Features
 
-- **Template Detection**: Automatically detects Meteor/Blaze templates within HTML files using `<template name="...">` tags
-- **Syntax Highlighting**: TextMate grammar for Blaze templating syntax (`{{helper}}`, `{{#if}}`, etc.) within HTML
-- **Code Completion**: Intelligent autocomplete for template helpers and CSS classes from neighboring files
-- **Cross-file Intelligence**: Analyzes neighboring `.js`, `.ts`, `.css`, and `.less` files for:
-  - Template helpers (from `Template.name.helpers()` definitions)
-  - CSS classes for autocompletion
-- **Non-intrusive**: Only activates when Meteor templates are detected; regular HTML files remain unaffected
-- **Handlebars Support**: Full support for Handlebars/Blaze syntax within template blocks
+- **🎯 Template Detection**: Automatically detects Meteor/Blaze templates within HTML files using `<template name="...">` tags
+- **🎨 Syntax Highlighting**: TextMate grammar for Blaze templating syntax (`{{helper}}`, `{{#if}}`, etc.) within HTML
+- **💡 Code Completion**: Intelligent autocomplete for:
+  - Template helpers from neighboring TypeScript/JavaScript files
+  - CSS classes from neighboring CSS/LESS files
+  - Built-in Blaze helpers (`#each`, `#if`, `#unless`, `#with`, `#let`)
+- **🔍 Cross-file Intelligence**: Analyzes neighboring files in the same directory for:
+  - Template helpers (from `Template.templateName.helpers()` definitions)
+  - CSS classes for class attribute autocompletion
+- **📋 Hover Information**: Shows helper definitions, file names, and source locations
+- **🎯 Go-to-Definition**: Navigate from helper usage to definition
+- **🔧 Non-intrusive**: Only activates when Meteor templates are detected; regular HTML files remain unaffected
+- **🤝 Handlebars Support**: Full support for Handlebars/Blaze syntax within template blocks
+- **📁 Directory-specific**: Only includes helpers and classes from files in the same directory
 
 ## How It Works
 
@@ -76,64 +82,79 @@ Template.myTemplate.helpers({
 }
 ```
 
-## Test Files
+## 🚀 Installation
 
-Check the `test-project/` directory for test cases and examples.
+### From VS Code Marketplace
+1. Open VS Code
+2. Go to Extensions (Ctrl/Cmd + Shift + X)
+3. Search for "Meteor Language Server"
+4. Click Install
 
-## Installation
+### Manual Installation
+1. Download the latest `.vsix` file from releases
+2. Run `code --install-extension meteor-language-server-x.x.x.vsix`
 
-1. Install from the VS Code marketplace (when published)
-2. Open an HTML file containing `<template>` tags
-3. The language server will automatically provide Meteor/Blaze features
+## 🔧 Development
 
-## Development
-
-To contribute to this extension:
-
-1. Clone the repository
-2. Run `npm install` to install dependencies
-3. Run `npm run compile` to build the extension
-4. Press F5 to launch the Extension Development Host
-5. Open an HTML file with `<template>` tags to test
-
-### Package development
+### Quick Start
 ```bash
-# Stop any existing watch processes
-pkill -f "npm.*watch"
-# Build the extension
-npm run compile
-# Package the extension
-npm run package
-# Create a VSIX package for distribution
-npx vsce package
-# Install the extension globally for testing
-code --install-extension meteor-language-server-0.0.1.vsix
+# Clone the repository
+git clone <repository-url>
+cd meteorLanguageServer
+
+# Install dependencies
+npm install
+
+# Start development mode (watch for changes)
+npm run dev
+
+# In VS Code: Press F5 to launch Extension Development Host
 ```
 
-### Building
-
+### Available Commands
 ```bash
-npm run compile        # Build once
-npm run watch          # Build and watch for changes
-npm run package        # Build for production
+npm run dev          # Start development mode (watch + compile)
+npm run compile      # Build once
+npm run watch        # Watch for changes and rebuild
+npm run package      # Build for production
+npm run lint         # Run ESLint
+npm run check-types  # Check TypeScript types
+npm test             # Run tests
 ```
 
-### Testing
+### Development Workflow
+1. **Setup**: Run `npm install` and `npm run dev`
+2. **Code**: Make changes to `src/` files
+3. **Test**: Press F5 in VS Code to launch Extension Development Host
+4. **Debug**: Open test files in `test-project/` to test features
+5. **Package**: Run `npm run package` to create production build
 
-```bash
-npm test               # Run tests (when implemented)
+### Project Structure
+```
+meteorLanguageServer/
+├── src/
+│   ├── extension.ts           # VS Code extension client
+│   └── server.ts              # Language server implementation
+├── test-project/              # Test Meteor project (excluded from build)
+│   ├── simple.html            # Basic template test
+│   ├── simple.ts              # TypeScript helpers
+│   └── test/                  # Nested template tests
+├── syntaxes/
+│   └── meteor-html.tmLanguage.json  # TextMate grammar
+├── package.json               # Extension manifest
+└── tsconfig.json             # TypeScript configuration
 ```
 
-## Architecture
+## 🏗️ Architecture
 
 - **Client** (`src/extension.ts`): VS Code extension that manages the language server
-- **Server** (`src/server.ts`): Language server providing completion, validation, and hover features
+- **Server** (`src/server.ts`): Language server providing completion, validation, hover, and definition features
 - **Grammar** (`syntaxes/meteor-html.tmLanguage.json`): TextMate grammar for Blaze syntax highlighting
 - **Protocol**: Uses Language Server Protocol (LSP) for communication
 
 The extension only activates language features when Meteor templates are detected in HTML files, ensuring it doesn't interfere with regular HTML development.
 
-## Configuration
+## ⚙️ Configuration
 
 Configure the extension through VS Code settings:
 
@@ -144,14 +165,45 @@ Configure the extension through VS Code settings:
 }
 ```
 
-## Contributing
+## 🧪 Testing
+
+The `test-project/` directory contains a full Meteor project for testing:
+
+```bash
+cd test-project
+meteor npm install    # Install dependencies
+meteor                # Start Meteor (optional)
+
+# Test the extension by opening template files in VS Code
+```
+
+### Test Cases
+- `simple.html` + `simple.ts`: Basic template and helpers
+- `test/template.html` + `test.ts`: Advanced TypeScript features
+- `test/nestedTemplate/`: Nested directory structure
+
+## 🤝 Contributing
 
 1. Fork the repository
-2. Create a feature branch
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
 3. Make your changes
-4. Add tests
-5. Submit a pull request
+4. Run tests (`npm test`)
+5. Commit your changes (`git commit -m 'Add amazing feature'`)
+6. Push to the branch (`git push origin feature/amazing-feature`)
+7. Open a Pull Request
 
-## License
+### Development Guidelines
+- Follow TypeScript best practices
+- Add tests for new features
+- Update documentation as needed
+- Ensure all checks pass (`npm run lint`, `npm run check-types`)
+
+## 📄 License
 
 MIT License - see LICENSE file for details.
+
+## 🐛 Issues & Support
+
+- Report bugs on [GitHub Issues](https://github.com/your-username/meteor-language-server/issues)
+- Feature requests welcome
+- Check existing issues before creating new ones

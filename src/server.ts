@@ -269,7 +269,7 @@ function analyzeNeighboringFiles(document: TextDocument) {
       connection.console.log(`[DEBUG]   - fileBaseName === baseName: ${fileBaseName === baseName} (${fileBaseName} === ${baseName})`);
       connection.console.log(`[DEBUG]   - templateNames.includes(fileBaseName): ${templateNames.includes(fileBaseName)} (templateNames: ${JSON.stringify(templateNames)} includes ${fileBaseName})`);
       connection.console.log(`[DEBUG]   - file.startsWith(baseName): ${file.startsWith(baseName)} (${file} starts with ${baseName})`);
-      
+
       if (file === 'nestedTemplate.ts') {
         connection.console.log(`[DEBUG] 🔍 SPECIAL CHECK FOR nestedTemplate.ts:`);
         connection.console.log(`[DEBUG]   - fileBaseName: "${fileBaseName}"`);
