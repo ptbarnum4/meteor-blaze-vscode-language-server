@@ -3,19 +3,15 @@
   "name": "Meteor HTML",
   "scopeName": "text.html.meteor",
   "patterns": [
-    {
-      "include": "#template-blocks"
-    },
-    {
-      "include": "text.html.basic"
-    }
+    { "include": "#template-blocks" },
+    { "include": "text.html.basic" }
   ],
   "repository": {
     "template-blocks": {
       "patterns": [
         {
           "name": "meta.template.meteor",
-          "begin": "(<template\\s+name=)([\"'])([^\"']+)\\2(>)",
+          "begin": "(<template\\s+name=)([\\\"'])([^\\\"']+)\\2(>)",
           "end": "(</template>)",
           "beginCaptures": {
             "1": { "name": "punctuation.definition.tag.begin.html" },
@@ -28,15 +24,9 @@
             "1": { "name": "punctuation.definition.tag.html" }
           },
           "patterns": [
-            {
-              "include": "#blaze-helpers"
-            },
-            {
-              "include": "#meteor-events"
-            },
-            {
-              "include": "text.html.basic"
-            }
+            { "include": "#blaze-helpers" },
+            { "include": "#meteor-events" },
+            { "include": "text.html.basic" }
           ]
         }
       ]
@@ -45,8 +35,8 @@
       "patterns": [
         {
           "name": "meta.helper.block.meteor",
-          "begin": "(\\{\\{#)([a-zA-Z0-9_-]+)\\b",
-          "end": "(\\{\\{/)([a-zA-Z0-9_-]+)(\\\\}\\\\})",
+          "begin": "(\\{\\{#)(if|each|unless|with|mrkdwn)\\b",
+          "end": "(\\{\\{/)(if|each|unless|with|mrkdwn)(\\}\\})",
           "beginCaptures": {
             "1": { "name": "punctuation.definition.tag.begin.meteor" },
             "2": { "name": "entity.name.tag.meteor keyword.control.meteor" }
@@ -57,31 +47,8 @@
             "3": { "name": "punctuation.definition.tag.end.meteor" }
           },
           "patterns": [
-            {
-              "include": "#blaze-expressions"
-            },
-            {
-              "include": "#blaze-helpers"
-            },
-            {
-              "include": "text.html.basic"
-            }
-          ]
-        },
-        {
-          "name": "meta.helper.expression.meteor",
-          "begin": "(\\{\\{\\{)",
-          "end": "(\\}\\}\\})",
-          "beginCaptures": {
-            "1": { "name": "punctuation.definition.tag.begin.meteor" }
-          },
-          "endCaptures": {
-            "1": { "name": "punctuation.definition.tag.end.meteor" }
-          },
-          "patterns": [
-            {
-              "include": "#blaze-expressions"
-            }
+            { "include": "#blaze-expressions" },
+            { "include": "text.html.basic" }
           ]
         },
         {
@@ -95,9 +62,7 @@
             "1": { "name": "punctuation.definition.tag.end.meteor" }
           },
           "patterns": [
-            {
-              "include": "#blaze-expressions"
-            }
+            { "include": "#blaze-expressions" }
           ]
         }
       ]
@@ -118,7 +83,7 @@
         },
         {
           "name": "keyword.operator.meteor",
-          "match": "\\."
+          "match": "\\\\."
         },
         {
           "name": "string.quoted.single.meteor",
