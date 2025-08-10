@@ -17,11 +17,7 @@ type TestData = {
 };
 
 // Create the static typed template
-type TestTemplate = TemplateStaticTyped<
-  'test',
-  TestData,
-  { props: TestProps }
->;
+type TestTemplate = TemplateStaticTyped<'test', TestData, { props: TestProps }>;
 
 // Resign the template to the static typed template
 const Template = _Template as TestTemplate;
@@ -45,20 +41,21 @@ Template.test.onRendered(function () {
 });
 
 Template.test.helpers({
- /**
-  * This is a test helper method
-  * @returns A string for the test text
-  */
+  /**
+   * This is a test helper method
+   * @returns A string for the test text
+   */
   testText() {
     return 'This is a TypeScript-powered Meteor template';
   },
 
   showTypeInfo() {
-    return this.props?.showDetails || false;
+    return Template.instance().props?.showDetails || false;
   },
 
   getPropInfo() {
-    return `Props available: showDetails, userCount (${this.props?.userCount})`;
+    const count = Template.instance().props?.userCount || 0;
+    return `Props available: showDetails, userCount (${count})`;
   },
 
   getDataInfo() {
