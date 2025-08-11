@@ -1,7 +1,7 @@
 import * as assert from 'assert';
 import { describe, it } from 'node:test';
 import { TextDocument } from 'vscode-languageserver-textdocument';
-import { TextDocuments, InitializeParams, TextDocumentSyncKind } from 'vscode-languageserver/node';
+import { InitializeParams, TextDocuments, TextDocumentSyncKind } from 'vscode-languageserver/node';
 import onInitialize from '../../../server/connection/onInitialize';
 import { CurrentConnectionConfig, LanguageServerSettings } from '../../../types';
 
@@ -43,7 +43,7 @@ describe('connection/onInitialize', () => {
   it('should set capabilities correctly with basic client capabilities', () => {
     const config = createMockConfig();
     const handler = onInitialize(config);
-    
+
     const params: InitializeParams = {
       processId: null,
       rootUri: null,
@@ -54,13 +54,13 @@ describe('connection/onInitialize', () => {
     };
 
     const result = handler(params);
-    
+
     assert.ok(result.capabilities, 'Should have capabilities');
     assert.strictEqual(result.capabilities.textDocumentSync, TextDocumentSyncKind.Incremental);
     assert.ok(result.capabilities.completionProvider, 'Should have completion provider');
     assert.ok(result.capabilities.completionProvider?.resolveProvider, 'Should resolve completions');
     assert.deepStrictEqual(
-      result.capabilities.completionProvider?.triggerCharacters, 
+      result.capabilities.completionProvider?.triggerCharacters,
       ['{', '"', "'", '.', ' ']
     );
     assert.strictEqual(result.capabilities.hoverProvider, true);
@@ -70,7 +70,7 @@ describe('connection/onInitialize', () => {
   it('should detect configuration capability', () => {
     const config = createMockConfig();
     const handler = onInitialize(config);
-    
+
     const params: InitializeParams = {
       processId: null,
       rootUri: null,
@@ -83,14 +83,14 @@ describe('connection/onInitialize', () => {
     };
 
     handler(params);
-    
+
     assert.strictEqual(config.hasConfigurationCapability, true);
   });
 
   it('should detect workspace folder capability', () => {
     const config = createMockConfig();
     const handler = onInitialize(config);
-    
+
     const params: InitializeParams = {
       processId: null,
       rootUri: null,
@@ -103,7 +103,7 @@ describe('connection/onInitialize', () => {
     };
 
     const result = handler(params);
-    
+
     assert.strictEqual(config.hasWorkspaceFolderCapability, true);
     assert.ok(result.capabilities.workspace?.workspaceFolders?.supported);
   });
@@ -111,7 +111,7 @@ describe('connection/onInitialize', () => {
   it('should detect diagnostic related information capability', () => {
     const config = createMockConfig();
     const handler = onInitialize(config);
-    
+
     const params: InitializeParams = {
       processId: null,
       rootUri: null,
@@ -126,14 +126,14 @@ describe('connection/onInitialize', () => {
     };
 
     handler(params);
-    
+
     assert.strictEqual(config.hasDiagnosticRelatedInformationCapability, true);
   });
 
   it('should handle missing capabilities gracefully', () => {
     const config = createMockConfig();
     const handler = onInitialize(config);
-    
+
     const params: InitializeParams = {
       processId: null,
       rootUri: null,
@@ -141,7 +141,7 @@ describe('connection/onInitialize', () => {
     };
 
     const result = handler(params);
-    
+
     assert.strictEqual(config.hasConfigurationCapability, false);
     assert.strictEqual(config.hasWorkspaceFolderCapability, false);
     assert.strictEqual(config.hasDiagnosticRelatedInformationCapability, false);
@@ -151,7 +151,7 @@ describe('connection/onInitialize', () => {
   it('should set all capabilities when client supports them', () => {
     const config = createMockConfig();
     const handler = onInitialize(config);
-    
+
     const params: InitializeParams = {
       processId: null,
       rootUri: null,
@@ -169,7 +169,7 @@ describe('connection/onInitialize', () => {
     };
 
     const result = handler(params);
-    
+
     assert.strictEqual(config.hasConfigurationCapability, true);
     assert.strictEqual(config.hasWorkspaceFolderCapability, true);
     assert.strictEqual(config.hasDiagnosticRelatedInformationCapability, true);

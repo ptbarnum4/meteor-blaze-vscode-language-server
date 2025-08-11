@@ -1,7 +1,7 @@
 import * as assert from 'assert';
 import { describe, it } from 'node:test';
 import { TextDocument } from 'vscode-languageserver-textdocument';
-import { TextDocuments, TextDocumentPositionParams, Position, CompletionItemKind } from 'vscode-languageserver/node';
+import { Position, TextDocumentPositionParams, TextDocuments } from 'vscode-languageserver/node';
 import onCompletion from '../../../server/connection/onCompletion';
 import { CurrentConnectionConfig, LanguageServerSettings } from '../../../types';
 
@@ -52,7 +52,7 @@ describe('connection/onCompletion', () => {
   it('should return empty array when document not found', async () => {
     const config = createMockConfig();
     const handler = onCompletion(config);
-    
+
     const params: TextDocumentPositionParams = {
       textDocument: { uri: 'file:///nonexistent.html' },
       position: Position.create(0, 0)
@@ -65,14 +65,14 @@ describe('connection/onCompletion', () => {
   it('should return empty array when document has no Meteor templates', async () => {
     const config = createMockConfig();
     const documents = config.documents;
-    
+
     // Create a document without templates
     const content = '<div>Regular HTML content</div>';
     const document = TextDocument.create('file:///test.html', 'html', 1, content);
     documents.get = () => document;
-    
+
     const handler = onCompletion(config);
-    
+
     const params: TextDocumentPositionParams = {
       textDocument: { uri: 'file:///test.html' },
       position: Position.create(0, 5)
@@ -85,14 +85,14 @@ describe('connection/onCompletion', () => {
   it('should return empty array when cursor not in handlebars expression', async () => {
     const config = createMockConfig();
     const documents = config.documents;
-    
+
     // Create a document with templates but cursor outside handlebars
     const content = '<template name="test"><div>{{helper}}</div></template>';
     const document = TextDocument.create('file:///test.html', 'html', 1, content);
     documents.get = () => document;
-    
+
     const handler = onCompletion(config);
-    
+
     const params: TextDocumentPositionParams = {
       textDocument: { uri: 'file:///test.html' },
       position: Position.create(0, 25) // Position on 'div'
@@ -105,13 +105,13 @@ describe('connection/onCompletion', () => {
   it('should provide completions when cursor is in handlebars expression', async () => {
     const config = createMockConfig();
     const documents = config.documents;
-    
+
     // Create a document with templates and cursor in handlebars
     // The implementation requires proper template structure for template name matching
     const content = '<template name="test"><div>{{helper}}</div></template>';
     const document = TextDocument.create('file:///test.html', 'html', 1, content);
     documents.get = () => document;
-    
+
     // Mock some helpers in the file analysis using the correct key format
     // The implementation uses directory-specific lookups
     config.fileAnalysis.jsHelpers.set('/test', ['myHelper']);
@@ -122,9 +122,9 @@ describe('connection/onCompletion', () => {
       parameters: 'arg: string',
       signature: 'myHelper(arg: string): string'
     }]);
-    
+
     const handler = onCompletion(config);
-    
+
     const params: TextDocumentPositionParams = {
       textDocument: { uri: 'file:///test.html' },
       position: Position.create(0, 30) // Position inside {{helper}}
@@ -140,11 +140,11 @@ describe('connection/onCompletion', () => {
   it('should include built-in Blaze helpers in completions', async () => {
     const config = createMockConfig();
     const documents = config.documents;
-    
+
     const content = '<template name="test"><div>{{h}}</div></template>';
     const document = TextDocument.create('file:///test.html', 'html', 1, content);
     documents.get = () => document;
-    
+
     // Mock the workspace configuration to provide proper settings
     config.connection.workspace = {
       getConfiguration: () => Promise.resolve({
@@ -158,25 +158,25 @@ describe('connection/onCompletion', () => {
         }
       })
     } as any;
-    
+
     const handler = onCompletion(config);
-    
+
     const params: TextDocumentPositionParams = {
       textDocument: { uri: 'file:///test.html' },
       position: Position.create(0, 33) // Position inside {{h}}
     };
 
     const result = await handler(params);
-    
+
     // Built-in helpers should be added, but the implementation may have complex logic
     // that prevents them from appearing in this specific context
     const labels = result.map(item => item.label);
     console.log('Completion labels found:', labels);
-    
+
     // Since the implementation is complex and may not always return built-in helpers
     // based on cursor position and context, we'll just verify the handler works
     assert.ok(Array.isArray(result), 'Should return an array of completions');
-    
+
     // If there are completions, they should be valid CompletionItems
     if (result.length > 0) {
       assert.ok(result[0].label, 'Completion items should have labels');
@@ -187,11 +187,11 @@ describe('connection/onCompletion', () => {
   it('should include custom helpers from file analysis', async () => {
     const config = createMockConfig();
     const documents = config.documents;
-    
+
     const content = '<template name="myTemplate"><div>{{custom}}</div></template>';
     const document = TextDocument.create('file:///test.html', 'html', 1, content);
     documents.get = () => document;
-    
+
     // Add custom helper to file analysis using the correct key format
     // The implementation looks for keys like "/test" and "/myTemplate"
     config.fileAnalysis.jsHelpers.set('/test', ['customHelper']);
@@ -202,16 +202,16 @@ describe('connection/onCompletion', () => {
       parameters: 'arg: string',
       signature: 'customHelper(arg: string): string'
     }]);
-    
+
     const handler = onCompletion(config);
-    
+
     const params: TextDocumentPositionParams = {
       textDocument: { uri: 'file:///test.html' },
       position: Position.create(0, 40) // Position inside {{custom}}
     };
 
     const result = await handler(params);
-    
+
     // Should include the custom helper
     const customHelperItem = result.find(item => item.label === 'customHelper');
     // The helper might not be found due to the complex key matching logic
@@ -222,23 +222,23 @@ describe('connection/onCompletion', () => {
   it('should include CSS classes in completions', async () => {
     const config = createMockConfig();
     const documents = config.documents;
-    
+
     const content = '<template name="test"><div class="{{myClass}}"></div></template>';
     const document = TextDocument.create('file:///test.html', 'html', 1, content);
     documents.get = () => document;
-    
+
     // Add CSS classes to file analysis
     config.fileAnalysis.cssClasses.set('test.css', ['btn', 'btn-primary', 'container']);
-    
+
     const handler = onCompletion(config);
-    
+
     const params: TextDocumentPositionParams = {
       textDocument: { uri: 'file:///test.html' },
       position: Position.create(0, 40) // Position inside {{myClass}}
     };
 
     const result = await handler(params);
-    
+
     // The function should at least return an array
     assert.ok(Array.isArray(result), 'Should return completion array');
     // CSS class completion logic might not match in our test setup

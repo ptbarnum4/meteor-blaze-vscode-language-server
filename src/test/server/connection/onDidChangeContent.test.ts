@@ -1,7 +1,7 @@
 import * as assert from 'assert';
 import { describe, it } from 'node:test';
 import { TextDocument } from 'vscode-languageserver-textdocument';
-import { TextDocuments, TextDocumentChangeEvent } from 'vscode-languageserver/node';
+import { TextDocumentChangeEvent, TextDocuments } from 'vscode-languageserver/node';
 import onDidChangeContent from '../../../server/connection/onDidChangeContent';
 import { CurrentConnectionConfig, LanguageServerSettings } from '../../../types';
 
@@ -47,10 +47,10 @@ describe('connection/onDidChangeContent', () => {
   it('should handle HTML document change', () => {
     const config = createMockConfig();
     const handler = onDidChangeContent(config);
-    
+
     const content = '<template name="test"><div>{{helper}}</div></template>';
     const document = TextDocument.create('file:///test.html', 'html', 1, content);
-    
+
     const changeEvent: TextDocumentChangeEvent<TextDocument> = {
       document
     };
@@ -64,10 +64,10 @@ describe('connection/onDidChangeContent', () => {
   it('should handle handlebars document change', () => {
     const config = createMockConfig();
     const handler = onDidChangeContent(config);
-    
+
     const content = '<template name="test"><div>{{helper}}</div></template>';
     const document = TextDocument.create('file:///test.hbs', 'handlebars', 1, content);
-    
+
     const changeEvent: TextDocumentChangeEvent<TextDocument> = {
       document
     };
@@ -81,10 +81,10 @@ describe('connection/onDidChangeContent', () => {
   it('should handle document without Meteor templates', () => {
     const config = createMockConfig();
     const handler = onDidChangeContent(config);
-    
+
     const content = '<div>Regular HTML content</div>';
     const document = TextDocument.create('file:///test.html', 'html', 1, content);
-    
+
     const changeEvent: TextDocumentChangeEvent<TextDocument> = {
       document
     };
@@ -98,14 +98,14 @@ describe('connection/onDidChangeContent', () => {
   it('should handle document with Meteor templates', () => {
     const config = createMockConfig();
     const handler = onDidChangeContent(config);
-    
+
     const content = `
       <template name="myTemplate">
         <div>{{helper}}</div>
       </template>
     `;
     const document = TextDocument.create('file:///test.html', 'html', 1, content);
-    
+
     const changeEvent: TextDocumentChangeEvent<TextDocument> = {
       document
     };
@@ -119,10 +119,10 @@ describe('connection/onDidChangeContent', () => {
   it('should handle empty document', () => {
     const config = createMockConfig();
     const handler = onDidChangeContent(config);
-    
+
     const content = '';
     const document = TextDocument.create('file:///test.html', 'html', 1, content);
-    
+
     const changeEvent: TextDocumentChangeEvent<TextDocument> = {
       document
     };
@@ -136,7 +136,7 @@ describe('connection/onDidChangeContent', () => {
   it('should handle JavaScript document', () => {
     const config = createMockConfig();
     const handler = onDidChangeContent(config);
-    
+
     const content = `
       Template.myTemplate.helpers({
         myHelper: function() {
@@ -145,7 +145,7 @@ describe('connection/onDidChangeContent', () => {
       });
     `;
     const document = TextDocument.create('file:///test.js', 'javascript', 1, content);
-    
+
     const changeEvent: TextDocumentChangeEvent<TextDocument> = {
       document
     };
@@ -159,7 +159,7 @@ describe('connection/onDidChangeContent', () => {
   it('should handle TypeScript document', () => {
     const config = createMockConfig();
     const handler = onDidChangeContent(config);
-    
+
     const content = `
       Template.myTemplate.helpers({
         myHelper(): string {
@@ -168,7 +168,7 @@ describe('connection/onDidChangeContent', () => {
       });
     `;
     const document = TextDocument.create('file:///test.ts', 'typescript', 1, content);
-    
+
     const changeEvent: TextDocumentChangeEvent<TextDocument> = {
       document
     };
@@ -182,13 +182,13 @@ describe('connection/onDidChangeContent', () => {
   it('should handle CSS document', () => {
     const config = createMockConfig();
     const handler = onDidChangeContent(config);
-    
+
     const content = `
       .btn { background: blue; }
       .btn-primary { color: white; }
     `;
     const document = TextDocument.create('file:///test.css', 'css', 1, content);
-    
+
     const changeEvent: TextDocumentChangeEvent<TextDocument> = {
       document
     };
@@ -202,10 +202,10 @@ describe('connection/onDidChangeContent', () => {
   it('should handle malformed document content', () => {
     const config = createMockConfig();
     const handler = onDidChangeContent(config);
-    
+
     const content = '<template name="test"><div>{{unclosed handlebars</div>';
     const document = TextDocument.create('file:///test.html', 'html', 1, content);
-    
+
     const changeEvent: TextDocumentChangeEvent<TextDocument> = {
       document
     };
@@ -219,12 +219,12 @@ describe('connection/onDidChangeContent', () => {
   it('should handle very large document', () => {
     const config = createMockConfig();
     const handler = onDidChangeContent(config);
-    
+
     // Create a large document
     const templateContent = '<template name="test"><div>{{helper}}</div></template>';
     const content = templateContent.repeat(1000);
     const document = TextDocument.create('file:///test.html', 'html', 1, content);
-    
+
     const changeEvent: TextDocumentChangeEvent<TextDocument> = {
       document
     };
@@ -243,10 +243,10 @@ describe('connection/onDidChangeContent', () => {
     // We can't easily mock the imported functions, but we can verify the handler runs
     // In a real implementation, we might use dependency injection for better testability
     const handler = onDidChangeContent(config);
-    
+
     const content = '<template name="test"><div>{{helper}}</div></template>';
     const document = TextDocument.create('file:///test.html', 'html', 1, content);
-    
+
     const changeEvent: TextDocumentChangeEvent<TextDocument> = {
       document
     };

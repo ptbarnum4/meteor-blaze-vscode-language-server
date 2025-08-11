@@ -1,7 +1,7 @@
 import * as assert from 'assert';
 import { describe, it } from 'node:test';
 import { TextDocument } from 'vscode-languageserver-textdocument';
-import { TextDocuments, CompletionItem, CompletionItemKind } from 'vscode-languageserver/node';
+import { CompletionItem, CompletionItemKind, TextDocuments } from 'vscode-languageserver/node';
 import onCompletionResolve from '../../../server/connection/onCompletionResolve';
 import { CurrentConnectionConfig, LanguageServerSettings } from '../../../types';
 
@@ -43,7 +43,7 @@ describe('connection/onCompletionResolve', () => {
   it('should return the same completion item without modification', () => {
     const config = createMockConfig();
     const handler = onCompletionResolve(config);
-    
+
     const completionItem: CompletionItem = {
       label: 'testHelper',
       kind: CompletionItemKind.Function,
@@ -52,7 +52,7 @@ describe('connection/onCompletionResolve', () => {
     };
 
     const result = handler(completionItem);
-    
+
     // Should return the exact same object
     assert.strictEqual(result, completionItem);
     assert.strictEqual(result.label, 'testHelper');
@@ -64,13 +64,13 @@ describe('connection/onCompletionResolve', () => {
   it('should handle minimal completion item', () => {
     const config = createMockConfig();
     const handler = onCompletionResolve(config);
-    
+
     const completionItem: CompletionItem = {
       label: 'simpleHelper'
     };
 
     const result = handler(completionItem);
-    
+
     assert.strictEqual(result, completionItem);
     assert.strictEqual(result.label, 'simpleHelper');
   });
@@ -78,7 +78,7 @@ describe('connection/onCompletionResolve', () => {
   it('should handle completion item with all properties', () => {
     const config = createMockConfig();
     const handler = onCompletionResolve(config);
-    
+
     const completionItem: CompletionItem = {
       label: 'complexHelper',
       kind: CompletionItemKind.Function,
@@ -100,7 +100,7 @@ describe('connection/onCompletionResolve', () => {
     };
 
     const result = handler(completionItem);
-    
+
     // Should return the exact same object with all properties intact
     assert.strictEqual(result, completionItem);
     assert.strictEqual(result.label, 'complexHelper');
@@ -125,7 +125,7 @@ describe('connection/onCompletionResolve', () => {
   it('should handle different completion item kinds', () => {
     const config = createMockConfig();
     const handler = onCompletionResolve(config);
-    
+
     const kinds = [
       CompletionItemKind.Function,
       CompletionItemKind.Variable,
@@ -142,7 +142,7 @@ describe('connection/onCompletionResolve', () => {
       };
 
       const result = handler(completionItem);
-      
+
       assert.strictEqual(result, completionItem);
       assert.strictEqual(result.kind, kind);
     });
@@ -151,7 +151,7 @@ describe('connection/onCompletionResolve', () => {
   it('should handle undefined properties gracefully', () => {
     const config = createMockConfig();
     const handler = onCompletionResolve(config);
-    
+
     const completionItem: CompletionItem = {
       label: 'testHelper',
       kind: undefined,
@@ -160,7 +160,7 @@ describe('connection/onCompletionResolve', () => {
     };
 
     const result = handler(completionItem);
-    
+
     assert.strictEqual(result, completionItem);
     assert.strictEqual(result.label, 'testHelper');
     assert.strictEqual(result.kind, undefined);
@@ -171,7 +171,7 @@ describe('connection/onCompletionResolve', () => {
   it('should preserve custom data and properties', () => {
     const config = createMockConfig();
     const handler = onCompletionResolve(config);
-    
+
     const completionItem: CompletionItem = {
       label: 'customHelper',
       data: {
@@ -183,7 +183,7 @@ describe('connection/onCompletionResolve', () => {
     };
 
     const result = handler(completionItem);
-    
+
     assert.strictEqual(result, completionItem);
     assert.deepStrictEqual(result.data, {
       type: 'meteor-helper',
@@ -196,10 +196,10 @@ describe('connection/onCompletionResolve', () => {
   it('should handle null completion item', () => {
     const config = createMockConfig();
     const handler = onCompletionResolve(config);
-    
+
     // TypeScript would prevent this, but testing runtime behavior
     const result = handler(null as any);
-    
+
     assert.strictEqual(result, null);
   });
 
@@ -213,14 +213,14 @@ describe('connection/onCompletionResolve', () => {
 
     configs.forEach(config => {
       const handler = onCompletionResolve(config);
-      
+
       const completionItem: CompletionItem = {
         label: 'testHelper',
         kind: CompletionItemKind.Function
       };
 
       const result = handler(completionItem);
-      
+
       // Should work the same regardless of config state
       assert.strictEqual(result, completionItem);
     });

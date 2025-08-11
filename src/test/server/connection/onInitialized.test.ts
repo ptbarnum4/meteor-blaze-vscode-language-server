@@ -1,7 +1,7 @@
 import * as assert from 'assert';
 import { describe, it } from 'node:test';
 import { TextDocument } from 'vscode-languageserver-textdocument';
-import { TextDocuments, InitializedParams } from 'vscode-languageserver/node';
+import { InitializedParams, TextDocuments } from 'vscode-languageserver/node';
 import onInitialized from '../../../server/connection/onInitialized';
 import { CurrentConnectionConfig, LanguageServerSettings } from '../../../types';
 
@@ -48,98 +48,98 @@ describe('connection/onInitialized', () => {
 
   it('should register configuration change notification when capability is enabled', () => {
     let registrationCalled = false;
-    
+
     const mockConnection = createMockConnection();
     mockConnection.client.register = () => {
       registrationCalled = true;
       return Promise.resolve();
     };
-    
-    const config = createMockConfig({ 
+
+    const config = createMockConfig({
       hasConfigurationCapability: true,
       connection: mockConnection as any
     });
-    
+
     const handler = onInitialized(config);
-    
+
     const params: InitializedParams = {};
-    
+
     handler(params);
-    
+
     assert.strictEqual(registrationCalled, true);
   });
 
   it('should not register configuration change notification when capability is disabled', () => {
     let registrationCalled = false;
-    
+
     const mockConnection = createMockConnection();
     mockConnection.client.register = () => {
       registrationCalled = true;
       return Promise.resolve();
     };
-    
-    const config = createMockConfig({ 
+
+    const config = createMockConfig({
       hasConfigurationCapability: false,
       connection: mockConnection as any
     });
-    
+
     const handler = onInitialized(config);
-    
+
     const params: InitializedParams = {};
-    
+
     handler(params);
-    
+
     assert.strictEqual(registrationCalled, false);
   });
 
   it('should register workspace folder change handler when capability is enabled', () => {
     let workspaceHandlerRegistered = false;
-    
+
     const mockConnection = createMockConnection();
     mockConnection.workspace.onDidChangeWorkspaceFolders = () => {
       workspaceHandlerRegistered = true;
     };
-    
-    const config = createMockConfig({ 
+
+    const config = createMockConfig({
       hasWorkspaceFolderCapability: true,
       connection: mockConnection as any
     });
-    
+
     const handler = onInitialized(config);
-    
+
     const params: InitializedParams = {};
-    
+
     handler(params);
-    
+
     assert.strictEqual(workspaceHandlerRegistered, true);
   });
 
   it('should not register workspace folder change handler when capability is disabled', () => {
     let workspaceHandlerRegistered = false;
-    
+
     const mockConnection = createMockConnection();
     mockConnection.workspace.onDidChangeWorkspaceFolders = () => {
       workspaceHandlerRegistered = true;
     };
-    
-    const config = createMockConfig({ 
+
+    const config = createMockConfig({
       hasWorkspaceFolderCapability: false,
       connection: mockConnection as any
     });
-    
+
     const handler = onInitialized(config);
-    
+
     const params: InitializedParams = {};
-    
+
     handler(params);
-    
+
     assert.strictEqual(workspaceHandlerRegistered, false);
   });
 
   it('should handle both capabilities enabled', () => {
     let configRegistered = false;
     let workspaceRegistered = false;
-    
+
     const mockConnection = createMockConnection();
     mockConnection.client.register = () => {
       configRegistered = true;
@@ -148,19 +148,19 @@ describe('connection/onInitialized', () => {
     mockConnection.workspace.onDidChangeWorkspaceFolders = () => {
       workspaceRegistered = true;
     };
-    
-    const config = createMockConfig({ 
+
+    const config = createMockConfig({
       hasConfigurationCapability: true,
       hasWorkspaceFolderCapability: true,
       connection: mockConnection as any
     });
-    
+
     const handler = onInitialized(config);
-    
+
     const params: InitializedParams = {};
-    
+
     handler(params);
-    
+
     assert.strictEqual(configRegistered, true);
     assert.strictEqual(workspaceRegistered, true);
   });
@@ -168,7 +168,7 @@ describe('connection/onInitialized', () => {
   it('should handle neither capability enabled', () => {
     let configRegistered = false;
     let workspaceRegistered = false;
-    
+
     const mockConnection = createMockConnection();
     mockConnection.client.register = () => {
       configRegistered = true;
@@ -177,19 +177,19 @@ describe('connection/onInitialized', () => {
     mockConnection.workspace.onDidChangeWorkspaceFolders = () => {
       workspaceRegistered = true;
     };
-    
-    const config = createMockConfig({ 
+
+    const config = createMockConfig({
       hasConfigurationCapability: false,
       hasWorkspaceFolderCapability: false,
       connection: mockConnection as any
     });
-    
+
     const handler = onInitialized(config);
-    
+
     const params: InitializedParams = {};
-    
+
     handler(params);
-    
+
     assert.strictEqual(configRegistered, false);
     assert.strictEqual(workspaceRegistered, false);
   });
@@ -197,9 +197,9 @@ describe('connection/onInitialized', () => {
   it('should handle empty initialized params', () => {
     const config = createMockConfig();
     const handler = onInitialized(config);
-    
+
     const params: InitializedParams = {};
-    
+
     // Should not throw with empty params
     assert.doesNotThrow(() => {
       handler(params);
@@ -209,7 +209,7 @@ describe('connection/onInitialized', () => {
   it('should handle undefined initialized params', () => {
     const config = createMockConfig();
     const handler = onInitialized(config);
-    
+
     // Should not throw with undefined params
     assert.doesNotThrow(() => {
       handler(undefined as any);
