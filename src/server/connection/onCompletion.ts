@@ -10,6 +10,7 @@ import {
 import { CurrentConnectionConfig } from '../../types';
 import { containsMeteorTemplates } from '../helpers/containsMeteorTemplates';
 import { isWithinHandlebarsExpression } from '../helpers/isWithinHandlebarsExpression';
+import { findEnclosingEachInContext } from '../helpers/findEnclosingEachInContext';
 
 const onCompletion = (config: CurrentConnectionConfig) => {
   const { connection, documents } = config;
@@ -117,6 +118,10 @@ const onCompletion = (config: CurrentConnectionConfig) => {
         { type: 'with', label: 'with' }
       ];
 
+      // Check if we're inside an #each block for @-prefixed helpers
+      const eachContext = findEnclosingEachInContext(text, offset);
+      const isInsideEachBlock = eachContext !== null;
+
       // Built-in blaze helpers
       let blazeHelpers = [
         { name: '#each', doc: 'Iterate over a list' },
@@ -124,12 +129,18 @@ const onCompletion = (config: CurrentConnectionConfig) => {
         { name: '#unless', doc: 'Inverse conditional rendering' },
         { name: '#with', doc: 'Change data context' },
         { name: '#let', doc: 'Define local variables' },
-        { name: '@index', doc: 'Current index in #each loop' },
-        { name: '@key', doc: 'Current key in #each loop' },
-        { name: '@first', doc: 'True if first item in #each loop' },
-        { name: '@last', doc: 'True if last item in #each loop' },
         { name: 'this', doc: 'Current data context' }
       ];
+
+      // Only add @-prefixed helpers when inside an #each block
+      if (isInsideEachBlock) {
+        blazeHelpers.push(
+          { name: '@index', doc: 'Current index in #each loop' },
+          { name: '@key', doc: 'Current key in #each loop' },
+          { name: '@first', doc: 'True if first item in #each loop' },
+          { name: '@last', doc: 'True if last item in #each loop' }
+        );
+      }
       try {
         const config = await connection.workspace.getConfiguration('meteorLanguageServer');
         let hashColor = '#FF6B35';
