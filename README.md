@@ -1,5 +1,7 @@
 # Meteor/Blaze HTML Language Server
 
+[![CI](https://github.com/ptbarnum4/meteor-blaze-vscode-language-server/actions/workflows/ci.yml/badge.svg)](https://github.com/ptbarnum4/meteor-blaze-vscode-language-server/actions/workflows/ci.yml)
+
 A VS Code extension that provides language support for Meteor/Blaze templates within HTML files. The extension detects Meteor templates embedded in HTML files and provides intelligent features like syntax highlighting, code completion, hover information, go-to-definition, and cross-file analysis.
 
 ## ✨ Features
