@@ -10,14 +10,15 @@
     "type-check": "tsc --noEmit"
   },
   "devDependencies": {
-    "@types/meteor": "^2.9.9",
-    "@types/react": "^19.1.9",
-    "@types/react-dom": "^19.1.7"
+    "@types/lodash": "^4.17.20",
+    "@types/meteor": "^2.9.9"
   },
   "engines": {
     "node": ">=14.0.0"
   },
   "dependencies": {
-    "@babel/runtime": "^7.28.2"
+    "@babel/runtime": "^7.28.2",
+    "jquery": "^3.7.1",
+    "lodash": "^4.17.21"
   }
 }

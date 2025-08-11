@@ -4,17 +4,10 @@ import './template.html';
 import './style.less';
 
 type TestProps = {
-  // Add template props here and in the `onCreated` function inside `this.props`
-  showDetails: boolean;
-  userCount: number;
+  count: ReactiveVar<number>;
 };
 
-type TestData = {
-  // Add template data here
-  title: string;
-  subtitle: string;
-  isActive: boolean;
-};
+type TestData = {};
 
 // Create the static typed template
 type TestTemplate = TemplateStaticTyped<'test', TestData, { props: TestProps }>;
@@ -24,10 +17,9 @@ const Template = _Template as TestTemplate;
 
 Template.test.onCreated(function () {
   this.props = {
-    // Add template props here and in the types above
-    showDetails: true,
-    userCount: 42
+    count: new ReactiveVar(60)
   };
+  console.log('Test template created with initial count:', this.props.count.get());
 });
 
 Template.test.onDestroyed(function () {
@@ -42,52 +34,39 @@ Template.test.onRendered(function () {
 
 Template.test.helpers({
   /**
-   * This is a test helper method
-   * @returns A string for the test text
+   * Get the current count from the reactive variable.
+   * @returns current count
    */
-  testText() {
-    return 'This is a TypeScript-powered Meteor template';
-  },
-
-  showTypeInfo() {
-    return Template.instance().props?.showDetails || false;
-  },
-
-  getPropInfo() {
-    const count = Template.instance().props?.userCount || 0;
-    return `Props available: showDetails, userCount (${count})`;
-  },
-
-  getDataInfo() {
-    return 'Data context is typed with TestData interface';
-  },
-
-  formattedUserCount() {
-    const count = this.props?.userCount || 0;
-    return count > 1 ? `${count} users` : `${count} user`;
+  count(): number {
+    return Template.instance().props.count.get();
   },
   /**
-   * Strings!
-   * @returns An array of strings to demonstrate TypeScript features in Meteor templates
+   * Generate an array of numbers from 1 to the current count.
+   * @returns Array of numbers
    */
-  arrayOfStrings1() {
-    return ['TypeScript', 'Meteor', 'Blaze', 'Templates'];
+  boxes(): number[] {
+    const count = Template.instance().props.count.get();
+    return Array.from({ length: count }, (_, i) => i + 1);
   },
-  arrayOfStrings2() {
-    return ['TypeScript', 'Meteor', 'Blaze', 'Templates'];
-  },
-  arrayOfStrings3() {
-    return ['TypeScript', 'Meteor', 'Blaze', 'Templates'];
+  /**
+   * Pad a number with leading zeros to ensure it is at least three digits.
+   * @param num
+   * @returns
+   */
+  pad(num: number) {
+    if (!num || num < 0) {
+      return '000';
+    }
+    return num.toString().padStart(3, '0');
   }
 });
 
 Template.test.events({
-  // test event handlers
-  'click .test-content'(event, template) {
-    console.log('TypeScript template clicked!', template.props);
-  },
-
-  'mouseenter .typescript-indicator'(event, template) {
-    console.log('Hovering TypeScript indicator');
+  'click .increment'(event, instance) {
+    // test events
+    event.preventDefault();
+    const currentCount = instance.props.count.get();
+    instance.props.count.set(currentCount + 1);
+    console.log('Count incremented to:', instance.props.count.get());
   }
 });
