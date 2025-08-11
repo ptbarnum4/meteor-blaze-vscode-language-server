@@ -63,7 +63,7 @@ const onCompletion = (config: CurrentConnectionConfig) => {
 
     if (currentTemplateName) {
       // Add helpers from analyzed files using directory-specific lookup strategies
-      const dirLookupKeys = [`${dir}/${baseName}`, `${dir}/${currentTemplateName}`].filter(Boolean);
+  const dirLookupKeys = [`${dir}/${currentTemplateName}`, `${dir}/${baseName}`].filter(Boolean);
 
       connection.console.log(
         `Looking up helpers with directory-specific keys: ${JSON.stringify(dirLookupKeys)}`
@@ -74,7 +74,7 @@ const onCompletion = (config: CurrentConnectionConfig) => {
         )}`
       );
 
-      dirLookupKeys.forEach(key => {
+  dirLookupKeys.forEach(key => {
         const helpers = config.fileAnalysis.jsHelpers.get(key as string);
         connection.console.log(
           `🔍 LOOKUP KEY: "${key}" → HELPERS: ${helpers ? JSON.stringify(helpers) : 'NONE FOUND'}`
@@ -89,6 +89,20 @@ const onCompletion = (config: CurrentConnectionConfig) => {
                 kind: CompletionItemKind.Function,
                 detail: `Template helper from ${sourceFile}`,
                 documentation: `Helper function: ${helper}`
+              });
+            }
+          });
+        }
+        // Add data properties from analyzed types
+        const dataProps = config.fileAnalysis.dataProperties?.get(key as string) || [];
+        if (dataProps.length) {
+          dataProps.forEach(p => {
+            if (!completions.find(c => c.label === p)) {
+              completions.push({
+                label: p,
+                kind: CompletionItemKind.Field,
+                detail: 'Template data property',
+                documentation: `Data property available to the template: ${p}`
               });
             }
           });

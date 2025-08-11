@@ -68,7 +68,7 @@ const onHover = (config: CurrentConnectionConfig) => {
     connection.console.log(`[HOVER DEBUG] Base name: ${baseName}`);
 
     // Look for this helper in analyzed files using directory-specific keys
-    const dirLookupKeys = [`${dir}/${baseName}`, `${dir}/${currentTemplateName}`].filter(Boolean);
+  const dirLookupKeys = [`${dir}/${currentTemplateName}`, `${dir}/${baseName}`].filter(Boolean);
 
     connection.console.log(`[HOVER DEBUG] Lookup keys: ${JSON.stringify(dirLookupKeys)}`);
     connection.console.log(
@@ -80,10 +80,11 @@ const onHover = (config: CurrentConnectionConfig) => {
     for (const key of dirLookupKeys) {
       const helpers = config.fileAnalysis.jsHelpers.get(key as string);
       const helperDetails = config.fileAnalysis.helperDetails.get(key as string);
+  const dataProps = config.fileAnalysis.dataProperties?.get(key as string) || [];
       connection.console.log(
         `[HOVER DEBUG] Key "${key}" → Helpers: ${helpers ? JSON.stringify(helpers) : 'NONE'}`
       );
-      if (helpers && helpers.includes(word)) {
+  if (helpers && helpers.includes(word)) {
         // Find the detailed information for this helper
         const helperInfo = helperDetails?.find(h => h.name === word);
 
@@ -159,6 +160,52 @@ const onHover = (config: CurrentConnectionConfig) => {
           contents: {
             kind: MarkupKind.Markdown,
             value: hoverContent.join('\n')
+          },
+          range: wordRange
+        };
+      }
+
+      // Data property hover
+      if (dataProps.includes(word)) {
+        const templateFileName = path.basename(filePath);
+        const typeName = config.fileAnalysis.dataTypeByKey?.get(key as string);
+        const typeMap = config.fileAnalysis.dataPropertyTypesByKey?.get(key as string) || {};
+        const propType = typeMap[word];
+        let elementType: string | undefined;
+        if (propType) {
+          // Extract array element type for forms like Type[] or Array<Type>
+          const arrMatchBracket = propType.match(/^\s*([^\[\]]+)\[\]\s*$/);
+          const arrMatchGeneric = propType.match(/^\s*Array\s*<\s*([^>]+)\s*>\s*$/);
+          if (arrMatchBracket) {
+            elementType = arrMatchBracket[1].trim();
+          } else if (arrMatchGeneric) {
+            elementType = arrMatchGeneric[1].trim();
+          }
+        }
+        const hoverLines: string[] = [];
+        hoverLines.push(`**${word}** - Template Data Property`);
+        hoverLines.push('');
+        if (typeName) {
+          hoverLines.push(`From type: \`${typeName}\``);
+          hoverLines.push('');
+        }
+        if (propType) {
+          hoverLines.push(`Type: \`${propType}\``);
+          if (elementType) {
+            hoverLines.push(`Element type: \`${elementType}\``);
+          }
+          hoverLines.push('');
+        }
+        hoverLines.push(`**Template:** ${currentTemplateName}`);
+        hoverLines.push('');
+        hoverLines.push(`**Template File:** ${templateFileName}`);
+        hoverLines.push('');
+  hoverLines.push(`**Usage:** \`{{${word}}}\``);
+
+        return {
+          contents: {
+            kind: MarkupKind.Markdown,
+            value: hoverLines.join('\n')
           },
           range: wordRange
         };

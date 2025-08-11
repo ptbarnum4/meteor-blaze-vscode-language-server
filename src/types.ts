@@ -43,6 +43,12 @@ export type FileAnalysis = {
   cssClasses: Map<string, string[]>;
   /** Map of templates by file path. */
   templates: Map<string, TemplateInfo>;
+  /** Map of template data properties by key (dir/base, dir/template). */
+  dataProperties?: Map<string, string[]>;
+  /** Map of template data type name by key (dir/template). */
+  dataTypeByKey?: Map<string, string>;
+  /** Map of data property types by key (property -> type string). */
+  dataPropertyTypesByKey?: Map<string, Record<string, string>>;
 };
 
 /**

@@ -3,10 +3,11 @@ import * as path from 'path';
 
 import { TextDocument } from 'vscode-languageserver-textdocument';
 
-import { containsMeteorTemplates } from './containsMeteorTemplates';
 import { FileAnalysis } from '../../types';
-import { analyzeJavaScriptFile } from './analyzeJavaScriptFile';
 import { analyzeCSSFile } from './analyzeCSSFile';
+import { analyzeJavaScriptFile } from './analyzeJavaScriptFile';
+import { analyzeTemplateData } from './analyzeTemplateData';
+import { containsMeteorTemplates } from './containsMeteorTemplates';
 
 // Analyze neighboring JS/TS/CSS/LESS files
 export const analyzeNeighboringFiles = (fileAnalysis: FileAnalysis, document: TextDocument) => {
@@ -50,6 +51,10 @@ export const analyzeNeighboringFiles = (fileAnalysis: FileAnalysis, document: Te
           const helperDetails = result.helperDetails;
           const extractedTemplateName = result.templateName;
 
+          // Extract TS type-based template data properties
+          const dataAnalysis = analyzeTemplateData(fullPath);
+          const allTypeProps = Object.values(dataAnalysis.types).flat();
+
           // Store helpers with directory-specific keys to ensure same-directory matching
           const dirKey = `${dir}/${baseName}`;
           const dirFileKey = `${dir}/${fileBaseName}`;
@@ -58,12 +63,52 @@ export const analyzeNeighboringFiles = (fileAnalysis: FileAnalysis, document: Te
           fileAnalysis.jsHelpers.set(dirFileKey, helpers);
           fileAnalysis.helperDetails.set(dirKey, helperDetails);
           fileAnalysis.helperDetails.set(dirFileKey, helperDetails);
+          if (allTypeProps.length) {
+            if (!fileAnalysis.dataProperties) {
+              fileAnalysis.dataProperties = new Map();
+            }
+            fileAnalysis.dataProperties.set(dirKey, allTypeProps);
+            fileAnalysis.dataProperties.set(dirFileKey, allTypeProps);
+            if (!fileAnalysis.dataPropertyTypesByKey) {
+              fileAnalysis.dataPropertyTypesByKey = new Map();
+            }
+            // If only one type was present, attempt to store its prop types
+            const firstTypeName = Object.keys(dataAnalysis.typePropertyTypes)[0];
+            if (firstTypeName) {
+              fileAnalysis.dataPropertyTypesByKey.set(dirKey, dataAnalysis.typePropertyTypes[firstTypeName] || {});
+              fileAnalysis.dataPropertyTypesByKey.set(dirFileKey, dataAnalysis.typePropertyTypes[firstTypeName] || {});
+            }
+          }
 
           // If we extracted a template name from the code, use that as a key too (with directory)
           if (extractedTemplateName) {
             const dirTemplateKey = `${dir}/${extractedTemplateName}`;
             fileAnalysis.jsHelpers.set(dirTemplateKey, helpers);
             fileAnalysis.helperDetails.set(dirTemplateKey, helperDetails);
+            // Try to map data properties by template name via TemplateStaticTyped
+            let propsForTemplate: string[] = [];
+            const mappedType = dataAnalysis.templateTypeMap[extractedTemplateName];
+            if (mappedType && dataAnalysis.types[mappedType]) {
+              propsForTemplate = dataAnalysis.types[mappedType];
+              if (!fileAnalysis.dataTypeByKey) {
+                fileAnalysis.dataTypeByKey = new Map();
+              }
+              fileAnalysis.dataTypeByKey.set(dirTemplateKey, mappedType);
+            } else if (allTypeProps.length) {
+              propsForTemplate = allTypeProps;
+            }
+            if (propsForTemplate.length) {
+              if (!fileAnalysis.dataProperties) {
+                fileAnalysis.dataProperties = new Map();
+              }
+              fileAnalysis.dataProperties.set(dirTemplateKey, propsForTemplate);
+              if (!fileAnalysis.dataPropertyTypesByKey) {
+                fileAnalysis.dataPropertyTypesByKey = new Map();
+              }
+              if (mappedType && dataAnalysis.typePropertyTypes[mappedType]) {
+                fileAnalysis.dataPropertyTypesByKey.set(dirTemplateKey, dataAnalysis.typePropertyTypes[mappedType]);
+              }
+            }
           }
 
           // Also store under template names found in HTML (with directory)
@@ -71,6 +116,29 @@ export const analyzeNeighboringFiles = (fileAnalysis: FileAnalysis, document: Te
             const dirTemplateKey = `${dir}/${templateName}`;
             fileAnalysis.jsHelpers.set(dirTemplateKey, helpers);
             fileAnalysis.helperDetails.set(dirTemplateKey, helperDetails);
+            let propsForTemplate: string[] = [];
+            const mappedType = dataAnalysis.templateTypeMap[templateName];
+            if (mappedType && dataAnalysis.types[mappedType]) {
+              propsForTemplate = dataAnalysis.types[mappedType];
+              if (!fileAnalysis.dataTypeByKey) {
+                fileAnalysis.dataTypeByKey = new Map();
+              }
+              fileAnalysis.dataTypeByKey.set(dirTemplateKey, mappedType);
+            } else if (allTypeProps.length) {
+              propsForTemplate = allTypeProps;
+            }
+            if (propsForTemplate.length) {
+              if (!fileAnalysis.dataProperties) {
+                fileAnalysis.dataProperties = new Map();
+              }
+              fileAnalysis.dataProperties.set(dirTemplateKey, propsForTemplate);
+              if (!fileAnalysis.dataPropertyTypesByKey) {
+                fileAnalysis.dataPropertyTypesByKey = new Map();
+              }
+              if (mappedType && dataAnalysis.typePropertyTypes[mappedType]) {
+                fileAnalysis.dataPropertyTypesByKey.set(dirTemplateKey, dataAnalysis.typePropertyTypes[mappedType]);
+              }
+            }
           });
         } else if (['.css', '.less'].includes(ext)) {
           const classes = analyzeCSSFile(fullPath);

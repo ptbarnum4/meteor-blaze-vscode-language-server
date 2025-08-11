@@ -1,13 +1,42 @@
 import { TemplateStaticTyped, Template as _Template } from 'meteor/templating';
 
-import './template.html';
 import './style.less';
+import './template.html';
 
 type TestProps = {
+  /**
+   * Reactive variable to hold the count value.
+   * This will be used to demonstrate reactivity in the template.
+   */
   count: ReactiveVar<number>;
 };
 
-type TestData = {};
+/**
+ * Test template for demonstrating static typing with Meteor templates.
+ * This template includes reactive variables, helpers, and events.
+ */
+type TestData = {
+  /**
+   * Data properties for the test template.
+   * These properties can be used to pass data into the template.
+   */
+  data1: string;
+  /**
+   * Additional data properties for the test template.
+   * These properties can be used to pass more data into the template.
+   */
+  data2: number;
+  /**
+   * Another data property for the test template.
+   * This can be used to pass boolean values into the template.
+   */
+  data3: boolean;
+  /**
+   * An array of strings for the test template.
+   * This can be used to pass a list of items into the template.
+   */
+  data4: string[];
+};
 
 // Create the static typed template
 type TestTemplate = TemplateStaticTyped<'test', TestData, { props: TestProps }>;
