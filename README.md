@@ -2,6 +2,8 @@
 
 [![CI](https://github.com/ptbarnum4/meteor-blaze-vscode-language-server/actions/workflows/ci.yml/badge.svg)](https://github.com/ptbarnum4/meteor-blaze-vscode-language-server/actions/workflows/ci.yml)
 
+> **⚠️ Early Release Notice**: This is a new extension under active development. While functional, it may contain bugs or incomplete features. Please [report any issues](https://github.com/ptbarnum4/meteor-blaze-vscode-language-server/issues) you encounter to help improve the extension. Contributions and feedback are greatly appreciated!
+
 A VS Code extension that provides language support for Meteor/Blaze templates within HTML files. The extension detects Meteor templates embedded in HTML files and provides intelligent features like syntax highlighting, code completion, hover information, go-to-definition, and cross-file analysis.
 
 ## ✨ Features
@@ -93,68 +95,33 @@ Template.myTemplate.helpers({
 4. Click Install
 
 ### Manual Installation
-1. Download the latest `.vsix` file from releases
-2. Run `code --install-extension meteor-blaze-vscode-language-server-x.x.x.vsix`
+1. Download the latest `.vsix` file from [releases](https://github.com/ptbarnum4/meteor-blaze-vscode-language-server/releases)
+2. In VS Code: View → Command Palette → "Extensions: Install from VSIX..."
+3. Select the downloaded `.vsix` file
 
-## 🔧 Development
+## 🚀 Getting Started
 
-### Quick Start
-```bash
-# Clone the repository
-git clone <repository-url>
-cd meteorLanguageServer
+After installation, the extension will automatically activate when you open HTML files containing Meteor templates:
 
-# Install dependencies
-npm install
+1. **Create or open an HTML file** with Meteor templates:
+   ```html
+   <template name="myTemplate">
+     <div>{{helper}}</div>
+   </template>
+   ```
 
-# Start development mode (watch for changes)
-npm run dev
+2. **Add template helpers** in a JavaScript/TypeScript file in the same directory:
+   ```javascript
+   Template.myTemplate.helpers({
+     helper: () => "Hello, Meteor!"
+   });
+   ```
 
-# In VS Code: Press F5 to launch Extension Development Host
-```
-
-### Available Commands
-```bash
-npm run dev          # Start development mode (watch + compile)
-npm run compile      # Build once
-npm run watch        # Watch for changes and rebuild
-npm run package      # Build for production
-npm run lint         # Run ESLint
-npm run check-types  # Check TypeScript types
-npm test             # Run tests
-```
-
-### Development Workflow
-1. **Setup**: Run `npm install` and `npm run dev`
-2. **Code**: Make changes to `src/` files
-3. **Test**: Press F5 in VS Code to launch Extension Development Host
-4. **Debug**: Open test files in `test-project/` to test features
-5. **Package**: Run `npm run package` to create production build
-
-### Project Structure
-```
-meteorLanguageServer/
-├── src/
-│   ├── extension.ts           # VS Code extension client
-│   └── server/index.ts        # Language server implementation
-├── test-project/              # Test Meteor project (excluded from build)
-│   ├── simple.html            # Basic template test
-│   ├── simple.ts              # TypeScript helpers
-│   └── test/                  # Nested template tests
-├── syntaxes/
-│   └── meteor-html.tmLanguage.json  # TextMate grammar
-├── package.json               # Extension manifest
-└── tsconfig.json             # TypeScript configuration
-```
-
-## 🏗️ Architecture
-
-- **Client** (`src/extension.ts`): VS Code extension that manages the language server
-- **Server** (`src/server/index.ts`): Language server providing completion, validation, hover, and definition features
-- **Grammar** (`syntaxes/meteor-html.tmLanguage.json`): TextMate grammar for Blaze syntax highlighting
-- **Protocol**: Uses Language Server Protocol (LSP) for communication
-
-The extension only activates language features when Meteor templates are detected in HTML files, ensuring it doesn't interfere with regular HTML development.
+3. **Start coding!** You'll now get:
+   - ✨ Syntax highlighting for Blaze syntax
+   - 💡 Auto-completion for helpers and CSS classes
+   - 🔍 Hover information and go-to-definition
+   - 🎯 Real-time validation and error checking
 
 ## ⚙️ Configuration
 
@@ -191,45 +158,71 @@ Configure the extension through VS Code settings. Use nested objects for advance
 ### Blaze Helpers Settings
 - **`extend`** (array): Add custom helpers for completion and hover. Example: `[ { "name": "#myHelper", "doc": "My custom helper for Blaze templates" } ]`
 
-## 🧪 Testing
+## 💡 Usage Tips
 
-The `test-project/` directory contains a full Meteor project for testing:
+### Template Detection
+The extension automatically activates when it detects `<template name="...">` tags in HTML files. Regular HTML files without Meteor templates remain unaffected.
 
-```bash
-cd test-project
-meteor npm install    # Install dependencies
-meteor                # Start Meteor (optional)
+### Cross-file Intelligence
+Place your template files alongside their corresponding JavaScript/TypeScript helper files and CSS files in the same directory for optimal autocompletion and navigation features.
 
-# Test the extension by opening template files in VS Code
+### Example Project Structure
+```
+my-meteor-app/
+├── client/
+│   ├── templates/
+│   │   ├── userProfile.html      # Contains <template name="userProfile">
+│   │   ├── userProfile.js        # Template.userProfile.helpers({...})
+│   │   └── userProfile.css       # Styles for the template
+│   └── lib/
+└── server/
 ```
 
-### Test Cases
-- `simple.html` + `simple.ts`: Basic template and helpers
-- `test/template.html` + `test.ts`: Advanced TypeScript features
-- `test/nestedTemplate/`: Nested directory structure
+## 🔧 Troubleshooting
+
+### Extension Not Activating
+- **Issue**: No syntax highlighting or completions in HTML files
+- **Solution**: Ensure your HTML file contains `<template name="...">` tags. The extension only activates when Meteor templates are detected.
+
+### No Completions for Helpers
+- **Issue**: Template helpers not appearing in autocomplete
+- **Solution**: 
+  - Check that helper files (`.js` or `.ts`) are in the same directory as the HTML template
+  - Verify helpers are defined using `Template.templateName.helpers({...})`
+  - Make sure the template name matches the helper file structure
+
+### CSS Classes Not Completing
+- **Issue**: CSS classes not showing in `class="{{...}}"` attributes
+- **Solution**:
+  - Ensure CSS files are in the same directory as the template
+  - Check that CSS contains valid class definitions (`.className`)
+
+### Go-to-Definition Not Working
+- **Issue**: Cannot navigate to helper definitions
+- **Solution**:
+  - Verify the helper is defined in a JavaScript/TypeScript file in the same directory
+  - Check that the cursor is positioned within a handlebars expression `{{helperName}}`
+
+### Enable Debug Logging
+If you're experiencing issues, enable verbose logging:
+1. Open VS Code Settings (Ctrl/Cmd + ,)
+2. Search for "meteorLanguageServer"
+3. Set "Trace Server" to "verbose"
+4. Check the Output panel → "Meteor/Blaze Language Server" for detailed logs
 
 ## 🤝 Contributing
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Make your changes
-4. Run tests (`npm test`)
-5. Commit your changes (`git commit -m 'Add amazing feature'`)
-6. Push to the branch (`git push origin feature/amazing-feature`)
-7. Open a Pull Request
+Contributions are welcome! Please see [DEVELOPMENT.md](./DEVELOPMENT.md) for development setup, architecture details, and contribution guidelines.
 
-### Development Guidelines
-- Follow TypeScript best practices
-- Add tests for new features
-- Update documentation as needed
-- Ensure all checks pass (`npm run lint`, `npm run check-types`)
+### Quick Links
+- 🐛 [Report Issues](https://github.com/ptbarnum4/meteor-blaze-vscode-language-server/issues)
+- 💡 [Feature Requests](https://github.com/ptbarnum4/meteor-blaze-vscode-language-server/issues)
+- 🔧 [Development Guide](./DEVELOPMENT.md)
 
 ## 📄 License
 
-MIT License - see LICENSE file for details.
+MIT License - see [LICENSE](./LICENSE) file for details.
 
-## 🐛 Issues & Support
+---
 
-- Report bugs on [GitHub Issues](https://github.com/ptbarnum4/meteor-blaze-vscode-language-server/issues)
-- Feature requests welcome
-- Check existing issues before creating new ones
+**Made with ❤️ for the Meteor.js community**
