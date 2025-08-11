@@ -240,7 +240,7 @@
     "pretest": "npm run compile-tests && npm run compile && npm run lint",
     "check-types": "tsc --noEmit",
     "lint": "eslint src",
-    "test": "node --test out/test/server/helpers/*.test.js",
+    "test": "node --test out/test/server/**/*.test.js",
     "test-manual": "node out/test/runTest.js"
   },
   "devDependencies": {
