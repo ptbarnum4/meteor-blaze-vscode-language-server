@@ -152,7 +152,38 @@ const onHover = (config: CurrentConnectionConfig) => {
         }
 
         hoverContent.push(`**Source:** ${actualSourceFile}\n`);
-        hoverContent.push(`**Usage:** \`{{${word}}}\``);
+
+        // Build usage string including parameter names when available
+        let usage = `{{${word}}}`;
+        try {
+          const paramNames: string[] = [];
+          const sig = helperInfo?.signature;
+          const paramsRaw = helperInfo?.parameters;
+          const extractNames = (raw: string) => {
+            // Split by commas not inside generics or parentheses (simple heuristic)
+            const parts = raw.split(/,(?![^<]*>|[^()]*\))/).map(p => p.trim()).filter(Boolean);
+            for (const p of parts) {
+              // Take everything before ':' or '=' and strip optional '?'
+              const nameMatch = p.match(/^([A-Za-z_$][\w$]*)\s*[?:=]?/);
+              if (nameMatch) {
+                paramNames.push(nameMatch[1]);
+              }
+            }
+          };
+          if (sig) {
+            const m = sig.match(/^[^(]*\((.*)\)/);
+            if (m && m[1].trim().length > 0) {
+              extractNames(m[1]);
+            }
+          } else if (paramsRaw && paramsRaw.trim().length > 0) {
+            extractNames(paramsRaw);
+          }
+          if (paramNames.length > 0) {
+            usage = `{{${word} ${paramNames.join(' ')}}}`;
+          }
+        } catch {}
+
+        hoverContent.push(`**Usage:** \`${usage}\``);
 
         // No additional generic text needed - the structured information above is sufficient
 
