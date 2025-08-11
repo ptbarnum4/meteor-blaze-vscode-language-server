@@ -96,8 +96,9 @@ const onDefinition = (config: CurrentConnectionConfig) => {
               const lines = content.split('\n');
               for (let i = 0; i < lines.length; i++) {
                 const line = lines[i];
+                // Updated regex to handle TypeScript method syntax: methodName(): ReturnType
                 const helperRegex = new RegExp(
-                  `\\b${word}\\s*[:=]?\\s*(?:function\\s*\\(|\\([^)]*\\)\\s*=>|\\([^)]*\\)\\s*\\{)`
+                  `\\b${word}\\s*(?:[:=]\\s*(?:function\\s*\\(|\\([^)]*\\)\\s*=>|\\([^)]*\\)\\s*\\{)|\\(\\)\\s*:\\s*[^{]+\\{)`
                 );
                 const match = helperRegex.exec(line);
                 if (match) {
@@ -124,7 +125,62 @@ const onDefinition = (config: CurrentConnectionConfig) => {
 
   // Navigate to template data property definition if applicable
   if (dataProps.includes(word) || (eachCtx && (eachCtx.alias === word || eachCtx.source === word))) {
+    // Special case: if clicking on each-alias, redirect to search for the source helper
+    if (eachCtx && eachCtx.alias === word) {
+      const sourceHelperName = eachCtx.source;
+
+      // Check if the source is a helper (not a data property)
+      const helpers = config.fileAnalysis.jsHelpers.get(key as string);
+      if (helpers && helpers.includes(sourceHelperName)) {
+        // Redirect to helper search for the source
         try {
+          const keyParts = key.split('/');
+          const keyBaseName = keyParts[keyParts.length - 1];
+          const possibleFiles = [
+            path.join(dir, `${keyBaseName}.js`),
+            path.join(dir, `${keyBaseName}.ts`),
+            path.join(dir, `${currentTemplateName}.js`),
+            path.join(dir, `${currentTemplateName}.ts`),
+            path.join(dir, `${baseName}.js`),
+            path.join(dir, `${baseName}.ts`)
+          ];
+
+          for (const file of possibleFiles) {
+            if (require('fs').existsSync(file)) {
+              const content = require('fs').readFileSync(file, 'utf8');
+              const lines = content.split('\n');
+              for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+                // Updated regex to handle TypeScript method syntax: methodName(): ReturnType
+                const helperRegex = new RegExp(
+                  `\\b${sourceHelperName}\\s*(?:[:=]\\s*(?:function\\s*\\(|\\([^)]*\\)\\s*=>|\\([^)]*\\)\\s*\\{)|\\(\\)\\s*:\\s*[^{]+\\{)`
+                );
+                const match = helperRegex.exec(line);
+                if (match) {
+                  connection.console.log(
+                    `Found definition of "${sourceHelperName}" (from alias "${word}") at line ${i + 1} in ${file}`
+                  );
+                  return [
+                    {
+                      uri: `file://${file}`,
+                      range: {
+                        start: { line: i, character: match.index || 0 },
+                        end: { line: i, character: (match.index || 0) + sourceHelperName.length }
+                      }
+                    }
+                  ];
+                }
+              }
+            }
+          }
+        } catch (error) {
+          connection.console.log(`Error finding helper definition for alias: ${error}`);
+        }
+      }
+    }
+
+    // Continue with original data property logic for non-alias cases
+    try {
           const keyParts = key.split('/');
           const keyBaseName = keyParts[keyParts.length - 1];
           const possibleFiles = [
