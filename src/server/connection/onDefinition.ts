@@ -63,11 +63,12 @@ const onDefinition = (config: CurrentConnectionConfig) => {
 
     connection.console.log(`Looking for definition of "${word}" within handlebars expression`);
 
-    // Look for this helper in analyzed files using directory-specific keys
-    const dirLookupKeys = [`${dir}/${baseName}`, `${dir}/${currentTemplateName}`].filter(Boolean);
+  // Look for this helper or data property in analyzed files using directory-specific keys
+  const dirLookupKeys = [`${dir}/${currentTemplateName}`, `${dir}/${baseName}`].filter(Boolean);
 
     for (const key of dirLookupKeys) {
-      const helpers = config.fileAnalysis.jsHelpers.get(key as string);
+  const helpers = config.fileAnalysis.jsHelpers.get(key as string);
+  const dataProps = config.fileAnalysis.dataProperties?.get(key as string) || [];
       if (helpers && helpers.includes(word)) {
         try {
           // Extract filename from directory-specific key
@@ -115,6 +116,169 @@ const onDefinition = (config: CurrentConnectionConfig) => {
           }
         } catch (error) {
           connection.console.log(`Error finding definition: ${error}`);
+        }
+      }
+
+      // Navigate to template data property definition if applicable
+      if (dataProps.includes(word)) {
+        try {
+          const keyParts = key.split('/');
+          const keyBaseName = keyParts[keyParts.length - 1];
+          const possibleFiles = [
+            path.join(dir, `${keyBaseName}.ts`),
+            path.join(dir, `${keyBaseName}.js`),
+            path.join(dir, `${currentTemplateName}.ts`),
+            path.join(dir, `${currentTemplateName}.js`),
+            path.join(dir, `${baseName}.ts`),
+            path.join(dir, `${baseName}.js`)
+          ];
+
+          const typeName = config.fileAnalysis.dataTypeByKey?.get(key as string);
+
+          // Helpers to compute line/char from index
+          const toLineChar = (content: string, index: number) => {
+            const pre = content.slice(0, index);
+            const line = (pre.match(/\n/g) || []).length;
+            const lastNl = pre.lastIndexOf('\n');
+            const character = index - (lastNl + 1);
+            return { line, character };
+          };
+
+          // Search a specific type/interface block for property
+          const findPropInNamedType = (content: string, tName: string): { idx: number } | null => {
+            const typeRe = new RegExp(`type\\s+${tName}\\s*=\\s*\\{([\\s\\S]*?)\\}`, 'g');
+            const ifaceRe = new RegExp(`interface\\s+${tName}\\s*\\{([\\s\\S]*?)\\}`, 'g');
+            let m = typeRe.exec(content);
+            if (!m) {
+              m = ifaceRe.exec(content);
+            }
+            if (m && typeof m.index === 'number') {
+              const blockOpenIdx = content.indexOf('{', m.index);
+              const block = m[1];
+              const propRe = new RegExp(`\\b${word}\\s*:`);
+              const pm = propRe.exec(block);
+              if (pm) {
+                const idx = (blockOpenIdx + 1) + pm.index;
+                return { idx };
+              }
+              return null;
+            }
+            return null;
+          };
+
+          // Search any type/interface block for property
+          const findPropInAnyType = (content: string): { idx: number } | null => {
+            const anyTypeRe = /(type\s+\w+\s*=\s*\{([\s\S]*?)\})|(interface\s+\w+\s*\{([\s\S]*?)\})/g;
+            let m;
+            while ((m = anyTypeRe.exec(content)) !== null) {
+              const group = m[2] || m[4] || '';
+              const blockOpenIdx = content.indexOf('{', m.index);
+              const propRe = new RegExp(`\\b${word}\\s*:`);
+              const pm = propRe.exec(group);
+              if (pm) {
+                const idx = (blockOpenIdx + 1) + pm.index;
+                return { idx };
+              }
+            }
+            return null;
+          };
+
+          // Search JSDoc typedef blocks
+          const findPropInTypedef = (content: string, tName?: string): { idx: number } | null => {
+            const tdRe = /\/\*\*[\s\S]*?@typedef\s+\{Object\}\s+(\w+)[\s\S]*?\*\//g;
+            let m;
+            while ((m = tdRe.exec(content)) !== null) {
+              const foundName = m[1];
+              if (tName && foundName !== tName) {
+                continue;
+              }
+              const block = m[0];
+              const propRe = new RegExp(`@property\\s+\\{[^}]+\\}\\s+${word}\\b`);
+              const pm = propRe.exec(block);
+              if (pm) {
+                const idx = (m.index || 0) + pm.index;
+                return { idx };
+              }
+              if (tName) {
+                break;
+              }
+            }
+            return null;
+          };
+
+          for (const file of possibleFiles) {
+            if (!require('fs').existsSync(file)) {
+              continue;
+            }
+            const content = require('fs').readFileSync(file, 'utf8');
+
+            // Prefer navigating directly to the property inside the known type/interface
+            if (typeName) {
+              const inNamed = findPropInNamedType(content, typeName);
+              if (inNamed) {
+                const { line, character } = toLineChar(content, inNamed.idx);
+                return [
+                  {
+                    uri: `file://${file}`,
+                    range: {
+                      start: { line, character },
+                      end: { line, character: character + word.length }
+                    }
+                  }
+                ];
+              }
+
+              // Try JSDoc typedef block for the named type
+              const inTypedef = findPropInTypedef(content, typeName);
+              if (inTypedef) {
+                const { line, character } = toLineChar(content, inTypedef.idx);
+                return [
+                  {
+                    uri: `file://${file}`,
+                    range: {
+                      start: { line, character },
+                      end: { line, character: character + word.length }
+                    }
+                  }
+                ];
+              }
+            }
+
+            // If we don't know the type, search any type/interface
+            const inAny = findPropInAnyType(content) || findPropInTypedef(content);
+            if (inAny) {
+              const { line, character } = toLineChar(content, inAny.idx);
+              return [
+                {
+                  uri: `file://${file}`,
+                  range: {
+                    start: { line, character },
+                    end: { line, character: character + word.length }
+                  }
+                }
+              ];
+            }
+
+            // As a last resort, if typeName is known, navigate to the type/interface declaration
+            if (typeName) {
+              const typeDeclRe = new RegExp(`(type\\s+${typeName}\\s*=\\s*\\{)|(interface\\s+${typeName}\\s*\\{)`);
+              const tm = typeDeclRe.exec(content);
+              if (tm && typeof tm.index === 'number') {
+                const { line, character } = toLineChar(content, tm.index);
+                return [
+                  {
+                    uri: `file://${file}`,
+                    range: {
+                      start: { line, character },
+                      end: { line, character: character + typeName.length }
+                    }
+                  }
+                ];
+              }
+            }
+          }
+        } catch (error) {
+          connection.console.log(`Error finding data property definition: ${error}`);
         }
       }
     }
