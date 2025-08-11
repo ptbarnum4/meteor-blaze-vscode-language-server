@@ -11,7 +11,7 @@ import { TextDocument } from 'vscode-languageserver-textdocument';
 import { createConnection, ProposedFeatures, TextDocuments } from 'vscode-languageserver/node';
 
 // Shared types/state used across handlers
-import { CurrentConnectionConfig } from '../../types';
+import { CurrentConnectionConfig } from '/types';
 
 // Request/notification handlers
 import onCompletion from './onCompletion';

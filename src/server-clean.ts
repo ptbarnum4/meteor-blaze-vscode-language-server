@@ -1,30 +1,27 @@
 import {
-  createConnection,
-  TextDocuments,
-  Diagnostic,
-  DiagnosticSeverity,
-  ProposedFeatures,
-  InitializeParams,
-  DidChangeConfigurationNotification,
   CompletionItem,
   CompletionItemKind,
-  TextDocumentPositionParams,
-  TextDocumentSyncKind,
-  InitializeResult,
+  createConnection,
+  Diagnostic,
+  DidChangeConfigurationNotification,
   Hover,
+  InitializeParams,
+  InitializeResult,
   MarkupKind,
   Position,
+  ProposedFeatures,
   Range,
-  Location,
-  DefinitionParams
+  TextDocumentPositionParams,
+  TextDocuments,
+  TextDocumentSyncKind
 } from 'vscode-languageserver/node';
 
 import {
   TextDocument
 } from 'vscode-languageserver-textdocument';
 
-import * as fs from 'fs';
-import * as path from 'path';
+import fs from 'fs';
+import path from 'path';
 
 // Create a connection for the server, using Node's IPC as a transport.
 let connection = createConnection(ProposedFeatures.all);

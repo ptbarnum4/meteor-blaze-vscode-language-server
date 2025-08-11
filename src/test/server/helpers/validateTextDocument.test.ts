@@ -1,9 +1,10 @@
-import * as assert from 'assert';
+import assert from 'assert';
 import { describe, it } from 'node:test';
 import { TextDocument } from 'vscode-languageserver-textdocument';
 import { TextDocuments } from 'vscode-languageserver/node';
-import { validateTextDocument } from '../../../server/helpers/validateTextDocument';
-import { CurrentConnectionConfig, LanguageServerSettings } from '../../../types';
+
+import { validateTextDocument } from '/server/helpers/validateTextDocument';
+import { CurrentConnectionConfig, LanguageServerSettings } from '/types';
 
 /**
  * Test suite for validateTextDocument helper function
@@ -19,7 +20,9 @@ describe('validateTextDocument', () => {
     }
   });
 
-  const createMockConfig = (overrides?: Partial<CurrentConnectionConfig>): CurrentConnectionConfig => ({
+  const createMockConfig = (
+    overrides?: Partial<CurrentConnectionConfig>
+  ): CurrentConnectionConfig => ({
     globalSettings: mockSettings,
     documentSettings: new Map(),
     fileAnalysis: {

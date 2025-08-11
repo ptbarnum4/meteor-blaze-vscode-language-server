@@ -1,4 +1,4 @@
-import * as fs from 'fs';
+import fs from 'fs';
 
 export const analyzeCSSFile = (filePath: string): string[] => {
   try {

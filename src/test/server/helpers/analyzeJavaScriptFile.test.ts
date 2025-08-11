@@ -1,9 +1,10 @@
-import * as assert from 'assert';
-import * as fs from 'fs';
+import assert from 'assert';
+import fs from 'fs';
 import { describe, it } from 'node:test';
-import * as os from 'os';
-import * as path from 'path';
-import { analyzeJavaScriptFile } from '../../../server/helpers/analyzeJavaScriptFile';
+import os from 'os';
+import path from 'path';
+
+import { analyzeJavaScriptFile } from '/server/helpers/analyzeJavaScriptFile';
 
 /**
  * Helper function to create a temporary test file

@@ -1,9 +1,10 @@
-import * as assert from 'assert';
-import * as fs from 'fs';
+import assert from 'assert';
+import fs from 'fs';
 import { describe, it } from 'node:test';
-import * as os from 'os';
-import * as path from 'path';
-import { analyzeCSSFile } from '../../../server/helpers/analyzeCSSFile';
+import os from 'os';
+import path from 'path';
+
+import { analyzeCSSFile } from '/server/helpers/analyzeCSSFile';
 
 /**
  * Helper function to create a temporary test file
@@ -29,7 +30,6 @@ function createTestFile(content: string): { filePath: string; cleanup: () => voi
  * Test suite for analyzeCSSFile helper function
  */
 describe('analyzeCSSFile', () => {
-
   it('should extract CSS class names and IDs', () => {
     const content = `
       .header { color: blue; }

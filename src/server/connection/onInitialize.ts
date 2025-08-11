@@ -4,7 +4,7 @@ import {
   TextDocumentSyncKind
 } from 'vscode-languageserver/node';
 
-import { CurrentConnectionConfig } from '../../types';
+import { CurrentConnectionConfig } from '/types';
 
 const onInitialize = (config: CurrentConnectionConfig) => {
   return (params: InitializeParams) => {

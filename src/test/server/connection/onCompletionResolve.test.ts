@@ -1,9 +1,10 @@
-import * as assert from 'assert';
+import assert from 'assert';
 import { describe, it } from 'node:test';
 import { TextDocument } from 'vscode-languageserver-textdocument';
 import { CompletionItem, CompletionItemKind, TextDocuments } from 'vscode-languageserver/node';
-import onCompletionResolve from '../../../server/connection/onCompletionResolve';
-import { CurrentConnectionConfig, LanguageServerSettings } from '../../../types';
+
+import onCompletionResolve from '/server/connection/onCompletionResolve';
+import { CurrentConnectionConfig, LanguageServerSettings } from '/types';
 
 /**
  * Test suite for onCompletionResolve connection handler
@@ -17,7 +18,9 @@ describe('connection/onCompletionResolve', () => {
     }
   });
 
-  const createMockConfig = (overrides?: Partial<CurrentConnectionConfig>): CurrentConnectionConfig => ({
+  const createMockConfig = (
+    overrides?: Partial<CurrentConnectionConfig>
+  ): CurrentConnectionConfig => ({
     globalSettings: mockSettings,
     documentSettings: new Map(),
     fileAnalysis: {

@@ -1,4 +1,4 @@
-import * as path from 'path';
+import path from 'path';
 
 import {
   CompletionItem,
@@ -7,10 +7,10 @@ import {
   TextDocumentPositionParams
 } from 'vscode-languageserver/node';
 
-import { CurrentConnectionConfig } from '../../types';
-import { containsMeteorTemplates } from '../helpers/containsMeteorTemplates';
-import { isWithinHandlebarsExpression } from '../helpers/isWithinHandlebarsExpression';
-import { findEnclosingEachInContext } from '../helpers/findEnclosingEachInContext';
+import { containsMeteorTemplates } from '/server/helpers/containsMeteorTemplates';
+import { findEnclosingEachInContext } from '/server/helpers/findEnclosingEachInContext';
+import { isWithinHandlebarsExpression } from '/server/helpers/isWithinHandlebarsExpression';
+import { CurrentConnectionConfig } from '/types';
 
 const onCompletion = (config: CurrentConnectionConfig) => {
   const { connection, documents } = config;
@@ -64,7 +64,7 @@ const onCompletion = (config: CurrentConnectionConfig) => {
 
     if (currentTemplateName) {
       // Add helpers from analyzed files using directory-specific lookup strategies
-  const dirLookupKeys = [`${dir}/${currentTemplateName}`, `${dir}/${baseName}`].filter(Boolean);
+      const dirLookupKeys = [`${dir}/${currentTemplateName}`, `${dir}/${baseName}`].filter(Boolean);
 
       connection.console.log(
         `Looking up helpers with directory-specific keys: ${JSON.stringify(dirLookupKeys)}`
@@ -75,7 +75,7 @@ const onCompletion = (config: CurrentConnectionConfig) => {
         )}`
       );
 
-  dirLookupKeys.forEach(key => {
+      dirLookupKeys.forEach(key => {
         const helpers = config.fileAnalysis.jsHelpers.get(key as string);
         connection.console.log(
           `🔍 LOOKUP KEY: "${key}" → HELPERS: ${helpers ? JSON.stringify(helpers) : 'NONE FOUND'}`

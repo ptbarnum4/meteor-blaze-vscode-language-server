@@ -1,9 +1,10 @@
-import * as assert from 'assert';
+import assert from 'assert';
 import { describe, it } from 'node:test';
 import { TextDocument } from 'vscode-languageserver-textdocument';
 import { DefinitionParams, Position, TextDocuments } from 'vscode-languageserver/node';
-import onDefinition from '../../../server/connection/onDefinition';
-import { CurrentConnectionConfig, LanguageServerSettings } from '../../../types';
+
+import onDefinition from '/server/connection/onDefinition';
+import { CurrentConnectionConfig, LanguageServerSettings } from '/types';
 
 /**
  * Test suite for onDefinition connection handler
@@ -17,7 +18,9 @@ describe('connection/onDefinition', () => {
     }
   });
 
-  const createMockConfig = (overrides?: Partial<CurrentConnectionConfig>): CurrentConnectionConfig => ({
+  const createMockConfig = (
+    overrides?: Partial<CurrentConnectionConfig>
+  ): CurrentConnectionConfig => ({
     globalSettings: mockSettings,
     documentSettings: new Map(),
     fileAnalysis: {

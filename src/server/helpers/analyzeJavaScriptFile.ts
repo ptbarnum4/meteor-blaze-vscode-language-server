@@ -1,6 +1,6 @@
-import * as fs from 'fs';
+import fs from 'fs';
 
-import { HelperInfo } from '../../types';
+import { HelperInfo } from '/types';
 
 type AnalyzeJavaScriptFileResult = {
   helpers: string[];

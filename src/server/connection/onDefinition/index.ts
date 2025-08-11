@@ -1,15 +1,12 @@
-import * as path from 'path';
+import path from 'path';
 
-import {
-  DefinitionParams,
-  Location
-} from 'vscode-languageserver/node';
+import { DefinitionParams, Location } from 'vscode-languageserver/node';
 
-import { CurrentConnectionConfig } from '../../types';
-import { containsMeteorTemplates } from '../helpers/containsMeteorTemplates';
-import { findEnclosingEachInContext } from '../helpers/findEnclosingEachInContext';
-import { getWordRangeAtPosition } from '../helpers/getWordRangeAtPosition';
-import { isWithinHandlebarsExpression } from '../helpers/isWithinHandlebarsExpression';
+import { containsMeteorTemplates } from '/server/helpers/containsMeteorTemplates';
+import { findEnclosingEachInContext } from '/server/helpers/findEnclosingEachInContext';
+import { getWordRangeAtPosition } from '/server/helpers/getWordRangeAtPosition';
+import { isWithinHandlebarsExpression } from '/server/helpers/isWithinHandlebarsExpression';
+import { CurrentConnectionConfig } from '/types';
 
 const onDefinition = (config: CurrentConnectionConfig) => {
   const { connection, documents } = config;
@@ -62,16 +59,16 @@ const onDefinition = (config: CurrentConnectionConfig) => {
       document.offsetAt(wordRange.end)
     );
 
-  connection.console.log(`Looking for definition of "${word}" within handlebars expression`);
+    connection.console.log(`Looking for definition of "${word}" within handlebars expression`);
 
-  const eachCtx = findEnclosingEachInContext(text, offset);
+    const eachCtx = findEnclosingEachInContext(text, offset);
 
-  // Look for this helper or data property in analyzed files using directory-specific keys
-  const dirLookupKeys = [`${dir}/${currentTemplateName}`, `${dir}/${baseName}`].filter(Boolean);
+    // Look for this helper or data property in analyzed files using directory-specific keys
+    const dirLookupKeys = [`${dir}/${currentTemplateName}`, `${dir}/${baseName}`].filter(Boolean);
 
     for (const key of dirLookupKeys) {
-  const helpers = config.fileAnalysis.jsHelpers.get(key as string);
-  const dataProps = config.fileAnalysis.dataProperties?.get(key as string) || [];
+      const helpers = config.fileAnalysis.jsHelpers.get(key as string);
+      const dataProps = config.fileAnalysis.dataProperties?.get(key as string) || [];
       if (helpers && helpers.includes(word)) {
         try {
           // Extract filename from directory-specific key
@@ -123,64 +120,72 @@ const onDefinition = (config: CurrentConnectionConfig) => {
         }
       }
 
-  // Navigate to template data property definition if applicable
-  if (dataProps.includes(word) || (eachCtx && (eachCtx.alias === word || eachCtx.source === word))) {
-    // Special case: if clicking on each-alias, redirect to search for the source helper
-    if (eachCtx && eachCtx.alias === word) {
-      const sourceHelperName = eachCtx.source;
+      // Navigate to template data property definition if applicable
+      if (
+        dataProps.includes(word) ||
+        (eachCtx && (eachCtx.alias === word || eachCtx.source === word))
+      ) {
+        // Special case: if clicking on each-alias, redirect to search for the source helper
+        if (eachCtx && eachCtx.alias === word) {
+          const sourceHelperName = eachCtx.source;
 
-      // Check if the source is a helper (not a data property)
-      const helpers = config.fileAnalysis.jsHelpers.get(key as string);
-      if (helpers && helpers.includes(sourceHelperName)) {
-        // Redirect to helper search for the source
-        try {
-          const keyParts = key.split('/');
-          const keyBaseName = keyParts[keyParts.length - 1];
-          const possibleFiles = [
-            path.join(dir, `${keyBaseName}.js`),
-            path.join(dir, `${keyBaseName}.ts`),
-            path.join(dir, `${currentTemplateName}.js`),
-            path.join(dir, `${currentTemplateName}.ts`),
-            path.join(dir, `${baseName}.js`),
-            path.join(dir, `${baseName}.ts`)
-          ];
+          // Check if the source is a helper (not a data property)
+          const helpers = config.fileAnalysis.jsHelpers.get(key as string);
+          if (helpers && helpers.includes(sourceHelperName)) {
+            // Redirect to helper search for the source
+            try {
+              const keyParts = key.split('/');
+              const keyBaseName = keyParts[keyParts.length - 1];
+              const possibleFiles = [
+                path.join(dir, `${keyBaseName}.js`),
+                path.join(dir, `${keyBaseName}.ts`),
+                path.join(dir, `${currentTemplateName}.js`),
+                path.join(dir, `${currentTemplateName}.ts`),
+                path.join(dir, `${baseName}.js`),
+                path.join(dir, `${baseName}.ts`)
+              ];
 
-          for (const file of possibleFiles) {
-            if (require('fs').existsSync(file)) {
-              const content = require('fs').readFileSync(file, 'utf8');
-              const lines = content.split('\n');
-              for (let i = 0; i < lines.length; i++) {
-                const line = lines[i];
-                // Updated regex to handle TypeScript method syntax: methodName(): ReturnType
-                const helperRegex = new RegExp(
-                  `\\b${sourceHelperName}\\s*(?:[:=]\\s*(?:function\\s*\\(|\\([^)]*\\)\\s*=>|\\([^)]*\\)\\s*\\{)|\\(\\)\\s*:\\s*[^{]+\\{)`
-                );
-                const match = helperRegex.exec(line);
-                if (match) {
-                  connection.console.log(
-                    `Found definition of "${sourceHelperName}" (from alias "${word}") at line ${i + 1} in ${file}`
-                  );
-                  return [
-                    {
-                      uri: `file://${file}`,
-                      range: {
-                        start: { line: i, character: match.index || 0 },
-                        end: { line: i, character: (match.index || 0) + sourceHelperName.length }
-                      }
+              for (const file of possibleFiles) {
+                if (require('fs').existsSync(file)) {
+                  const content = require('fs').readFileSync(file, 'utf8');
+                  const lines = content.split('\n');
+                  for (let i = 0; i < lines.length; i++) {
+                    const line = lines[i];
+                    // Updated regex to handle TypeScript method syntax: methodName(): ReturnType
+                    const helperRegex = new RegExp(
+                      `\\b${sourceHelperName}\\s*(?:[:=]\\s*(?:function\\s*\\(|\\([^)]*\\)\\s*=>|\\([^)]*\\)\\s*\\{)|\\(\\)\\s*:\\s*[^{]+\\{)`
+                    );
+                    const match = helperRegex.exec(line);
+                    if (match) {
+                      connection.console.log(
+                        `Found definition of "${sourceHelperName}" (from alias "${word}") at line ${
+                          i + 1
+                        } in ${file}`
+                      );
+                      return [
+                        {
+                          uri: `file://${file}`,
+                          range: {
+                            start: { line: i, character: match.index || 0 },
+                            end: {
+                              line: i,
+                              character: (match.index || 0) + sourceHelperName.length
+                            }
+                          }
+                        }
+                      ];
                     }
-                  ];
+                  }
                 }
               }
+            } catch (error) {
+              connection.console.log(`Error finding helper definition for alias: ${error}`);
             }
           }
-        } catch (error) {
-          connection.console.log(`Error finding helper definition for alias: ${error}`);
         }
-      }
-    }
 
-    // Continue with original data property logic for non-alias cases
-    try {
+        // Continue with original data property logic for non-alias cases
+        try {
           const keyParts = key.split('/');
           const keyBaseName = keyParts[keyParts.length - 1];
           const possibleFiles = [
@@ -211,7 +216,7 @@ const onDefinition = (config: CurrentConnectionConfig) => {
           };
 
           // Search a specific type/interface block for property
-      const findPropInNamedType = (content: string, tName: string): { idx: number } | null => {
+          const findPropInNamedType = (content: string, tName: string): { idx: number } | null => {
             const typeRe = new RegExp(`type\\s+${tName}\\s*=\\s*\\{([\\s\\S]*?)\\}`, 'g');
             const ifaceRe = new RegExp(`interface\\s+${tName}\\s*\\{([\\s\\S]*?)\\}`, 'g');
             let m = typeRe.exec(content);
@@ -221,10 +226,10 @@ const onDefinition = (config: CurrentConnectionConfig) => {
             if (m && typeof m.index === 'number') {
               const blockOpenIdx = content.indexOf('{', m.index);
               const block = m[1];
-        const propRe = new RegExp(`\\b${targetPropName}\\s*:`);
+              const propRe = new RegExp(`\\b${targetPropName}\\s*:`);
               const pm = propRe.exec(block);
               if (pm) {
-                const idx = (blockOpenIdx + 1) + pm.index;
+                const idx = blockOpenIdx + 1 + pm.index;
                 return { idx };
               }
               return null;
@@ -233,16 +238,17 @@ const onDefinition = (config: CurrentConnectionConfig) => {
           };
 
           // Search any type/interface block for property
-      const findPropInAnyType = (content: string): { idx: number } | null => {
-            const anyTypeRe = /(type\s+\w+\s*=\s*\{([\s\S]*?)\})|(interface\s+\w+\s*\{([\s\S]*?)\})/g;
+          const findPropInAnyType = (content: string): { idx: number } | null => {
+            const anyTypeRe =
+              /(type\s+\w+\s*=\s*\{([\s\S]*?)\})|(interface\s+\w+\s*\{([\s\S]*?)\})/g;
             let m;
             while ((m = anyTypeRe.exec(content)) !== null) {
               const group = m[2] || m[4] || '';
               const blockOpenIdx = content.indexOf('{', m.index);
-        const propRe = new RegExp(`\\b${targetPropName}\\s*:`);
+              const propRe = new RegExp(`\\b${targetPropName}\\s*:`);
               const pm = propRe.exec(group);
               if (pm) {
-                const idx = (blockOpenIdx + 1) + pm.index;
+                const idx = blockOpenIdx + 1 + pm.index;
                 return { idx };
               }
             }
@@ -250,7 +256,7 @@ const onDefinition = (config: CurrentConnectionConfig) => {
           };
 
           // Search JSDoc typedef blocks
-      const findPropInTypedef = (content: string, tName?: string): { idx: number } | null => {
+          const findPropInTypedef = (content: string, tName?: string): { idx: number } | null => {
             const tdRe = /\/\*\*[\s\S]*?@typedef\s+\{Object\}\s+(\w+)[\s\S]*?\*\//g;
             let m;
             while ((m = tdRe.exec(content)) !== null) {
@@ -259,7 +265,7 @@ const onDefinition = (config: CurrentConnectionConfig) => {
                 continue;
               }
               const block = m[0];
-        const propRe = new RegExp(`@property\\s+\\{[^}]+\\}\\s+${targetPropName}\\b`);
+              const propRe = new RegExp(`@property\\s+\\{[^}]+\\}\\s+${targetPropName}\\b`);
               const pm = propRe.exec(block);
               if (pm) {
                 const idx = (m.index || 0) + pm.index;
@@ -283,12 +289,12 @@ const onDefinition = (config: CurrentConnectionConfig) => {
               const inNamed = findPropInNamedType(content, typeName);
               if (inNamed) {
                 const { line, character } = toLineChar(content, inNamed.idx);
-        return [
+                return [
                   {
                     uri: `file://${file}`,
                     range: {
                       start: { line, character },
-          end: { line, character: character + targetPropName.length }
+                      end: { line, character: character + targetPropName.length }
                     }
                   }
                 ];
@@ -298,12 +304,12 @@ const onDefinition = (config: CurrentConnectionConfig) => {
               const inTypedef = findPropInTypedef(content, typeName);
               if (inTypedef) {
                 const { line, character } = toLineChar(content, inTypedef.idx);
-        return [
+                return [
                   {
                     uri: `file://${file}`,
                     range: {
                       start: { line, character },
-          end: { line, character: character + targetPropName.length }
+                      end: { line, character: character + targetPropName.length }
                     }
                   }
                 ];
@@ -312,14 +318,14 @@ const onDefinition = (config: CurrentConnectionConfig) => {
 
             // If we don't know the type, search any type/interface
             const inAny = findPropInAnyType(content) || findPropInTypedef(content);
-      if (inAny) {
+            if (inAny) {
               const { line, character } = toLineChar(content, inAny.idx);
               return [
                 {
                   uri: `file://${file}`,
                   range: {
                     start: { line, character },
-        end: { line, character: character + targetPropName.length }
+                    end: { line, character: character + targetPropName.length }
                   }
                 }
               ];
@@ -327,7 +333,9 @@ const onDefinition = (config: CurrentConnectionConfig) => {
 
             // As a last resort, if typeName is known, navigate to the type/interface declaration
             if (typeName) {
-              const typeDeclRe = new RegExp(`(type\\s+${typeName}\\s*=\\s*\\{)|(interface\\s+${typeName}\\s*\\{)`);
+              const typeDeclRe = new RegExp(
+                `(type\\s+${typeName}\\s*=\\s*\\{)|(interface\\s+${typeName}\\s*\\{)`
+              );
               const tm = typeDeclRe.exec(content);
               if (tm && typeof tm.index === 'number') {
                 const { line, character } = toLineChar(content, tm.index);

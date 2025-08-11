@@ -138,7 +138,7 @@ Located in `src/test/suite/extension.test.ts`, these tests verify the extension 
 Use the `suite()` and `test()` functions from VS Code's testing framework:
 
 ```typescript
-import * as assert from 'assert';
+import assert from 'assert';
 import { yourFunction } from '../../../path/to/function';
 
 suite('Your Function Name', () => {
@@ -167,9 +167,9 @@ suite('Your Function Name', () => {
 For tests that need to create temporary files:
 
 ```typescript
-import * as fs from 'fs';
-import * as path from 'path';
-import * as os from 'os';
+import fs from 'fs';
+import path from 'path';
+import os from 'os';
 
 suite('File Testing Example', () => {
   let tempDir: string;

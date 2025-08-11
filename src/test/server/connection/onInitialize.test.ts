@@ -1,9 +1,10 @@
-import * as assert from 'assert';
+import assert from 'assert';
 import { describe, it } from 'node:test';
 import { TextDocument } from 'vscode-languageserver-textdocument';
 import { InitializeParams, TextDocuments, TextDocumentSyncKind } from 'vscode-languageserver/node';
-import onInitialize from '../../../server/connection/onInitialize';
-import { CurrentConnectionConfig, LanguageServerSettings } from '../../../types';
+
+import onInitialize from '/server/connection/onInitialize';
+import { CurrentConnectionConfig, LanguageServerSettings } from '/types';
 
 /**
  * Test suite for onInitialize connection handler
@@ -17,7 +18,9 @@ describe('connection/onInitialize', () => {
     }
   });
 
-  const createMockConfig = (overrides?: Partial<CurrentConnectionConfig>): CurrentConnectionConfig => ({
+  const createMockConfig = (
+    overrides?: Partial<CurrentConnectionConfig>
+  ): CurrentConnectionConfig => ({
     globalSettings: mockSettings,
     documentSettings: new Map(),
     fileAnalysis: {
@@ -58,11 +61,17 @@ describe('connection/onInitialize', () => {
     assert.ok(result.capabilities, 'Should have capabilities');
     assert.strictEqual(result.capabilities.textDocumentSync, TextDocumentSyncKind.Incremental);
     assert.ok(result.capabilities.completionProvider, 'Should have completion provider');
-    assert.ok(result.capabilities.completionProvider?.resolveProvider, 'Should resolve completions');
-    assert.deepStrictEqual(
-      result.capabilities.completionProvider?.triggerCharacters,
-      ['{', '"', "'", '.', ' ']
+    assert.ok(
+      result.capabilities.completionProvider?.resolveProvider,
+      'Should resolve completions'
     );
+    assert.deepStrictEqual(result.capabilities.completionProvider?.triggerCharacters, [
+      '{',
+      '"',
+      "'",
+      '.',
+      ' '
+    ]);
     assert.strictEqual(result.capabilities.hoverProvider, true);
     assert.strictEqual(result.capabilities.definitionProvider, true);
   });

@@ -1,9 +1,10 @@
-import * as fs from 'fs';
-import * as path from 'path';
+import fs from 'fs';
+import path from 'path';
 
 import { TextDocument } from 'vscode-languageserver-textdocument';
 
-import { FileAnalysis } from '../../types';
+import { FileAnalysis } from '/types';
+
 import { analyzeCSSFile } from './analyzeCSSFile';
 import { analyzeJavaScriptFile } from './analyzeJavaScriptFile';
 import { analyzeTemplateData } from './analyzeTemplateData';

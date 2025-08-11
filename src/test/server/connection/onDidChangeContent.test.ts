@@ -1,9 +1,10 @@
-import * as assert from 'assert';
+import assert from 'assert';
 import { describe, it } from 'node:test';
 import { TextDocument } from 'vscode-languageserver-textdocument';
 import { TextDocumentChangeEvent, TextDocuments } from 'vscode-languageserver/node';
-import onDidChangeContent from '../../../server/connection/onDidChangeContent';
-import { CurrentConnectionConfig, LanguageServerSettings } from '../../../types';
+
+import onDidChangeContent from '/server/connection/onDidChangeContent';
+import { CurrentConnectionConfig, LanguageServerSettings } from '/types';
 
 /**
  * Test suite for onDidChangeContent connection handler

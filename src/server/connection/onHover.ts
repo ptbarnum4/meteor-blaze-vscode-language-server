@@ -1,13 +1,13 @@
-import * as path from 'path';
+import path from 'path';
 
 import { Hover, MarkupKind, TextDocumentPositionParams } from 'vscode-languageserver/node';
 
-import { CurrentConnectionConfig } from '../../types';
-import { containsMeteorTemplates } from '../helpers/containsMeteorTemplates';
-import { findEnclosingEachInContext } from '../helpers/findEnclosingEachInContext';
-import { getWordRangeAtPosition } from '../helpers/getWordRangeAtPosition';
-import { isWithinHandlebarsExpression } from '../helpers/isWithinHandlebarsExpression';
-import { trimUsageDocumentation } from '../helpers/trimUsageDocumentation';
+import { containsMeteorTemplates } from '/server/helpers/containsMeteorTemplates';
+import { findEnclosingEachInContext } from '/server/helpers/findEnclosingEachInContext';
+import { getWordRangeAtPosition } from '/server/helpers/getWordRangeAtPosition';
+import { isWithinHandlebarsExpression } from '/server/helpers/isWithinHandlebarsExpression';
+import { trimUsageDocumentation } from '/server/helpers/trimUsageDocumentation';
+import { CurrentConnectionConfig } from '/types';
 
 const onHover = (config: CurrentConnectionConfig) => {
   const { connection, documents } = config;
@@ -73,13 +73,18 @@ const onHover = (config: CurrentConnectionConfig) => {
     const cursorOffset = document.offsetAt(textDocumentPosition.position);
     connection.console.log(`[EACH DEBUG] Document text length: ${documentText.length}`);
     connection.console.log(`[EACH DEBUG] Cursor offset: ${cursorOffset}`);
-    connection.console.log(`[EACH DEBUG] Text around cursor (±50 chars): "${documentText.slice(Math.max(0, cursorOffset - 50), cursorOffset + 50)}"`);
+    connection.console.log(
+      `[EACH DEBUG] Text around cursor (±50 chars): "${documentText.slice(
+        Math.max(0, cursorOffset - 50),
+        cursorOffset + 50
+      )}"`
+    );
 
     const eachCtx = findEnclosingEachInContext(documentText, cursorOffset);
     connection.console.log(`[EACH DEBUG] Context detection: ${JSON.stringify(eachCtx)}`);
 
     // Look for this helper in analyzed files using directory-specific keys
-  const dirLookupKeys = [`${dir}/${currentTemplateName}`, `${dir}/${baseName}`].filter(Boolean);
+    const dirLookupKeys = [`${dir}/${currentTemplateName}`, `${dir}/${baseName}`].filter(Boolean);
 
     connection.console.log(`[HOVER DEBUG] Lookup keys: ${JSON.stringify(dirLookupKeys)}`);
     connection.console.log(
@@ -95,11 +100,19 @@ const onHover = (config: CurrentConnectionConfig) => {
       const typeName = config.fileAnalysis.dataTypeByKey?.get(key as string);
       const typeMap = config.fileAnalysis.dataPropertyTypesByKey?.get(key as string) || {};
 
-      connection.console.log(`[HOVER DEBUG] Key "${key}" → Helpers: ${helpers ? JSON.stringify(helpers) : 'NONE'}`);
-      connection.console.log(`[HOVER DEBUG] Key "${key}" → HelperDetails: ${helperDetails ? helperDetails.length + ' items' : 'NONE'}`);
-      connection.console.log(`[HOVER DEBUG] Key "${key}" → DataProps: ${JSON.stringify(dataProps)}`);
+      connection.console.log(
+        `[HOVER DEBUG] Key "${key}" → Helpers: ${helpers ? JSON.stringify(helpers) : 'NONE'}`
+      );
+      connection.console.log(
+        `[HOVER DEBUG] Key "${key}" → HelperDetails: ${
+          helperDetails ? helperDetails.length + ' items' : 'NONE'
+        }`
+      );
+      connection.console.log(
+        `[HOVER DEBUG] Key "${key}" → DataProps: ${JSON.stringify(dataProps)}`
+      );
       connection.console.log(`[HOVER DEBUG] Key "${key}" → TypeMap: ${JSON.stringify(typeMap)}`);
-  if (helpers && helpers.includes(word)) {
+      if (helpers && helpers.includes(word)) {
         // Find the detailed information for this helper
         const helperInfo = helperDetails?.find(h => h.name === word);
 
@@ -176,7 +189,10 @@ const onHover = (config: CurrentConnectionConfig) => {
           const paramsRaw = helperInfo?.parameters;
           const extractNames = (raw: string) => {
             // Split by commas not inside generics or parentheses (simple heuristic)
-            const parts = raw.split(/,(?![^<]*>|[^()]*\))/).map(p => p.trim()).filter(Boolean);
+            const parts = raw
+              .split(/,(?![^<]*>|[^()]*\))/)
+              .map(p => p.trim())
+              .filter(Boolean);
             for (const p of parts) {
               // Take everything before ':' or '=' and strip optional '?'
               const nameMatch = p.match(/^([A-Za-z_$][\w$]*)\s*[?:=]?/);
@@ -222,9 +238,13 @@ const onHover = (config: CurrentConnectionConfig) => {
           const helperInfo = helperDetails?.find(h => h.name === eachCtx.source);
           if (helperInfo?.returnType) {
             listType = helperInfo.returnType;
-            connection.console.log(`[EACH DEBUG] Found helper "${eachCtx.source}" with return type: ${listType}`);
+            connection.console.log(
+              `[EACH DEBUG] Found helper "${eachCtx.source}" with return type: ${listType}`
+            );
           } else {
-            connection.console.log(`[EACH DEBUG] No helper found for "${eachCtx.source}" or no return type`);
+            connection.console.log(
+              `[EACH DEBUG] No helper found for "${eachCtx.source}" or no return type`
+            );
           }
         } else {
           connection.console.log(`[EACH DEBUG] Found list type in typeMap: ${listType}`);
@@ -240,7 +260,9 @@ const onHover = (config: CurrentConnectionConfig) => {
           if (m) {
             return m[1].trim();
           }
-          m = first.match(/^\s*(?:Array|ReadonlyArray|Set|Iterable)\s*<\s*([^,>]+)(?:\s*,[^>]+)?\s*>\s*$/);
+          m = first.match(
+            /^\s*(?:Array|ReadonlyArray|Set|Iterable)\s*<\s*([^,>]+)(?:\s*,[^>]+)?\s*>\s*$/
+          );
           if (m) {
             return m[1].trim();
           }
@@ -256,7 +278,9 @@ const onHover = (config: CurrentConnectionConfig) => {
         };
         const aliasType: string | undefined = deriveElementType(listType);
 
-        connection.console.log(`[EACH DEBUG] alias="${word}", source="${eachCtx.source}", listType="${listType}", aliasType="${aliasType}"`);
+        connection.console.log(
+          `[EACH DEBUG] alias="${word}", source="${eachCtx.source}", listType="${listType}", aliasType="${aliasType}"`
+        );
 
         const hoverLines: string[] = [];
         hoverLines.push(`**${word}** - Each item alias in \`${eachCtx.source}\``);
@@ -302,7 +326,9 @@ const onHover = (config: CurrentConnectionConfig) => {
             if (m) {
               return m[1].trim();
             }
-            m = first.match(/^\s*(?:Array|ReadonlyArray|Set|Iterable)\s*<\s*([^,>]+)(?:\s*,[^>]+)?\s*>\s*$/);
+            m = first.match(
+              /^\s*(?:Array|ReadonlyArray|Set|Iterable)\s*<\s*([^,>]+)(?:\s*,[^>]+)?\s*>\s*$/
+            );
             if (m) {
               return m[1].trim();
             }
@@ -350,7 +376,7 @@ const onHover = (config: CurrentConnectionConfig) => {
         hoverLines.push('');
         hoverLines.push(`**Template File:** ${templateFileName}`);
         hoverLines.push('');
-  hoverLines.push(`**Usage:** \`{{${word}}}\``);
+        hoverLines.push(`**Usage:** \`{{${word}}}\``);
 
         return {
           contents: {

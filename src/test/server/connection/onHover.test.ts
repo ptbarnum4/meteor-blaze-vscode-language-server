@@ -1,9 +1,10 @@
-import * as assert from 'assert';
+import assert from 'assert';
 import { describe, it } from 'node:test';
 import { TextDocument } from 'vscode-languageserver-textdocument';
 import { Position, TextDocumentPositionParams, TextDocuments } from 'vscode-languageserver/node';
-import onHover from '../../../server/connection/onHover';
-import { CurrentConnectionConfig, LanguageServerSettings } from '../../../types';
+
+import onHover from '/server/connection/onHover';
+import { CurrentConnectionConfig, LanguageServerSettings } from '/types';
 
 /**
  * Test suite for onHover connection handler
@@ -17,7 +18,9 @@ describe('connection/onHover', () => {
     }
   });
 
-  const createMockConfig = (overrides?: Partial<CurrentConnectionConfig>): CurrentConnectionConfig => ({
+  const createMockConfig = (
+    overrides?: Partial<CurrentConnectionConfig>
+  ): CurrentConnectionConfig => ({
     globalSettings: mockSettings,
     documentSettings: new Map(),
     fileAnalysis: {
@@ -133,7 +136,10 @@ describe('connection/onHover', () => {
 
     // The hover implementation may return null for built-in helpers
     // depending on its specific logic, so we just verify it doesn't crash
-    assert.ok(result === null || (result && result.contents), 'Should handle built-in helper hover');
+    assert.ok(
+      result === null || (result && result.contents),
+      'Should handle built-in helper hover'
+    );
   });
 
   it('should provide hover info for custom helpers', async () => {
@@ -147,13 +153,15 @@ describe('connection/onHover', () => {
 
     // Add custom helper to file analysis using correct key format
     config.fileAnalysis.jsHelpers.set('/test', ['customHelper']);
-    config.fileAnalysis.helperDetails.set('/test', [{
-      name: 'customHelper',
-      jsdoc: 'This is a custom helper that does something useful',
-      returnType: 'string',
-      parameters: 'value: number',
-      signature: 'customHelper(value: number): string'
-    }]);
+    config.fileAnalysis.helperDetails.set('/test', [
+      {
+        name: 'customHelper',
+        jsdoc: 'This is a custom helper that does something useful',
+        returnType: 'string',
+        parameters: 'value: number',
+        signature: 'customHelper(value: number): string'
+      }
+    ]);
 
     const handler = onHover(config);
 
@@ -166,7 +174,10 @@ describe('connection/onHover', () => {
 
     // The hover might not find the helper due to key matching complexity
     // but should handle the request gracefully
-    assert.ok(result === null || (result && result.contents), 'Should handle custom helper hover gracefully');
+    assert.ok(
+      result === null || (result && result.contents),
+      'Should handle custom helper hover gracefully'
+    );
   });
 
   it('should provide hover info for CSS classes', async () => {
@@ -191,7 +202,10 @@ describe('connection/onHover', () => {
     const result = await handler(params);
 
     // The hover implementation may not handle CSS classes or may handle them differently
-    assert.ok(result === null || (result && result.contents), 'Should handle CSS class hover gracefully');
+    assert.ok(
+      result === null || (result && result.contents),
+      'Should handle CSS class hover gracefully'
+    );
   });
 
   it('should handle template helpers correctly', async () => {
@@ -205,11 +219,13 @@ describe('connection/onHover', () => {
 
     // Add template helper to file analysis
     config.fileAnalysis.jsHelpers.set('myTemplate', ['templateHelper']);
-    config.fileAnalysis.helperDetails.set('myTemplate', [{
-      name: 'templateHelper',
-      jsdoc: 'Template-specific helper function',
-      returnType: 'boolean'
-    }]);
+    config.fileAnalysis.helperDetails.set('myTemplate', [
+      {
+        name: 'templateHelper',
+        jsdoc: 'Template-specific helper function',
+        returnType: 'boolean'
+      }
+    ]);
 
     const handler = onHover(config);
 
@@ -221,7 +237,10 @@ describe('connection/onHover', () => {
     const result = await handler(params);
 
     // Template helpers might not be found due to complex key matching
-    assert.ok(result === null || (result && result.contents), 'Should handle template helper hover gracefully');
+    assert.ok(
+      result === null || (result && result.contents),
+      'Should handle template helper hover gracefully'
+    );
   });
 
   it('should handle helpers with @ prefix correctly', async () => {
@@ -229,7 +248,8 @@ describe('connection/onHover', () => {
     const documents = config.documents;
 
     // Create a document with @ prefixed helper (like @index in #each)
-    const content = '<template name="test"><div>{{#each items}}{{@index}}{{/each}}</div></template>';
+    const content =
+      '<template name="test"><div>{{#each items}}{{@index}}{{/each}}</div></template>';
     const document = TextDocument.create('file:///test.html', 'html', 1, content);
     documents.get = () => document;
 
@@ -243,6 +263,9 @@ describe('connection/onHover', () => {
     const result = await handler(params);
 
     // @ prefixed helpers might be handled differently or not at all
-    assert.ok(result === null || (result && result.contents), 'Should handle @ prefixed helpers gracefully');
+    assert.ok(
+      result === null || (result && result.contents),
+      'Should handle @ prefixed helpers gracefully'
+    );
   });
 });

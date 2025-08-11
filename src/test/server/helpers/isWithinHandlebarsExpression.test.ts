@@ -1,6 +1,7 @@
-import * as assert from 'assert';
+import assert from 'assert';
 import { describe, it } from 'node:test';
-import { isWithinHandlebarsExpression } from '../../../server/helpers/isWithinHandlebarsExpression';
+
+import { isWithinHandlebarsExpression } from '/server/helpers/isWithinHandlebarsExpression';
 
 /**
  * Test suite for isWithinHandlebarsExpression helper function

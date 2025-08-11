@@ -1,6 +1,6 @@
 import { DidChangeConfigurationNotification, InitializedParams } from 'vscode-languageserver/node';
 
-import { CurrentConnectionConfig } from '../../types';
+import { CurrentConnectionConfig } from '/types';
 
 const onInitialized = (config: CurrentConnectionConfig) => {
   return (_params: InitializedParams) => {
