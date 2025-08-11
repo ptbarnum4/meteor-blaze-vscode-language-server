@@ -2,10 +2,48 @@ import fs from 'fs';
 
 import { HelperInfo } from '/types';
 
+type MethodBlock = {
+  name: string;
+  jsdoc?: string;
+  signature: string;
+  returnType?: string;
+  parameters?: string;
+};
+
 type AnalyzeJavaScriptFileResult = {
   helpers: string[];
   helperDetails: HelperInfo[];
   templateName?: string;
+};
+
+const parseMethodBlocks = (helpersContent: string): MethodBlock[] => {
+  const blocks: MethodBlock[] = [];
+
+  // Split by method boundaries - look for JSDoc comments followed by method definitions
+  const methodPattern = /(\/\*\*[\s\S]*?\*\/\s*)?(\w+)\s*(\([^)]*\))\s*(?::\s*([^{]*))?\s*\{/g;
+
+  let match;
+  while ((match = methodPattern.exec(helpersContent)) !== null) {
+    const jsdoc = match[1];
+    const name = match[2];
+    const params = match[3];
+    const returnType = match[4];
+
+    // Skip if this looks like an if statement or other control flow
+    if (name === 'if' || name === 'for' || name === 'while' || name === 'switch') {
+      continue;
+    }
+
+    blocks.push({
+      name,
+      jsdoc: jsdoc?.trim(),
+      signature: `${name}${params}${returnType ? `: ${returnType.trim()}` : ''}`,
+      returnType: returnType?.trim(),
+      parameters: params.slice(1, -1) // Remove parentheses
+    });
+  }
+
+  return blocks;
 };
 
 export const analyzeJavaScriptFile = (filePath: string): AnalyzeJavaScriptFileResult => {
@@ -44,97 +82,70 @@ export const analyzeJavaScriptFile = (filePath: string): AnalyzeJavaScriptFileRe
         // Extract the content between braces
         const helpersContent = content.substring(startIndex + 1, endIndex - 1);
 
-        // Extract helper function names and details with enhanced patterns
-        const patterns = [
-          // TypeScript method syntax with JSDoc: methodName(): ReturnType {
-          {
-            regex: /(\/\*\*[\s\S]*?\*\/\s*)?(\w+)\s*\([^)]*\)\s*:\s*([^{]*)\{/g,
-            hasJSDoc: true,
-            hasReturnType: true
-          },
-          // Method syntax with JSDoc: methodName() {
-          {
-            regex: /(\/\*\*[\s\S]*?\*\/\s*)?(\w+)\s*\(([^)]*)\)\s*\{/g,
-            hasJSDoc: true,
-            hasReturnType: false
-          },
-          // Property syntax with JSDoc: methodName: function() {
-          {
-            regex: /(\/\*\*[\s\S]*?\*\/\s*)?(\w+)\s*:\s*function\s*\(([^)]*)\)\s*\{/g,
-            hasJSDoc: true,
-            hasReturnType: false
-          },
-          // Arrow function syntax with JSDoc: methodName: () => {
-          {
-            regex: /(\/\*\*[\s\S]*?\*\/\s*)?(\w+)\s*:\s*\(([^)]*)\)\s*=>\s*[\{\.]/g,
-            hasJSDoc: true,
-            hasReturnType: false
-          }
-        ];
+        // Extract helper function names and details with enhanced parsing
+        const methodBlocks = parseMethodBlocks(helpersContent);
 
-        patterns.forEach(pattern => {
-          let helperMatch;
-          while ((helperMatch = pattern.regex.exec(helpersContent)) !== null) {
-            const jsdocComment = pattern.hasJSDoc ? helperMatch[1] : undefined;
-            const helperName = pattern.hasJSDoc ? helperMatch[2] : helperMatch[1];
-            const parametersOrReturnType = pattern.hasJSDoc ? helperMatch[3] : helperMatch[2];
-            const returnType = pattern.hasReturnType ? parametersOrReturnType : undefined;
-            const parameters = !pattern.hasReturnType ? parametersOrReturnType : helperMatch[4];
+        methodBlocks.forEach((block: MethodBlock) => {
+          const { name, jsdoc, signature, returnType, parameters } = block;
 
-            if (!helpers.includes(helperName)) {
-              helpers.push(helperName);
+          if (!helpers.includes(name)) {
+            helpers.push(name);
 
-              // Parse JSDoc comment
-              let parsedJSDoc = '';
-              let extractedReturnType = returnType;
-              let extractedParameters = parameters;
+            let parsedJSDoc = '';
+            let extractedReturnType = returnType;
+            let extractedParameters = parameters;
 
-              if (jsdocComment) {
-                // Extract description from JSDoc
-                const descMatch = jsdocComment.match(/\/\*\*\s*([\s\S]*?)\s*(?:@|\*\/)/);
-                if (descMatch) {
-                  parsedJSDoc = descMatch[1].replace(/\s*\*\s?/g, ' ').trim();
-                }
+            if (jsdoc) {
+              // Extract description from JSDoc
+              const descMatch = jsdoc.match(/\/\*\*\s*([\s\S]*?)\s*(?:@|\*\/)/);
+              if (descMatch) {
+                parsedJSDoc = descMatch[1].replace(/\s*\*\s?/g, ' ').trim();
+              }
 
-                // Extract @returns tag
-                const returnsMatch = jsdocComment.match(/@returns?\s+\{([^}]+)\}\s*([^@*]*)/);
-                if (returnsMatch && !extractedReturnType) {
-                  extractedReturnType = returnsMatch[1];
-                  if (returnsMatch[2].trim()) {
-                    parsedJSDoc += (parsedJSDoc ? ' ' : '') + `Returns: ${returnsMatch[2].trim()}`;
-                  }
-                }
-
-                // Extract @param tags
-                const paramMatches = jsdocComment.matchAll(
-                  /@param\s+\{([^}]+)\}\s+(\w+)\s*([^@*]*)/g
-                );
-                const paramDescriptions: string[] = [];
-                for (const paramMatch of paramMatches) {
-                  const paramType = paramMatch[1];
-                  const paramName = paramMatch[2];
-                  const paramDesc = paramMatch[3].trim();
-                  paramDescriptions.push(
-                    `${paramName}: ${paramType}${paramDesc ? ` - ${paramDesc}` : ''}`
-                  );
-                }
-                if (paramDescriptions.length > 0) {
-                  extractedParameters = paramDescriptions.join(', ');
+              // Extract @returns tag
+              const returnsMatch = jsdoc.match(/@returns?\s+\{([^}]+)\}\s*([^@*]*)/);
+              if (returnsMatch && !extractedReturnType) {
+                extractedReturnType = returnsMatch[1];
+                if (returnsMatch[2].trim()) {
+                  parsedJSDoc += (parsedJSDoc ? ' ' : '') + `Returns: ${returnsMatch[2].trim()}`;
                 }
               }
 
-              const helperInfo: HelperInfo = {
-                name: helperName,
-                jsdoc: parsedJSDoc || undefined,
-                returnType: extractedReturnType?.trim() || undefined,
-                parameters: extractedParameters?.trim() || undefined,
-                signature: `${helperName}(${extractedParameters || ''})${
-                  extractedReturnType ? `: ${extractedReturnType}` : ''
-                }`
-              };
-
-              helperDetails.push(helperInfo);
+              // Extract @param tags
+              const paramMatches = jsdoc.matchAll(
+                /@param\s+\{([^}]+)\}\s+(\w+)\s*([^@*]*)/g
+              );
+              const paramDescriptions: string[] = [];
+              for (const paramMatch of paramMatches) {
+                const paramType = paramMatch[1];
+                const paramName = paramMatch[2];
+                const paramDesc = paramMatch[3].trim();
+                paramDescriptions.push(
+                  `${paramName}: ${paramType}${paramDesc ? ` - ${paramDesc}` : ''}`
+                );
+              }
+              if (paramDescriptions.length > 0) {
+                extractedParameters = paramDescriptions.join(', ');
+              }
             }
+
+            const helperInfo: HelperInfo = {
+              name,
+              jsdoc: parsedJSDoc || undefined,
+              returnType: extractedReturnType?.trim() || undefined,
+              parameters: extractedParameters?.trim() || undefined,
+              signature: `${name}(${extractedParameters || ''})${
+                extractedReturnType ? `: ${extractedReturnType}` : ''
+              }`
+            };
+
+            // Debug logging for helper extraction
+            console.log(`[HELPER ANALYSIS] Extracted helper: ${name}`);
+            console.log(`[HELPER ANALYSIS] JSDoc: "${parsedJSDoc}"`);
+            console.log(`[HELPER ANALYSIS] Parameters: "${extractedParameters}"`);
+            console.log(`[HELPER ANALYSIS] Return Type: "${extractedReturnType}"`);
+
+            helperDetails.push(helperInfo);
           }
         });
 

@@ -93,9 +93,9 @@ const onDefinition = (config: CurrentConnectionConfig) => {
               const lines = content.split('\n');
               for (let i = 0; i < lines.length; i++) {
                 const line = lines[i];
-                // Updated regex to handle TypeScript method syntax: methodName(): ReturnType
+                // Updated regex to handle TypeScript method syntax with parameters: methodName(params): ReturnType
                 const helperRegex = new RegExp(
-                  `\\b${word}\\s*(?:[:=]\\s*(?:function\\s*\\(|\\([^)]*\\)\\s*=>|\\([^)]*\\)\\s*\\{)|\\(\\)\\s*:\\s*[^{]+\\{)`
+                  `\\b${word}\\s*(?:[:=]\\s*(?:function\\s*\\(|\\([^)]*\\)\\s*=>|\\([^)]*\\)\\s*\\{)|\\([^)]*\\)\\s*(?::\\s*[^{]+)?\\s*\\{)`
                 );
                 const match = helperRegex.exec(line);
                 if (match) {
