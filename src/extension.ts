@@ -1,5 +1,5 @@
-import * as vscode from 'vscode';
 import * as path from 'path';
+import * as vscode from 'vscode';
 import {
   LanguageClient,
   LanguageClientOptions,
@@ -48,7 +48,7 @@ function updateDecorationType() {
 
   // Update decorations for all visible editors
   vscode.window.visibleTextEditors.forEach(editor => {
-    if (editor.document.languageId === 'html' || editor.document.languageId === 'handlebars') {
+    if (['html','handlebars','meteor-html','meteor-handlebars'].includes(editor.document.languageId)) {
       updateBlockConditionDecorations(editor.document);
     }
   });
@@ -60,13 +60,10 @@ export function activate(context: vscode.ExtensionContext) {
     'delimiter', 'blazeBlockHash', 'blazeBlockName', 'blazeBlockSingleArg', 'blazeBlockFirstArg', 'blazeBlockArgs', 'blazeBlockIn', 'blazeExpression'
   ]);
 
-  context.subscriptions.push(
-    vscode.languages.registerDocumentSemanticTokensProvider(
-      { language: 'html', scheme: 'file' },
-      {
-        provideDocumentSemanticTokens(document) {
-          const tokensBuilder = new vscode.SemanticTokensBuilder(legend);
-          const text = document.getText();
+  const semanticProvider: vscode.DocumentSemanticTokensProvider = {
+    provideDocumentSemanticTokens(document) {
+      const tokensBuilder = new vscode.SemanticTokensBuilder(legend);
+      const text = document.getText();
           // Find all block helper ranges (start/end positions)
           const blockRanges: Array<{ start: number, end: number }> = [];
           const blockStartRegex = /\{\{#(\w+)/g;
@@ -137,13 +134,22 @@ export function activate(context: vscode.ExtensionContext) {
             }
             tokensBuilder.push(startPos.line, startPos.character + length - 2, 2, 0); // delimiter
           }
-          // No tokens for any text outside of {{...}} blocks, including inside nested block helpers
-          return tokensBuilder.build();
-        }
-      },
-      legend
-    )
-  );
+      // No tokens for any text outside of {{...}} blocks, including inside nested block helpers
+      return tokensBuilder.build();
+    }
+  };
+
+  const selectors: vscode.DocumentSelector = [
+    { language: 'html', scheme: 'file' },
+    { language: 'handlebars', scheme: 'file' },
+    { language: 'meteor-handlebars', scheme: 'file' },
+    { language: 'meteor-html', scheme: 'file' }
+  ];
+  for (const sel of selectors as vscode.DocumentFilter[]) {
+    context.subscriptions.push(
+      vscode.languages.registerDocumentSemanticTokensProvider(sel, semanticProvider, legend)
+    );
+  }
   // Prompt user to set editor.tokenColorCustomizations for Blaze token colors
   vscode.window.showInformationMessage(
     'For full Blaze token coloring, add editor.tokenColorCustomizations to your settings. See example-blaze-token-theme.jsonc for details.'

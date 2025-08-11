@@ -43,7 +43,7 @@
   "editor.formatOnSave": true,
   "editor.tabSize": 2,
   "files.associations": {
-    "*.html": "html"
+    "*.html": "handlebars"
   },
 
   // Language-specific settings

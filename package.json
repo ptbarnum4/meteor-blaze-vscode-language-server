@@ -96,6 +96,16 @@
         "path": "./blaze-theme.json"
       }
     ],
+    "semanticTokenTypes": [
+      { "id": "delimiter", "description": "Blaze expression delimiters {{ and }}", "superType": "operator" },
+      { "id": "blazeBlockHash", "description": "# in Blaze block helpers", "superType": "operator" },
+      { "id": "blazeBlockName", "description": "Blaze block helper name (if, each, with, unless)", "superType": "keyword" },
+      { "id": "blazeBlockSingleArg", "description": "Single argument to a Blaze block helper", "superType": "parameter" },
+      { "id": "blazeBlockFirstArg", "description": "First argument to a Blaze block helper", "superType": "parameter" },
+      { "id": "blazeBlockArgs", "description": "Subsequent arguments to a Blaze block helper", "superType": "parameter" },
+      { "id": "blazeBlockIn", "description": "The 'in' keyword for each/with style blocks", "superType": "keyword" },
+      { "id": "blazeExpression", "description": "Inline Blaze expression contents", "superType": "variable" }
+    ],
     "commands": [
       {
         "command": "meteor-blaze-vscode-language-server.restart",
