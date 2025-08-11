@@ -1,6 +1,5 @@
 import { TextDocument } from 'vscode-languageserver-textdocument';
-import { InlineCompletionFeatureShape } from 'vscode-languageserver/lib/common/inlineCompletion.proposed';
-import { _, createConnection, TextDocuments } from 'vscode-languageserver/node';
+import { createConnection, TextDocuments } from 'vscode-languageserver/node';
 
 /**
  * Represents information about a Meteor template.
@@ -57,9 +56,7 @@ export type LanguageServerSettings = {
 /**
  * Represents the connection to the VS Code server.
  */
-export type VSCodeServerConnection = ReturnType<
-  typeof createConnection<_, _, _, _, _, _, InlineCompletionFeatureShape, _>
->;
+export type VSCodeServerConnection = ReturnType<typeof createConnection>;
 
 /**
  * Represents the configuration for the current connection.
