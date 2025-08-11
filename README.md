@@ -186,7 +186,7 @@ my-meteor-app/
 
 ### No Completions for Helpers
 - **Issue**: Template helpers not appearing in autocomplete
-- **Solution**: 
+- **Solution**:
   - Check that helper files (`.js` or `.ts`) are in the same directory as the HTML template
   - Verify helpers are defined using `Template.templateName.helpers({...})`
   - Make sure the template name matches the helper file structure

@@ -162,7 +162,7 @@ The project uses GitHub Actions for continuous integration:
   - Linting, type checking, and testing
   - Builds extension package
   - Uses Node.js LTS
-  
+
 - **Test Workflow** (`.github/workflows/test.yml`): Extended testing
   - Cross-platform testing (Ubuntu, Windows, macOS)
   - Manual dispatch and daily scheduled runs
