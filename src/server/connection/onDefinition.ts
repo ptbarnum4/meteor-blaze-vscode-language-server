@@ -7,6 +7,7 @@ import {
 
 import { CurrentConnectionConfig } from '../../types';
 import { containsMeteorTemplates } from '../helpers/containsMeteorTemplates';
+import { findEnclosingEachInContext } from '../helpers/findEnclosingEachInContext';
 import { getWordRangeAtPosition } from '../helpers/getWordRangeAtPosition';
 import { isWithinHandlebarsExpression } from '../helpers/isWithinHandlebarsExpression';
 
@@ -61,7 +62,9 @@ const onDefinition = (config: CurrentConnectionConfig) => {
       document.offsetAt(wordRange.end)
     );
 
-    connection.console.log(`Looking for definition of "${word}" within handlebars expression`);
+  connection.console.log(`Looking for definition of "${word}" within handlebars expression`);
+
+  const eachCtx = findEnclosingEachInContext(text, offset);
 
   // Look for this helper or data property in analyzed files using directory-specific keys
   const dirLookupKeys = [`${dir}/${currentTemplateName}`, `${dir}/${baseName}`].filter(Boolean);
@@ -119,8 +122,8 @@ const onDefinition = (config: CurrentConnectionConfig) => {
         }
       }
 
-      // Navigate to template data property definition if applicable
-      if (dataProps.includes(word)) {
+  // Navigate to template data property definition if applicable
+  if (dataProps.includes(word) || (eachCtx && (eachCtx.alias === word || eachCtx.source === word))) {
         try {
           const keyParts = key.split('/');
           const keyBaseName = keyParts[keyParts.length - 1];
@@ -134,6 +137,13 @@ const onDefinition = (config: CurrentConnectionConfig) => {
           ];
 
           const typeName = config.fileAnalysis.dataTypeByKey?.get(key as string);
+          const typeMap = config.fileAnalysis.dataPropertyTypesByKey?.get(key as string) || {};
+
+          // If we're on the alias in an each-in block, redirect to the element type of the source list
+          let targetPropName = word;
+          if (eachCtx && eachCtx.alias === word) {
+            targetPropName = eachCtx.source; // Clicking alias navigates to list property definition
+          }
 
           // Helpers to compute line/char from index
           const toLineChar = (content: string, index: number) => {
@@ -145,7 +155,7 @@ const onDefinition = (config: CurrentConnectionConfig) => {
           };
 
           // Search a specific type/interface block for property
-          const findPropInNamedType = (content: string, tName: string): { idx: number } | null => {
+      const findPropInNamedType = (content: string, tName: string): { idx: number } | null => {
             const typeRe = new RegExp(`type\\s+${tName}\\s*=\\s*\\{([\\s\\S]*?)\\}`, 'g');
             const ifaceRe = new RegExp(`interface\\s+${tName}\\s*\\{([\\s\\S]*?)\\}`, 'g');
             let m = typeRe.exec(content);
@@ -155,7 +165,7 @@ const onDefinition = (config: CurrentConnectionConfig) => {
             if (m && typeof m.index === 'number') {
               const blockOpenIdx = content.indexOf('{', m.index);
               const block = m[1];
-              const propRe = new RegExp(`\\b${word}\\s*:`);
+        const propRe = new RegExp(`\\b${targetPropName}\\s*:`);
               const pm = propRe.exec(block);
               if (pm) {
                 const idx = (blockOpenIdx + 1) + pm.index;
@@ -167,13 +177,13 @@ const onDefinition = (config: CurrentConnectionConfig) => {
           };
 
           // Search any type/interface block for property
-          const findPropInAnyType = (content: string): { idx: number } | null => {
+      const findPropInAnyType = (content: string): { idx: number } | null => {
             const anyTypeRe = /(type\s+\w+\s*=\s*\{([\s\S]*?)\})|(interface\s+\w+\s*\{([\s\S]*?)\})/g;
             let m;
             while ((m = anyTypeRe.exec(content)) !== null) {
               const group = m[2] || m[4] || '';
               const blockOpenIdx = content.indexOf('{', m.index);
-              const propRe = new RegExp(`\\b${word}\\s*:`);
+        const propRe = new RegExp(`\\b${targetPropName}\\s*:`);
               const pm = propRe.exec(group);
               if (pm) {
                 const idx = (blockOpenIdx + 1) + pm.index;
@@ -184,7 +194,7 @@ const onDefinition = (config: CurrentConnectionConfig) => {
           };
 
           // Search JSDoc typedef blocks
-          const findPropInTypedef = (content: string, tName?: string): { idx: number } | null => {
+      const findPropInTypedef = (content: string, tName?: string): { idx: number } | null => {
             const tdRe = /\/\*\*[\s\S]*?@typedef\s+\{Object\}\s+(\w+)[\s\S]*?\*\//g;
             let m;
             while ((m = tdRe.exec(content)) !== null) {
@@ -193,7 +203,7 @@ const onDefinition = (config: CurrentConnectionConfig) => {
                 continue;
               }
               const block = m[0];
-              const propRe = new RegExp(`@property\\s+\\{[^}]+\\}\\s+${word}\\b`);
+        const propRe = new RegExp(`@property\\s+\\{[^}]+\\}\\s+${targetPropName}\\b`);
               const pm = propRe.exec(block);
               if (pm) {
                 const idx = (m.index || 0) + pm.index;
@@ -217,12 +227,12 @@ const onDefinition = (config: CurrentConnectionConfig) => {
               const inNamed = findPropInNamedType(content, typeName);
               if (inNamed) {
                 const { line, character } = toLineChar(content, inNamed.idx);
-                return [
+        return [
                   {
                     uri: `file://${file}`,
                     range: {
                       start: { line, character },
-                      end: { line, character: character + word.length }
+          end: { line, character: character + targetPropName.length }
                     }
                   }
                 ];
@@ -232,12 +242,12 @@ const onDefinition = (config: CurrentConnectionConfig) => {
               const inTypedef = findPropInTypedef(content, typeName);
               if (inTypedef) {
                 const { line, character } = toLineChar(content, inTypedef.idx);
-                return [
+        return [
                   {
                     uri: `file://${file}`,
                     range: {
                       start: { line, character },
-                      end: { line, character: character + word.length }
+          end: { line, character: character + targetPropName.length }
                     }
                   }
                 ];
@@ -246,14 +256,14 @@ const onDefinition = (config: CurrentConnectionConfig) => {
 
             // If we don't know the type, search any type/interface
             const inAny = findPropInAnyType(content) || findPropInTypedef(content);
-            if (inAny) {
+      if (inAny) {
               const { line, character } = toLineChar(content, inAny.idx);
               return [
                 {
                   uri: `file://${file}`,
                   range: {
                     start: { line, character },
-                    end: { line, character: character + word.length }
+        end: { line, character: character + targetPropName.length }
                   }
                 }
               ];

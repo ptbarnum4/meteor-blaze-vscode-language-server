@@ -4,6 +4,7 @@ import { Hover, MarkupKind, TextDocumentPositionParams } from 'vscode-languagese
 
 import { CurrentConnectionConfig } from '../../types';
 import { containsMeteorTemplates } from '../helpers/containsMeteorTemplates';
+import { findEnclosingEachInContext } from '../helpers/findEnclosingEachInContext';
 import { getWordRangeAtPosition } from '../helpers/getWordRangeAtPosition';
 import { isWithinHandlebarsExpression } from '../helpers/isWithinHandlebarsExpression';
 import { trimUsageDocumentation } from '../helpers/trimUsageDocumentation';
@@ -67,6 +68,16 @@ const onHover = (config: CurrentConnectionConfig) => {
     connection.console.log(`[HOVER DEBUG] Dir: ${dir}`);
     connection.console.log(`[HOVER DEBUG] Base name: ${baseName}`);
 
+    // Check each-in context before entering the main loop
+    const documentText = document.getText();
+    const cursorOffset = document.offsetAt(textDocumentPosition.position);
+    connection.console.log(`[EACH DEBUG] Document text length: ${documentText.length}`);
+    connection.console.log(`[EACH DEBUG] Cursor offset: ${cursorOffset}`);
+    connection.console.log(`[EACH DEBUG] Text around cursor (±50 chars): "${documentText.slice(Math.max(0, cursorOffset - 50), cursorOffset + 50)}"`);
+
+    const eachCtx = findEnclosingEachInContext(documentText, cursorOffset);
+    connection.console.log(`[EACH DEBUG] Context detection: ${JSON.stringify(eachCtx)}`);
+
     // Look for this helper in analyzed files using directory-specific keys
   const dirLookupKeys = [`${dir}/${currentTemplateName}`, `${dir}/${baseName}`].filter(Boolean);
 
@@ -80,10 +91,14 @@ const onHover = (config: CurrentConnectionConfig) => {
     for (const key of dirLookupKeys) {
       const helpers = config.fileAnalysis.jsHelpers.get(key as string);
       const helperDetails = config.fileAnalysis.helperDetails.get(key as string);
-  const dataProps = config.fileAnalysis.dataProperties?.get(key as string) || [];
-      connection.console.log(
-        `[HOVER DEBUG] Key "${key}" → Helpers: ${helpers ? JSON.stringify(helpers) : 'NONE'}`
-      );
+      const dataProps = config.fileAnalysis.dataProperties?.get(key as string) || [];
+      const typeName = config.fileAnalysis.dataTypeByKey?.get(key as string);
+      const typeMap = config.fileAnalysis.dataPropertyTypesByKey?.get(key as string) || {};
+
+      connection.console.log(`[HOVER DEBUG] Key "${key}" → Helpers: ${helpers ? JSON.stringify(helpers) : 'NONE'}`);
+      connection.console.log(`[HOVER DEBUG] Key "${key}" → HelperDetails: ${helperDetails ? helperDetails.length + ' items' : 'NONE'}`);
+      connection.console.log(`[HOVER DEBUG] Key "${key}" → DataProps: ${JSON.stringify(dataProps)}`);
+      connection.console.log(`[HOVER DEBUG] Key "${key}" → TypeMap: ${JSON.stringify(typeMap)}`);
   if (helpers && helpers.includes(word)) {
         // Find the detailed information for this helper
         const helperInfo = helperDetails?.find(h => h.name === word);
@@ -196,17 +211,121 @@ const onHover = (config: CurrentConnectionConfig) => {
         };
       }
 
-      // Data property hover
+      // #each alias hover: allow hover on alias even if it's not part of template data properties
+      if (eachCtx && eachCtx.alias === word) {
+        connection.console.log(`[EACH DEBUG] Processing alias hover for "${word}"`);
+        const templateFileName = path.basename(filePath);
+        let listType = typeMap[eachCtx.source];
+
+        // If not found in data properties, check if it's a helper with a return type
+        if (!listType) {
+          const helperInfo = helperDetails?.find(h => h.name === eachCtx.source);
+          if (helperInfo?.returnType) {
+            listType = helperInfo.returnType;
+            connection.console.log(`[EACH DEBUG] Found helper "${eachCtx.source}" with return type: ${listType}`);
+          } else {
+            connection.console.log(`[EACH DEBUG] No helper found for "${eachCtx.source}" or no return type`);
+          }
+        } else {
+          connection.console.log(`[EACH DEBUG] Found list type in typeMap: ${listType}`);
+        }
+
+        const deriveElementType = (t?: string): string | undefined => {
+          if (!t) {
+            return undefined;
+          }
+          const cleaned = t.trim().replace(/^\(|\)$/g, '');
+          const first = cleaned.split('|')[0].trim();
+          let m = first.match(/^\s*([^\[\]]+)\[\]\s*$/);
+          if (m) {
+            return m[1].trim();
+          }
+          m = first.match(/^\s*(?:Array|ReadonlyArray|Set|Iterable)\s*<\s*([^,>]+)(?:\s*,[^>]+)?\s*>\s*$/);
+          if (m) {
+            return m[1].trim();
+          }
+          m = first.match(/^\s*Map\s*<\s*[^,>]+,\s*([^>]+)\s*>\s*$/);
+          if (m) {
+            return m[1].trim();
+          }
+          m = first.match(/^\s*Mongo\.Cursor\s*<\s*([^>]+)\s*>\s*$/);
+          if (m) {
+            return m[1].trim();
+          }
+          return undefined;
+        };
+        const aliasType: string | undefined = deriveElementType(listType);
+
+        connection.console.log(`[EACH DEBUG] alias="${word}", source="${eachCtx.source}", listType="${listType}", aliasType="${aliasType}"`);
+
+        const hoverLines: string[] = [];
+        hoverLines.push(`**${word}** - Each item alias in \`${eachCtx.source}\``);
+        hoverLines.push('');
+        if (typeName) {
+          hoverLines.push(`From type: \`${typeName}\``);
+          hoverLines.push('');
+        }
+        if (aliasType) {
+          hoverLines.push(`Type: \`${aliasType}\``);
+          hoverLines.push('');
+        }
+        hoverLines.push(`**Template:** ${currentTemplateName}`);
+        hoverLines.push('');
+        hoverLines.push(`**Template File:** ${templateFileName}`);
+        hoverLines.push('');
+        hoverLines.push(`**Usage:** \`{{${word}}}\``);
+
+        return {
+          contents: {
+            kind: MarkupKind.Markdown,
+            value: hoverLines.join('\n')
+          },
+          range: wordRange
+        };
+      }
+
+      // Data property hover (includes #each value in list context awareness)
       if (dataProps.includes(word)) {
         const templateFileName = path.basename(filePath);
-        const typeName = config.fileAnalysis.dataTypeByKey?.get(key as string);
-        const typeMap = config.fileAnalysis.dataPropertyTypesByKey?.get(key as string) || {};
         const propType = typeMap[word];
+        // Check #each alias context: `{{#each value in list}}` so value should use element type of list
+        let adjustedType: string | undefined = propType;
+        if (eachCtx && eachCtx.alias === word) {
+          const listType = typeMap[eachCtx.source];
+          const deriveElementType = (t?: string): string | undefined => {
+            if (!t) {
+              return undefined;
+            }
+            const cleaned = t.trim().replace(/^\(|\)$/g, '');
+            const first = cleaned.split('|')[0].trim();
+            let m = first.match(/^\s*([^\[\]]+)\[\]\s*$/);
+            if (m) {
+              return m[1].trim();
+            }
+            m = first.match(/^\s*(?:Array|ReadonlyArray|Set|Iterable)\s*<\s*([^,>]+)(?:\s*,[^>]+)?\s*>\s*$/);
+            if (m) {
+              return m[1].trim();
+            }
+            m = first.match(/^\s*Map\s*<\s*[^,>]+,\s*([^>]+)\s*>\s*$/);
+            if (m) {
+              return m[1].trim();
+            }
+            m = first.match(/^\s*Mongo\.Cursor\s*<\s*([^>]+)\s*>\s*$/);
+            if (m) {
+              return m[1].trim();
+            }
+            return undefined;
+          };
+          const elem = deriveElementType(listType);
+          if (elem) {
+            adjustedType = elem;
+          }
+        }
         let elementType: string | undefined;
-        if (propType) {
+        if (adjustedType) {
           // Extract array element type for forms like Type[] or Array<Type>
-          const arrMatchBracket = propType.match(/^\s*([^\[\]]+)\[\]\s*$/);
-          const arrMatchGeneric = propType.match(/^\s*Array\s*<\s*([^>]+)\s*>\s*$/);
+          const arrMatchBracket = adjustedType.match(/^\s*([^\[\]]+)\[\]\s*$/);
+          const arrMatchGeneric = adjustedType.match(/^\s*Array\s*<\s*([^>]+)\s*>\s*$/);
           if (arrMatchBracket) {
             elementType = arrMatchBracket[1].trim();
           } else if (arrMatchGeneric) {
@@ -220,8 +339,8 @@ const onHover = (config: CurrentConnectionConfig) => {
           hoverLines.push(`From type: \`${typeName}\``);
           hoverLines.push('');
         }
-        if (propType) {
-          hoverLines.push(`Type: \`${propType}\``);
+        if (adjustedType) {
+          hoverLines.push(`Type: \`${adjustedType}\``);
           if (elementType) {
             hoverLines.push(`Element type: \`${elementType}\``);
           }
