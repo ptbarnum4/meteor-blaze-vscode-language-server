@@ -1,7 +1,11 @@
 .vscode/**
 .vscode-test/**
 out/**
+/.github/**
 node_modules/**
+!node_modules/vscode-languageclient/**
+!node_modules/vscode-languageserver/**
+!node_modules/vscode-languageserver-textdocument/**
 src/**
 test-project/**
 test-matching.js
@@ -14,6 +18,8 @@ src/test/**
 **/test/**
 **/example/**
 **/simple.*
+.github/**
+scripts/**
 .gitignore
 .yarnrc
 esbuild.js
@@ -23,3 +29,13 @@ vsc-extension-quickstart.md
 **/*.map
 **/*.ts
 **/.vscode-test.*
+
+# Keep built output and necessary assets
+!dist/**
+!syntaxes/**
+!language-configuration.json
+!blaze-theme.json
+!README.md
+!LICENSE
+!CHANGELOG.md
+!icon.png
