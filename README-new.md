@@ -88,7 +88,7 @@ npm test               # Run tests
 This extension follows the Language Server Protocol (LSP) pattern:
 
 - **Client** (`src/extension.ts`): VS Code extension that manages the language client
-- **Server** (`src/server.ts`): Language server that provides language features
+- **Server** (`src/server/index.ts`): Language server that provides language features
 - **Grammar** (`syntaxes/meteor.tmLanguage.json`): TextMate grammar for syntax highlighting
 - **Configuration** (`language-configuration.json`): Language configuration for VS Code
 

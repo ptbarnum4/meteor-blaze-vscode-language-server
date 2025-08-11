@@ -17,7 +17,7 @@ This is a language server extension for the Meteor framework that provides:
 
 ## Key Files
 - `src/extension.ts`: Extension entry point and client setup
-- `src/server.ts`: Language server implementation
+- `src/server/index.ts`: Language server implementation
 - `package.json`: Extension manifest and configuration
 - `syntaxes/`: Language grammar definitions
 - `language-configuration.json`: Language configuration

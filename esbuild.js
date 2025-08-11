@@ -46,7 +46,7 @@ async function main() {
 	// Build server
 	const serverCtx = await esbuild.context({
 		entryPoints: [
-			'src/server.ts'
+			'src/server/index.ts'
 		],
 		bundle: true,
 		format: 'cjs',

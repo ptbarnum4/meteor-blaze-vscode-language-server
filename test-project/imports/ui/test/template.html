@@ -18,6 +18,7 @@
       {{/each}}
 
       {{#each number in numbers}}
+      {{@index}}
 
       {{/each}}
 
@@ -26,12 +27,14 @@
       {{/with}}
 
       {{#unless arrayOfStrings aString}}
-
+      {{#each}}
       <ul class="string-list">
         {{#each string in arrayOfStrings1}}
         <li class="string-list-item">{{string}}</li>
         {{#each string in arrayOfStrings2}}
-        <li class="string-list-item">{{string}}</li>
+        <li class="string-list-item">
+          {{string}}
+        </li>
         {{/each}}
         {{this}}
         {{/each}}

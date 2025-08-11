@@ -134,7 +134,7 @@ npm test             # Run tests
 meteorLanguageServer/
 ├── src/
 │   ├── extension.ts           # VS Code extension client
-│   └── server.ts              # Language server implementation
+│   └── server/index.ts        # Language server implementation
 ├── test-project/              # Test Meteor project (excluded from build)
 │   ├── simple.html            # Basic template test
 │   ├── simple.ts              # TypeScript helpers
@@ -148,7 +148,7 @@ meteorLanguageServer/
 ## 🏗️ Architecture
 
 - **Client** (`src/extension.ts`): VS Code extension that manages the language server
-- **Server** (`src/server.ts`): Language server providing completion, validation, hover, and definition features
+- **Server** (`src/server/index.ts`): Language server providing completion, validation, hover, and definition features
 - **Grammar** (`syntaxes/meteor-html.tmLanguage.json`): TextMate grammar for Blaze syntax highlighting
 - **Protocol**: Uses Language Server Protocol (LSP) for communication
 
