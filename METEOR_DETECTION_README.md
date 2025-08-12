@@ -15,7 +15,7 @@ The `test-project/` folder DOES have a `.meteor` directory, so when opened as a 
 2. Extension should NOT activate
 3. No Blaze features should work in HTML/HBS files
 
-### Test 2: Meteor Project 
+### Test 2: Meteor Project
 1. Open the `test-project/` folder as a new workspace in VS Code
 2. Extension should activate and show: "Meteor/Blaze HTML Language Server activated for Meteor project!"
 3. Open `imports/ui/mainLayout.html`
