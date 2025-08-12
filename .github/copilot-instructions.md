@@ -16,7 +16,7 @@ This is a language server extension for the Meteor framework that provides:
 - **Communication**: Uses the Language Server Protocol (LSP)
 
 ## Key Files
-- `src/extension.ts`: Extension entry point and client setup
+- `src/extension/index.ts`: Extension entry point and client setup
 - `src/server/index.ts`: Language server implementation
 - `package.json`: Extension manifest and configuration
 - `syntaxes/`: Language grammar definitions

@@ -85,7 +85,9 @@ function updateDecorationType() {
 export function activate(context: vscode.ExtensionContext) {
   // Check if this is a Meteor project
   if (!isMeteorProject()) {
-    console.log('Meteor/Blaze Language Server: No .meteor directory found. Extension will not activate.');
+    console.log(
+      'Meteor/Blaze Language Server: No .meteor directory found. Extension will not activate.'
+    );
     return;
   }
 
@@ -184,7 +186,9 @@ export function activate(context: vscode.ExtensionContext) {
           if (expressionContent === 'else') {
             const contentStart = startPos.character + 2;
             const leadingWhitespace = match[0].slice(2).match(/^\s*/);
-            const elseStart = leadingWhitespace ? contentStart + leadingWhitespace[0].length : contentStart;
+            const elseStart = leadingWhitespace
+              ? contentStart + leadingWhitespace[0].length
+              : contentStart;
             tokensBuilder.push(startPos.line, elseStart, 4, 2); // blazeBlockName (same as block names)
           } else {
             // Handle other expressions
@@ -354,19 +358,31 @@ export function activate(context: vscode.ExtensionContext) {
     const hasMeteorProject = isMeteorProject();
     if (!hasMeteorProject && client) {
       // No longer a Meteor project, deactivate
-      vscode.window.showInformationMessage('Meteor/Blaze Language Server: No .meteor directory found. Deactivating extension.');
+      vscode.window.showInformationMessage(
+        'Meteor/Blaze Language Server: No .meteor directory found. Deactivating extension.'
+      );
       client.stop();
     } else if (hasMeteorProject && !client) {
       // Became a Meteor project, but this would require reactivating the extension
-      vscode.window.showInformationMessage('Meteor/Blaze Language Server: .meteor directory detected. Please reload the window to activate the extension.');
+      vscode.window.showInformationMessage(
+        'Meteor/Blaze Language Server: .meteor directory detected. Please reload the window to activate the extension.'
+      );
     }
   });
 
-  context.subscriptions.push(restartCommand, disposable, activeEditorDisposable, configDisposable, workspaceFoldersChangeDisposable);
+  context.subscriptions.push(
+    restartCommand,
+    disposable,
+    activeEditorDisposable,
+    configDisposable,
+    workspaceFoldersChangeDisposable
+  );
 
   // Log activation
   console.log('Meteor/Blaze HTML Language Server is now active for Meteor project!');
-  vscode.window.showInformationMessage('Meteor/Blaze HTML Language Server activated for Meteor project!');
+  vscode.window.showInformationMessage(
+    'Meteor/Blaze HTML Language Server activated for Meteor project!'
+  );
 
   // Register CompletionItemProvider for propNames inside block conditions
   context.subscriptions.push(
@@ -484,10 +500,19 @@ function findMatchingBlockCondition(textBeforeEndBlock: string, blockType: strin
   return null;
 }
 
-function findEnclosingBlockForElse(text: string, elseOffset: number): { type: 'if' | 'unless'; condition: string } | null {
+function findEnclosingBlockForElse(
+  text: string,
+  elseOffset: number
+): { type: 'if' | 'unless'; condition: string } | null {
   // Find all #if, #unless, {{else}}, /if, /unless blocks before the else position
   type Block =
-    | { type: 'open'; blockType: 'if' | 'unless'; condition: string; position: number; length: number }
+    | {
+        type: 'open';
+        blockType: 'if' | 'unless';
+        condition: string;
+        position: number;
+        length: number;
+      }
     | { type: 'close'; blockType: 'if' | 'unless'; position: number; length: number }
     | { type: 'else'; position: number; length: number };
 

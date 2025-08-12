@@ -42,7 +42,7 @@ npm run package:local # Build and install locally for testing
 
 The extension follows the Language Server Protocol (LSP) architecture:
 
-- **Client** (`src/extension.ts`): VS Code extension that manages the language server
+- **Client** (`src/extension/index.ts`): VS Code extension that manages the language server
 - **Server** (`src/server/index.ts`): Language server providing completion, validation, hover, and definition features
 - **Grammar** (`syntaxes/meteor-html.tmLanguage.json`): TextMate grammar for Blaze syntax highlighting
 - **Protocol**: Uses Language Server Protocol (LSP) for communication
@@ -51,7 +51,8 @@ The extension follows the Language Server Protocol (LSP) architecture:
 ```
 meteor-blaze-vscode-language-server/
 ├── src/
-│   ├── extension.ts           # VS Code extension client
+│   ├── extension/
+│   │   └── index.ts          # VS Code extension client
 │   ├── server/
 │   │   ├── index.ts          # Main language server
 │   │   ├── connection/       # LSP connection handlers

@@ -27,7 +27,7 @@ async function main() {
 	// Build extension (client)
 	const extensionCtx = await esbuild.context({
 		entryPoints: [
-			'src/extension.ts'
+			'src/extension/index.ts'
 		],
 		bundle: true,
 		format: 'cjs',
