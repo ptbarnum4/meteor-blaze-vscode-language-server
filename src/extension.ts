@@ -1,4 +1,5 @@
 import path from 'path';
+import fs from 'fs';
 import vscode from 'vscode';
 import {
   LanguageClient,
@@ -8,6 +9,29 @@ import {
 } from 'vscode-languageclient/node';
 
 let client: LanguageClient;
+
+// Check if the current workspace contains a Meteor project
+function isMeteorProject(): boolean {
+  const workspaceFolders = vscode.workspace.workspaceFolders;
+  if (!workspaceFolders) {
+    return false;
+  }
+
+  // Check each workspace folder for a .meteor directory
+  for (const folder of workspaceFolders) {
+    const meteorPath = path.join(folder.uri.fsPath, '.meteor');
+    try {
+      if (fs.existsSync(meteorPath) && fs.statSync(meteorPath).isDirectory()) {
+        return true;
+      }
+    } catch (error) {
+      // Ignore errors and continue checking
+      console.log(`Error checking for .meteor directory in ${folder.uri.fsPath}:`, error);
+    }
+  }
+
+  return false;
+}
 
 // Decoration type for block-condition hints (created dynamically based on settings)
 let blockConditionDecorationType: vscode.TextEditorDecorationType;
@@ -59,6 +83,14 @@ function updateDecorationType() {
 }
 
 export function activate(context: vscode.ExtensionContext) {
+  // Check if this is a Meteor project
+  if (!isMeteorProject()) {
+    console.log('Meteor/Blaze Language Server: No .meteor directory found. Extension will not activate.');
+    return;
+  }
+
+  console.log('Meteor/Blaze Language Server: .meteor directory found. Activating extension...');
+
   // Register semantic token provider for Blaze blocks and expressions
   const legend = new vscode.SemanticTokensLegend([
     'delimiter',
@@ -316,11 +348,25 @@ export function activate(context: vscode.ExtensionContext) {
     }
   });
 
-  context.subscriptions.push(restartCommand, disposable, activeEditorDisposable, configDisposable);
+  // Set up workspace folder change listener to handle dynamic addition/removal of Meteor projects
+  const workspaceFoldersChangeDisposable = vscode.workspace.onDidChangeWorkspaceFolders(event => {
+    // If a folder with .meteor was added or removed, we might need to restart the extension
+    const hasMeteorProject = isMeteorProject();
+    if (!hasMeteorProject && client) {
+      // No longer a Meteor project, deactivate
+      vscode.window.showInformationMessage('Meteor/Blaze Language Server: No .meteor directory found. Deactivating extension.');
+      client.stop();
+    } else if (hasMeteorProject && !client) {
+      // Became a Meteor project, but this would require reactivating the extension
+      vscode.window.showInformationMessage('Meteor/Blaze Language Server: .meteor directory detected. Please reload the window to activate the extension.');
+    }
+  });
+
+  context.subscriptions.push(restartCommand, disposable, activeEditorDisposable, configDisposable, workspaceFoldersChangeDisposable);
 
   // Log activation
-  console.log('Meteor/Blaze HTML Language Server is now active!');
-  vscode.window.showInformationMessage('Meteor/Blaze HTML Language Server activated!');
+  console.log('Meteor/Blaze HTML Language Server is now active for Meteor project!');
+  vscode.window.showInformationMessage('Meteor/Blaze HTML Language Server activated for Meteor project!');
 
   // Register CompletionItemProvider for propNames inside block conditions
   context.subscriptions.push(
