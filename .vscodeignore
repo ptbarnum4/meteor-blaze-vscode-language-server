@@ -18,6 +18,17 @@ src/test/**
 **/test/**
 **/example/**
 **/simple.*
+
+# macOS files
+.DS_Store
+**/.DS_Store
+._*
+**._*
+
+# Temporary files
+*.tmp
+**/*.tmp
+test-pad-analysis.js
 .github/**
 scripts/**
 .gitignore
