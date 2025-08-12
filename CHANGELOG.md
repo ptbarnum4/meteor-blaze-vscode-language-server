@@ -4,6 +4,39 @@ All notable changes to the "meteor-blaze-vscode-language-server" extension will 
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [0.0.4] - 2025-08-11
+
+### Added
+- **Comprehensive Configuration Documentation**: New `CONFIGURATION.md` file with complete VS Code settings reference
+  - Detailed examples for all extension configuration options
+  - Theme customization guide with color token explanations
+  - Block condition configuration with troubleshooting tips
+  - Blaze helpers setup documentation with performance optimization
+- **Enhanced User Experience**: Improved extension activation messaging
+  - Added clickable "Open Configuration Guide" button linking to GitHub documentation
+  - Streamlined onboarding with direct access to configuration help
+  - Better discoverability of extension features and customization options
+- **Documentation Cross-Referencing**: Added prominent links to configuration guide in main README
+
+### Changed
+- **Simplified Onboarding**: Removed redundant color theme setup prompts
+- **Enhanced Theme Support**: Improved approach to Handlebars token highlighting
+  - Removed standalone `blaze-theme.json` to prevent auto-generated VS Code UI elements
+  - Moved to flexible `editor.tokenColorCustomizations` approach
+  - Maintained compatibility with all VS Code themes
+  - Enhanced semantic token organization in package.json
+
+### Removed
+- Color theme setup notification messages that interrupted workflow
+- Auto-generated "Set Color Theme" button from extension UI
+- Standalone `blaze-theme.json` theme file
+
+### Technical Improvements
+- Enhanced activation flow with actionable user guidance
+- Improved documentation structure for better maintainability
+- Cleaned up package.json theme contributions
+- Better file organization (renamed README-new.md to GITHUB_RELEASE_INSTRUCTIONS.md)
+
 ## [0.0.3] - 2025-08-11
 
 ### Added
