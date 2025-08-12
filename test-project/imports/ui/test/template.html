@@ -11,11 +11,14 @@
       {{data2}}
       {{data3}}
 
+      {{#if pad box}}
+
       <div class="boxes">
         {{#each box in boxes}}
         <div class="box">
+
           <span class="box-text">Box</span>
-          <span class="box-number">{{pad box}}</span>
+          <span class="box-number">{{pad}}</span>
         </div>
         {{/each}}
       </div>

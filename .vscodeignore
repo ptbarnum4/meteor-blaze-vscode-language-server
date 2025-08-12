@@ -29,6 +29,22 @@ src/test/**
 *.tmp
 **/*.tmp
 test-pad-analysis.js
+
+# Build artifacts
+*.log
+npm-debug.log*
+.npm
+node_modules/.cache/
+
+# Git
+.git/**
+.gitignore
+
+# Development
+tsconfig.json
+eslint.config.mjs
+esbuild.js
+.eslintrc*
 .github/**
 scripts/**
 .gitignore

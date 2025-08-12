@@ -1,10 +1,10 @@
 import path from 'path';
 import vscode from 'vscode';
 import {
-  LanguageClient,
-  LanguageClientOptions,
-  ServerOptions,
-  TransportKind
+    LanguageClient,
+    LanguageClientOptions,
+    ServerOptions,
+    TransportKind
 } from 'vscode-languageclient/node';
 
 let client: LanguageClient;
@@ -144,7 +144,43 @@ export function activate(context: vscode.ExtensionContext) {
             }
           }
         } else {
-          tokensBuilder.push(startPos.line, startPos.character + 2, length - 4, 7); // blazeExpression
+          // Handle regular expressions like {{pad box}} or {{helper arg1 arg2}}
+          const expressionContent = match[0].slice(2, -2).trim(); // Remove {{ and }}
+          const tokens = expressionContent.split(/\s+/).filter(token => token.length > 0);
+
+          if (tokens.length > 0) {
+            const contentStart = startPos.character + 2;
+            let currentOffset = 0;
+
+            // Find the actual start position of content (skip whitespace)
+            const leadingWhitespace = match[0].slice(2).match(/^\s*/);
+            if (leadingWhitespace) {
+              currentOffset = leadingWhitespace[0].length;
+            }
+
+            if (tokens.length === 1) {
+              // Single token - use blazeExpression for the whole thing
+              const tokenPosition = expressionContent.indexOf(tokens[0], currentOffset);
+              const tokenStart = contentStart + tokenPosition;
+              tokensBuilder.push(startPos.line, tokenStart, tokens[0].length, 7); // blazeExpression
+            } else {
+              // Multiple tokens - follow block condition pattern
+              tokens.forEach((token, index) => {
+                const tokenPosition = expressionContent.indexOf(token, currentOffset);
+                const tokenStart = contentStart + tokenPosition;
+
+                if (index === 0) {
+                  // First argument gets blazeBlockFirstArg
+                  tokensBuilder.push(startPos.line, tokenStart, token.length, 4); // blazeBlockFirstArg
+                } else {
+                  // Subsequent arguments get blazeBlockArgs
+                  tokensBuilder.push(startPos.line, tokenStart, token.length, 5); // blazeBlockArgs
+                }
+
+                currentOffset = tokenPosition + token.length;
+              });
+            }
+          }
         }
         tokensBuilder.push(startPos.line, startPos.character + length - 2, 2, 0); // delimiter
       }
