@@ -3,8 +3,8 @@ import { describe, it } from 'node:test';
 import { TextDocument } from 'vscode-languageserver-textdocument';
 import { Position, TextDocumentPositionParams, TextDocuments } from 'vscode-languageserver/node';
 
-import onCompletion from '/server/connection/onCompletion';
-import { CurrentConnectionConfig, LanguageServerSettings } from '/types';
+import onCompletion from '../../../server/connection/onCompletion';
+import { CurrentConnectionConfig, LanguageServerSettings } from '../../../types';
 
 /**
  * Test suite for onCompletion connection handler

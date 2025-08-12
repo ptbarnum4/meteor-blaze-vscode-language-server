@@ -1,7 +1,7 @@
 import assert from 'assert';
 import { describe, it } from 'node:test';
 
-import { trimUsageDocumentation } from '/server/helpers/trimUsageDocumentation';
+import { trimUsageDocumentation } from '../../../server/helpers/trimUsageDocumentation';
 
 /**
  * Test suite for trimUsageDocumentation helper function

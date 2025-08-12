@@ -3,8 +3,8 @@ import { describe, it } from 'node:test';
 import { TextDocument } from 'vscode-languageserver-textdocument';
 import { DefinitionParams, Position, TextDocuments } from 'vscode-languageserver/node';
 
-import onDefinition from '/server/connection/onDefinition';
-import { CurrentConnectionConfig, LanguageServerSettings } from '/types';
+import onDefinition from '../../../server/connection/onDefinition';
+import { CurrentConnectionConfig, LanguageServerSettings } from '../../../types';
 
 /**
  * Test suite for onDefinition connection handler

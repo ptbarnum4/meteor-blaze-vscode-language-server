@@ -3,8 +3,8 @@ import { describe, it } from 'node:test';
 import { TextDocument } from 'vscode-languageserver-textdocument';
 import { DidChangeConfigurationParams, TextDocuments } from 'vscode-languageserver/node';
 
-import onDidChangeConfiguration from '/server/connection/onDidChangeConfiguration';
-import { CurrentConnectionConfig, LanguageServerSettings } from '/types';
+import onDidChangeConfiguration from '../../../server/connection/onDidChangeConfiguration';
+import { CurrentConnectionConfig, LanguageServerSettings } from '../../../types';
 
 /**
  * Test suite for onDidChangeConfiguration connection handler

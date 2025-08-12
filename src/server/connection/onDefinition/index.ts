@@ -2,11 +2,11 @@ import path from 'path';
 
 import { DefinitionParams, Location } from 'vscode-languageserver/node';
 
-import { containsMeteorTemplates } from '/server/helpers/containsMeteorTemplates';
-import { findEnclosingEachInContext } from '/server/helpers/findEnclosingEachInContext';
-import { getWordRangeAtPosition } from '/server/helpers/getWordRangeAtPosition';
-import { isWithinHandlebarsExpression } from '/server/helpers/isWithinHandlebarsExpression';
-import { CurrentConnectionConfig } from '/types';
+import { containsMeteorTemplates } from '../../helpers/containsMeteorTemplates';
+import { findEnclosingEachInContext } from '../../helpers/findEnclosingEachInContext';
+import { getWordRangeAtPosition } from '../../helpers/getWordRangeAtPosition';
+import { isWithinHandlebarsExpression } from '../../helpers/isWithinHandlebarsExpression';
+import { CurrentConnectionConfig } from '../../../types';
 
 const onDefinition = (config: CurrentConnectionConfig) => {
   const { connection, documents } = config;

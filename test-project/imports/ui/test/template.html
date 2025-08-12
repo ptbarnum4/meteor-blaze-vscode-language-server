@@ -11,25 +11,26 @@
       {{data2}}
       {{data3}}
 
+      {{#if data1}}{{data1}}{{/if}}
       {{#if condition}}
-        <p>Condition is true</p>
+      <p>Condition is true</p>
       {{else}}
-        <p>Condition is false</p>
+      <p>Condition is false</p>
       {{/if}}
-
+      {{#mrkdwn }}
       <!-- Test case: Missing closing tag - should show error -->
       {{#unless disabled}}
-        <p>Not disabled content</p>
+      <p>Not disabled content</p>
       <!-- Missing {{/unless}} tag should trigger lint error -->
 
       <!-- Test case: Another missing closing tag -->
       {{#with userData}}
-        <p>User: {{name}}</p>
+      <p>User: {{name}}</p>
       <!-- Missing {{/with}} tag should trigger lint error -->
 
       <!-- Test case: Mismatched closing tag -->
       {{#if showData}}
-        <p>Showing data</p>
+      <p>Showing data</p>
       {{/unless}}
       <!-- Should show error: wrong closing tag type -->
 

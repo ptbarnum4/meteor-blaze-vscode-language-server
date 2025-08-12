@@ -2,7 +2,7 @@ import assert from 'assert';
 import { describe, it } from 'node:test';
 import { TextDocument } from 'vscode-languageserver-textdocument';
 
-import { containsMeteorTemplates } from '/server/helpers/containsMeteorTemplates';
+import { containsMeteorTemplates } from '../../../server/helpers/containsMeteorTemplates';
 
 /**
  * Test suite for containsMeteorTemplates helper function

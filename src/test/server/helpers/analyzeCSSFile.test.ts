@@ -4,7 +4,7 @@ import { describe, it } from 'node:test';
 import os from 'os';
 import path from 'path';
 
-import { analyzeCSSFile } from '/server/helpers/analyzeCSSFile';
+import { analyzeCSSFile } from '../../../server/helpers/analyzeCSSFile';
 
 /**
  * Helper function to create a temporary test file

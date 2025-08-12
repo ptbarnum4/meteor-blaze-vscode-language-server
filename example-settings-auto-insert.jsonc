@@ -1,0 +1,26 @@
+{
+  "meteorLanguageServer.blockConditions": {
+    "enabled": true,
+    "autoInsertEndTags": true,
+    "extend": [
+      {
+        "type": "customBlock",
+        "label": "Custom Block",
+        "requiresEndTag": true,
+        "autoInsertEndTag": true
+      },
+      {
+        "type": "myHelper",
+        "label": "My Helper Block",
+        "requiresEndTag": true,
+        "autoInsertEndTag": false
+      },
+      {
+        "type": "layout",
+        "label": "Layout Block",
+        "requiresEndTag": false,
+        "autoInsertEndTag": true
+      }
+    ]
+  }
+}

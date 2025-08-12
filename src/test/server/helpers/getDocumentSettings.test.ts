@@ -3,8 +3,8 @@ import { describe, it } from 'node:test';
 import { TextDocument } from 'vscode-languageserver-textdocument';
 import { TextDocuments } from 'vscode-languageserver/node';
 
-import getDocumentSettings from '/server/helpers/getDocumentSettings';
-import { CurrentConnectionConfig, LanguageServerSettings } from '/types';
+import getDocumentSettings from '../../../server/helpers/getDocumentSettings';
+import { CurrentConnectionConfig, LanguageServerSettings } from '../../../types';
 
 /**
  * Test suite for getDocumentSettings helper function

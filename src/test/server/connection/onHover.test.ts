@@ -3,8 +3,8 @@ import { describe, it } from 'node:test';
 import { TextDocument } from 'vscode-languageserver-textdocument';
 import { Position, TextDocumentPositionParams, TextDocuments } from 'vscode-languageserver/node';
 
-import onHover from '/server/connection/onHover';
-import { CurrentConnectionConfig, LanguageServerSettings } from '/types';
+import onHover from '../../../server/connection/onHover';
+import { CurrentConnectionConfig, LanguageServerSettings } from '../../../types';
 
 /**
  * Test suite for onHover connection handler

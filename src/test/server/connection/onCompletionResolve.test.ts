@@ -3,8 +3,8 @@ import { describe, it } from 'node:test';
 import { TextDocument } from 'vscode-languageserver-textdocument';
 import { CompletionItem, CompletionItemKind, TextDocuments } from 'vscode-languageserver/node';
 
-import onCompletionResolve from '/server/connection/onCompletionResolve';
-import { CurrentConnectionConfig, LanguageServerSettings } from '/types';
+import onCompletionResolve from '../../../server/connection/onCompletionResolve';
+import { CurrentConnectionConfig, LanguageServerSettings } from '../../../types';
 
 /**
  * Test suite for onCompletionResolve connection handler

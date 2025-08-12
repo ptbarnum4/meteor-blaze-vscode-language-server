@@ -4,7 +4,7 @@ import { describe, it } from 'node:test';
 import os from 'os';
 import path from 'path';
 
-import { analyzeJavaScriptFile } from '/server/helpers/analyzeJavaScriptFile';
+import { analyzeJavaScriptFile } from '../../../server/helpers/analyzeJavaScriptFile';
 
 /**
  * Helper function to create a temporary test file

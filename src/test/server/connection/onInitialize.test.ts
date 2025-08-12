@@ -3,8 +3,8 @@ import { describe, it } from 'node:test';
 import { TextDocument } from 'vscode-languageserver-textdocument';
 import { InitializeParams, TextDocuments, TextDocumentSyncKind } from 'vscode-languageserver/node';
 
-import onInitialize from '/server/connection/onInitialize';
-import { CurrentConnectionConfig, LanguageServerSettings } from '/types';
+import onInitialize from '../../../server/connection/onInitialize';
+import { CurrentConnectionConfig, LanguageServerSettings } from '../../../types';
 
 /**
  * Test suite for onInitialize connection handler
@@ -70,7 +70,8 @@ describe('connection/onInitialize', () => {
       '"',
       "'",
       '.',
-      ' '
+      ' ',
+      '}'
     ]);
     assert.strictEqual(result.capabilities.hoverProvider, true);
     assert.strictEqual(result.capabilities.definitionProvider, true);

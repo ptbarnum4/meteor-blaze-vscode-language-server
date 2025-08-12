@@ -3,8 +3,8 @@ import { describe, it } from 'node:test';
 import { TextDocument } from 'vscode-languageserver-textdocument';
 import { InitializedParams, TextDocuments } from 'vscode-languageserver/node';
 
-import onInitialized from '/server/connection/onInitialized';
-import { CurrentConnectionConfig, LanguageServerSettings } from '/types';
+import onInitialized from '../../../server/connection/onInitialized';
+import { CurrentConnectionConfig, LanguageServerSettings } from '../../../types';
 
 /**
  * Test suite for onInitialized connection handler

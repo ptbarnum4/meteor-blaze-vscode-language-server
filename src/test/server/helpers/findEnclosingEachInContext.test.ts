@@ -1,7 +1,7 @@
 import assert from 'assert';
 import { describe, it } from 'node:test';
 
-import { findEnclosingEachInContext } from '/server/helpers/findEnclosingEachInContext';
+import { findEnclosingEachInContext } from '../../../server/helpers/findEnclosingEachInContext';
 
 describe('findEnclosingEachInContext', () => {
   it('should detect each-in context from template.html example', () => {

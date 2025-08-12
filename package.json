@@ -141,6 +141,11 @@
               "default": true,
               "description": "Enable inline condition hints for Blaze block helpers ({{/if}}, {{/each}}, etc.)"
             },
+            "autoInsertEndTags": {
+              "type": "boolean",
+              "default": true,
+              "description": "Automatically insert closing tags when typing opening Blaze block tags ({{#if}}, {{#each}}, etc.)"
+            },
             "color": {
               "type": "string",
               "default": "editorCodeLens.foreground",
@@ -185,6 +190,11 @@
                     "type": "boolean",
                     "default": false,
                     "description": "Whether this block type requires an end tag for validation. Set to true to validate missing end tags."
+                  },
+                  "autoInsertEndTag": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Whether to automatically insert end tags for this custom block type when typing the opening tag."
                   }
                 },
                 "required": [

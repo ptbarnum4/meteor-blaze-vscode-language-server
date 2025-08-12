@@ -1,10 +1,10 @@
 import { TextDocument } from 'vscode-languageserver-textdocument';
 import { TextDocumentChangeEvent } from 'vscode-languageserver/node';
 
-import { analyzeNeighboringFiles } from '/server/helpers/analyzeNeighboringFiles';
-import { containsMeteorTemplates } from '/server/helpers/containsMeteorTemplates';
-import { validateTextDocument } from '/server/helpers/validateTextDocument';
-import { CurrentConnectionConfig } from '/types';
+import { analyzeNeighboringFiles } from '../helpers/analyzeNeighboringFiles';
+import { containsMeteorTemplates } from '../helpers/containsMeteorTemplates';
+import { validateTextDocument } from '../helpers/validateTextDocument';
+import { CurrentConnectionConfig } from '../../types';
 
 const onDidChangeContent = (config: CurrentConnectionConfig) => {
   return (change: TextDocumentChangeEvent<TextDocument>) => {

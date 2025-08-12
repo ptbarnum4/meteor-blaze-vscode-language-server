@@ -1,17 +1,18 @@
 import path from 'path';
 
 import {
-    CompletionItem,
-    CompletionItemKind,
-    MarkupKind,
-    TextDocumentPositionParams
+  CompletionItem,
+  CompletionItemKind,
+  MarkupKind,
+  TextDocumentPositionParams
 } from 'vscode-languageserver/node';
 
-import { containsMeteorTemplates } from '/server/helpers/containsMeteorTemplates';
-import { findEnclosingEachInContext } from '/server/helpers/findEnclosingEachInContext';
-import { findEnclosingIfOrUnlessBlock } from '/server/helpers/findEnclosingIfOrUnlessBlock';
-import { isWithinHandlebarsExpression } from '/server/helpers/isWithinHandlebarsExpression';
-import { CurrentConnectionConfig } from '/types';
+import { CurrentConnectionConfig } from '../../types';
+import { createBlockCompletions, shouldProvideBlockCompletion } from '../helpers/autoInsertEndTags';
+import { containsMeteorTemplates } from '../helpers/containsMeteorTemplates';
+import { findEnclosingEachInContext } from '../helpers/findEnclosingEachInContext';
+import { findEnclosingIfOrUnlessBlock } from '../helpers/findEnclosingIfOrUnlessBlock';
+import { isWithinHandlebarsExpression } from '../helpers/isWithinHandlebarsExpression';
 
 const onCompletion = (config: CurrentConnectionConfig) => {
   const { connection, documents } = config;
@@ -48,6 +49,27 @@ const onCompletion = (config: CurrentConnectionConfig) => {
     );
 
     const completions: CompletionItem[] = [];
+
+    // Check if we should provide block completions (for {{#block}} patterns)
+    const blockCompletion = shouldProvideBlockCompletion(text, offset);
+    if (blockCompletion.shouldProvide) {
+      connection.console.log(`Providing block completions for trigger: ${blockCompletion.trigger}`);
+      const blockCompletions = await createBlockCompletions(config, blockCompletion.trigger);
+
+      // For auto-triggered completions (when typing }}), return immediately
+      if (blockCompletion.trigger.startsWith('complete-')) {
+        connection.console.log(`Auto-triggering completion for: ${blockCompletion.trigger}`);
+        return blockCompletions;
+      }
+
+      completions.push(...blockCompletions);
+
+      // If we have an exact block match (space-triggered), return focused results
+      if (blockCompletion.trigger !== '#' && blockCompletions.length > 0) {
+        connection.console.log(`Returning focused block completion for: ${blockCompletion.trigger}`);
+        return blockCompletions.filter((comp: CompletionItem) => comp.preselect === true);
+      }
+    }
 
     // Get base file name for cross-file analysis
     const filePath = document.uri.replace('file://', '');
