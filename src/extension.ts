@@ -1,10 +1,10 @@
 import path from 'path';
 import vscode from 'vscode';
 import {
-    LanguageClient,
-    LanguageClientOptions,
-    ServerOptions,
-    TransportKind
+  LanguageClient,
+  LanguageClientOptions,
+  ServerOptions,
+  TransportKind
 } from 'vscode-languageclient/node';
 
 let client: LanguageClient;
@@ -438,6 +438,86 @@ function findMatchingBlockCondition(textBeforeEndBlock: string, blockType: strin
   return null;
 }
 
+function findEnclosingBlockForElse(text: string, elseOffset: number): { type: 'if' | 'unless'; condition: string } | null {
+  // Find all #if, #unless, {{else}}, /if, /unless blocks before the else position
+  type Block =
+    | { type: 'open'; blockType: 'if' | 'unless'; condition: string; position: number; length: number }
+    | { type: 'close'; blockType: 'if' | 'unless'; position: number; length: number }
+    | { type: 'else'; position: number; length: number };
+
+  const allBlocks: Block[] = [];
+
+  // Match all relevant block patterns
+  const patterns = [
+    { regex: /\{\{\s*#(if|unless)\s+([^}]+)\s*\}\}/g, isOpening: true },
+    { regex: /\{\{\s*\/(if|unless)\s*\}\}/g, isOpening: false },
+    { regex: /\{\{\s*else\s*\}\}/g, isElse: true }
+  ];
+
+  patterns.forEach(pattern => {
+    let match;
+    while ((match = pattern.regex.exec(text)) !== null) {
+      if (match.index >= elseOffset) {
+        break; // Only consider blocks before our else
+      }
+
+      if (pattern.isElse) {
+        allBlocks.push({
+          type: 'else',
+          position: match.index,
+          length: match[0].length
+        });
+      } else if (pattern.isOpening) {
+        allBlocks.push({
+          type: 'open',
+          blockType: match[1] as 'if' | 'unless',
+          condition: match[2].trim(),
+          position: match.index,
+          length: match[0].length
+        });
+      } else {
+        allBlocks.push({
+          type: 'close',
+          blockType: match[1] as 'if' | 'unless',
+          position: match.index,
+          length: match[0].length
+        });
+      }
+    }
+  });
+
+  // Sort by position
+  allBlocks.sort((a, b) => a.position - b.position);
+
+  // Track the stack of open blocks
+  const stack: Array<{ blockType: 'if' | 'unless'; condition: string }> = [];
+  let elseCount = 0;
+
+  for (const block of allBlocks) {
+    if (block.type === 'open') {
+      stack.push({ blockType: block.blockType, condition: block.condition });
+    } else if (block.type === 'close') {
+      if (stack.length > 0 && stack[stack.length - 1].blockType === block.blockType) {
+        stack.pop();
+      }
+    } else if (block.type === 'else') {
+      elseCount++;
+    }
+  }
+
+  // The else we're looking for should be the (elseCount + 1)th else
+  // Return the condition from the top of the stack (innermost open block)
+  if (stack.length > 0) {
+    const enclosingBlock = stack[stack.length - 1];
+    return {
+      type: enclosingBlock.blockType,
+      condition: enclosingBlock.condition
+    };
+  }
+
+  return null;
+}
+
 function updateBlockConditionDecorations(document: vscode.TextDocument) {
   const editor = vscode.window.activeTextEditor;
   if (!editor || editor.document !== document) {
@@ -527,10 +607,36 @@ function updateBlockConditionDecorations(document: vscode.TextDocument) {
           range: new vscode.Range(endPos, endPos),
           renderOptions: {
             after: {
-              contentText: `// ${label}${propText} => ${condition}`
+              contentText: `// END ${label}${propText} ${condition}`
             }
           }
         });
+      }
+    }
+
+    // Find all {{else}} patterns within if/unless blocks and add condition hints
+    if (type === 'if' || type === 'unless') {
+      const elseRegex = /\{\{\s*else\s*\}\}/g;
+      let elseMatch;
+
+      while ((elseMatch = elseRegex.exec(text)) !== null) {
+        // Use the new function to find the enclosing block
+        const enclosingBlock = findEnclosingBlockForElse(text, elseMatch.index);
+
+        if (enclosingBlock && enclosingBlock.type === type) {
+          // Determine the prefix based on block type
+          const prefix = type === 'unless' ? 'IS' : 'NOT';
+          const elsePos = document.positionAt(elseMatch.index + elseMatch[0].length);
+
+          decorations.push({
+            range: new vscode.Range(elsePos, elsePos),
+            renderOptions: {
+              after: {
+                contentText: `// ${prefix} ${enclosingBlock.condition}`
+              }
+            }
+          });
+        }
       }
     }
   });
