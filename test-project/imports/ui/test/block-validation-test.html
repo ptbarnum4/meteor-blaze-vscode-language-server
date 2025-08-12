@@ -1,0 +1,30 @@
+<template name="blockValidationTest">
+  <!-- Test case 1: #let block should NOT show validation error (excluded by default) -->
+  {{#let item=getCurrentItem}}
+    <p>{{item.name}}</p>
+  <!-- Missing {{/let}} but should not trigger error -->
+
+  <!-- Test case 2: #if block SHOULD show validation error -->
+  {{#if showItem}}
+    <p>This is shown conditionally</p>
+  <!-- Missing {{/if}} should trigger error -->
+
+  <!-- Test case 3: #unless block SHOULD show validation error -->
+  {{#unless hideContent}}
+    <div>Content is visible</div>
+  <!-- Missing {{/unless}} should trigger error -->
+
+  <!-- Test case 4: #each block SHOULD show validation error -->
+  {{#each items}}
+    <li>{{this.name}}</li>
+  <!-- Missing {{/each}} should trigger error -->
+
+  <!-- Test case 5: Correct blocks should NOT show errors -->
+  {{#if user.isLoggedIn}}
+    <p>Welcome {{user.name}}!</p>
+  {{/if}}
+
+  {{#let currentUser=getUser}}
+    <span>{{currentUser.email}}</span>
+  {{/let}}
+</template>

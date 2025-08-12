@@ -180,6 +180,11 @@
                       "type": "string"
                     },
                     "description": "Optional array of prop names for the block type."
+                  },
+                  "requiresEndTag": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Whether this block type requires an end tag for validation. Set to true to validate missing end tags."
                   }
                 },
                 "required": [

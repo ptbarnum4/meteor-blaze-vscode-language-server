@@ -24,7 +24,8 @@
       {
         "type": "mrkdwn",
         "label": "Custom Markdown Block",
-        "propNames": ["text", "markdown", "content"]
+        "propNames": ["text", "markdown", "content"],
+        "requiresEndTag": true
       }
     ]
     // "margin": "0 0 0 1.5em",

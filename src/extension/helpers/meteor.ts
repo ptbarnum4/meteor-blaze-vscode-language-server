@@ -15,7 +15,7 @@ export const isMeteorProject = (): boolean => {
   // Check each workspace folder for a .meteor directory (recursively up 5 levels)
   for (const folder of workspaceFolders) {
     let currentPath = folder.uri.fsPath;
-    
+
     // Check current directory and up to 5 parent directories
     for (let level = 0; level <= 5; level++) {
       const meteorPath = path.join(currentPath, '.meteor');
@@ -27,15 +27,15 @@ export const isMeteorProject = (): boolean => {
         // Ignore errors and continue checking
         console.error(`Error checking for .meteor directory in ${currentPath}:`, error);
       }
-      
+
       // Move up one directory level
       const parentPath = path.dirname(currentPath);
-      
+
       // Stop if we've reached the root or can't go up further
       if (parentPath === currentPath) {
         break;
       }
-      
+
       currentPath = parentPath;
     }
   }
