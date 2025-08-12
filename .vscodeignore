@@ -61,7 +61,6 @@ vsc-extension-quickstart.md
 !dist/**
 !syntaxes/**
 !language-configuration.json
-!blaze-theme.json
 !README.md
 !LICENSE
 !CHANGELOG.md

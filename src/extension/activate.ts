@@ -184,8 +184,13 @@ export const createActivate = (extConfig: ExtensionConfig) => {
     }
     // Prompt user to set editor.tokenColorCustomizations for Blaze token colors
     vscode.window.showInformationMessage(
-      'For full Blaze token coloring, add editor.tokenColorCustomizations to your settings. See example-blaze-token-theme.jsonc for details.'
-    );
+      'For full Blaze token coloring, add editor.tokenColorCustomizations to your settings. See CONFIGURATION.md for details.',
+      'Open Configuration Guide'
+    ).then(selection => {
+      if (selection === 'Open Configuration Guide') {
+        vscode.env.openExternal(vscode.Uri.parse('https://github.com/ptbarnum4/meteor-blaze-vscode-language-server/blob/main/CONFIGURATION.md'));
+      }
+    });
     console.log('Meteor/Blaze HTML Language Server extension activating...');
 
     // Initialize decoration type with current settings
