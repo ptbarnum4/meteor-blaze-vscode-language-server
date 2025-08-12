@@ -1,14 +1,15 @@
 import path from 'path';
 
 import {
-  CompletionItem,
-  CompletionItemKind,
-  MarkupKind,
-  TextDocumentPositionParams
+    CompletionItem,
+    CompletionItemKind,
+    MarkupKind,
+    TextDocumentPositionParams
 } from 'vscode-languageserver/node';
 
 import { containsMeteorTemplates } from '/server/helpers/containsMeteorTemplates';
 import { findEnclosingEachInContext } from '/server/helpers/findEnclosingEachInContext';
+import { findEnclosingIfOrUnlessBlock } from '/server/helpers/findEnclosingIfOrUnlessBlock';
 import { isWithinHandlebarsExpression } from '/server/helpers/isWithinHandlebarsExpression';
 import { CurrentConnectionConfig } from '/types';
 
@@ -122,6 +123,10 @@ const onCompletion = (config: CurrentConnectionConfig) => {
       const eachContext = findEnclosingEachInContext(text, offset);
       const isInsideEachBlock = eachContext !== null;
 
+      // Check if we're inside an #if or #unless block for else helper
+      const ifUnlessContext = findEnclosingIfOrUnlessBlock(text, offset);
+      const isInsideIfOrUnlessBlock = ifUnlessContext.isInside;
+
       // Built-in blaze helpers
       let blazeHelpers = [
         { name: '#each', doc: 'Iterate over a list' },
@@ -140,6 +145,14 @@ const onCompletion = (config: CurrentConnectionConfig) => {
           { name: '@first', doc: 'True if first item in #each loop' },
           { name: '@last', doc: 'True if last item in #each loop' }
         );
+      }
+
+      // Only add else helper when inside an #if or #unless block
+      if (isInsideIfOrUnlessBlock) {
+        blazeHelpers.push({
+          name: 'else',
+          doc: `Alternative branch for #${ifUnlessContext.blockType} block`
+        });
       }
       try {
         const config = await connection.workspace.getConfiguration('meteorLanguageServer');
