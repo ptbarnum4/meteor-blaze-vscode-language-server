@@ -1,0 +1,26 @@
+<template name="sameLineTest">
+  <!-- These should NOT show auto-completion hints since end tags are on same line -->
+  {{#if condition}} content {{/if}}
+  {{#unless disabled}} content {{/unless}}
+  {{#with data}} content {{/with}}
+  {{#each items}} content {{/each}}
+
+  <!-- These SHOULD show auto-completion hints since end tags are missing -->
+  {{#if condition}}
+    content
+
+  {{#unless disabled}}
+    content
+
+  {{#with data}}
+    content
+
+  {{#each items}}
+    content
+
+  <!-- These SHOULD show auto-completion hints since end tags are on different lines -->
+  {{#if condition}} content
+
+  {{#unless disabled}} content
+
+</template>

@@ -211,20 +211,20 @@ export function shouldProvideBlockCompletion(text: string, offset: number): { sh
           // Get the line number of the opening block
           const textBeforeBlock = text.substring(0, offset);
           const openingBlockLine = textBeforeBlock.split('\n').length - 1;
-          
+
           // Find the position of the closing tag
           const closingTagMatch = closingTagPattern.exec(textAfterBlock);
           if (closingTagMatch) {
             const closingTagOffset = offset + closingTagMatch.index;
             const textBeforeClosingTag = text.substring(0, closingTagOffset);
             const closingBlockLine = textBeforeClosingTag.split('\n').length - 1;
-            
+
             // If opening and closing are on the same line, don't offer completion
             if (openingBlockLine === closingBlockLine) {
               return { shouldProvide: false, trigger: '' };
             }
           }
-          
+
           // Different lines or couldn't determine - don't offer completion as tag exists
           return { shouldProvide: false, trigger: '' };
         }
@@ -264,20 +264,20 @@ export function shouldProvideBlockCompletion(text: string, offset: number): { sh
           // Get the line number of the opening block
           const textBeforeBlock = text.substring(0, lastOpenBrace);
           const openingBlockLine = textBeforeBlock.split('\n').length - 1;
-          
+
           // Find the position of the closing tag
           const closingTagMatch = closingTagPattern.exec(textAfterCursor);
           if (closingTagMatch) {
             const closingTagOffset = offset + nextCloseBrace + 2 + closingTagMatch.index;
             const textBeforeClosingTag = text.substring(0, closingTagOffset);
             const closingBlockLine = textBeforeClosingTag.split('\n').length - 1;
-            
+
             // If opening and closing are on the same line, don't offer completion
             if (openingBlockLine === closingBlockLine) {
               return { shouldProvide: false, trigger: '' };
             }
           }
-          
+
           // Different lines or couldn't determine - don't offer completion as tag exists
           return { shouldProvide: false, trigger: '' };
         }
@@ -295,29 +295,29 @@ export function shouldProvideBlockCompletion(text: string, offset: number): { sh
   const blockWithSpaceMatch = beforeCursor.match(/\{\{\s*#(if|unless|with|each)\s+$/);
   if (blockWithSpaceMatch) {
     const blockType = blockWithSpaceMatch[1];
-    
+
     // Check if there's already a closing tag on the same line
     const textFromCursor = text.substring(offset);
     const closingTagPattern = new RegExp(`\\{\\{\\s*\\/${blockType}\\s*\\}\\}`, 'i');
-    
+
     if (closingTagPattern.test(textFromCursor)) {
       // Get line numbers to check if opening and closing are on same line
       const textBeforeCursor = text.substring(0, offset);
       const openingBlockLine = textBeforeCursor.split('\n').length - 1;
-      
+
       const closingTagMatch = closingTagPattern.exec(textFromCursor);
       if (closingTagMatch) {
         const closingTagOffset = offset + closingTagMatch.index;
         const textBeforeClosingTag = text.substring(0, closingTagOffset);
         const closingBlockLine = textBeforeClosingTag.split('\n').length - 1;
-        
+
         // If opening and closing are on the same line, don't offer completion
         if (openingBlockLine === closingBlockLine) {
           return { shouldProvide: false, trigger: '' };
         }
       }
     }
-    
+
     return {
       shouldProvide: true,
       trigger: blockWithSpaceMatch[1]
@@ -328,29 +328,29 @@ export function shouldProvideBlockCompletion(text: string, offset: number): { sh
   const customBlockWithSpaceMatch = beforeCursor.match(/\{\{\s*#(\w+)\s+$/);
   if (customBlockWithSpaceMatch) {
     const blockType = customBlockWithSpaceMatch[1];
-    
+
     // Check if there's already a closing tag on the same line
     const textFromCursor = text.substring(offset);
     const closingTagPattern = new RegExp(`\\{\\{\\s*\\/${blockType}\\s*\\}\\}`, 'i');
-    
+
     if (closingTagPattern.test(textFromCursor)) {
       // Get line numbers to check if opening and closing are on same line
       const textBeforeCursor = text.substring(0, offset);
       const openingBlockLine = textBeforeCursor.split('\n').length - 1;
-      
+
       const closingTagMatch = closingTagPattern.exec(textFromCursor);
       if (closingTagMatch) {
         const closingTagOffset = offset + closingTagMatch.index;
         const textBeforeClosingTag = text.substring(0, closingTagOffset);
         const closingBlockLine = textBeforeClosingTag.split('\n').length - 1;
-        
+
         // If opening and closing are on the same line, don't offer completion
         if (openingBlockLine === closingBlockLine) {
           return { shouldProvide: false, trigger: '' };
         }
       }
     }
-    
+
     return {
       shouldProvide: true,
       trigger: customBlockWithSpaceMatch[1]

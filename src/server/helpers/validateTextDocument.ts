@@ -99,7 +99,7 @@ async function findUnmatchedBlazeBlocks(text: string, document: TextDocument, co
           // Check if opening and closing blocks are on the same line
           const openingLine = openBlocks[i].position.start.line;
           const closingLine = block.position.start.line;
-          
+
           if (openingLine === closingLine) {
             // Same line - these blocks are properly closed inline
             matchedIndex = i;

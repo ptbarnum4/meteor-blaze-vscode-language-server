@@ -1,0 +1,7 @@
+<template name="properlyClosedTest">
+  <!-- These should NOT show any diagnostic errors -->
+  {{#if condition}} content {{/if}}
+  {{#unless disabled}} content {{/unless}}
+  {{#with data}} content {{/with}}
+  {{#each items}} content {{/each}}
+</template>

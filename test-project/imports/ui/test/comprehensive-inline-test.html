@@ -1,0 +1,39 @@
+<template name="comprehensiveInlineTest">
+  <!-- SAME LINE BLOCKS: Should NOT show completion hints -->
+  {{#if condition}} content {{/if}}
+  {{#unless disabled}} content {{/unless}}
+  {{#with data}} {{name}} {{/with}}
+  {{#each items}} {{this}} {{/each}}
+
+  <!-- INLINE WITH EXTRA SPACES: Should NOT show completion hints -->
+  {{#if  condition  }} content {{/if}}
+  {{#unless   disabled   }} content {{/unless}}
+
+  <!-- MULTIPLE INLINE BLOCKS ON SAME LINE: Should NOT show completion hints for any -->
+  {{#if user}} Hello {{/if}} {{#unless loading}} Done {{/unless}}
+
+  <!-- NESTED BUT SAME LINE: Should NOT show completion hints -->
+  {{#if outer}} {{#if inner}} text {{/if}} {{/if}}
+
+  <!-- INCOMPLETE BLOCKS: SHOULD show completion hints -->
+  {{#if condition}}
+    content
+
+  {{#unless disabled}}
+    content
+
+  <!-- MIXED: Inline should NOT show hints, incomplete SHOULD show hints -->
+  {{#if complete}} done {{/if}}
+  {{#if incomplete}}
+    not done
+
+  <!-- CURSOR POSITION TESTS for inline blocks -->
+  <!-- Cursor at: {{#if data1|}} content {{/if}} - should NOT show hints -->
+  {{#if data1}} content {{/if}}
+
+  <!-- Cursor at: {{#if |data1}} content {{/if}} - should NOT show hints -->
+  {{#if data1}} content {{/if}}
+
+  <!-- Cursor at: {{#|if data1}} content {{/if}} - should NOT show hints -->
+  {{#if data1}} content {{/if}}
+</template>

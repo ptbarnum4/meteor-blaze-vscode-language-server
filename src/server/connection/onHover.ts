@@ -2,12 +2,12 @@ import path from 'path';
 
 import { Hover, MarkupKind, TextDocumentPositionParams } from 'vscode-languageserver/node';
 
+import { CurrentConnectionConfig } from '../../types';
 import { containsMeteorTemplates } from '../helpers/containsMeteorTemplates';
 import { findEnclosingEachInContext } from '../helpers/findEnclosingEachInContext';
 import { getWordRangeAtPosition } from '../helpers/getWordRangeAtPosition';
 import { isWithinHandlebarsExpression } from '../helpers/isWithinHandlebarsExpression';
 import { trimUsageDocumentation } from '../helpers/trimUsageDocumentation';
-import { CurrentConnectionConfig } from '../../types';
 
 const onHover = (config: CurrentConnectionConfig) => {
   const { connection, documents } = config;
