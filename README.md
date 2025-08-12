@@ -150,6 +150,8 @@ Configure the extension through VS Code settings. Use nested objects for advance
 }
 ```
 
+📖 **For complete configuration options, examples, and troubleshooting, see [CONFIGURATION.md](./CONFIGURATION.md)**
+
 ### Block Condition Settings
 - **`enabled`** (boolean, default: `true`): Enable/disable inline condition hints for Blaze block helpers
 - **`color`** (string, default: `"editorCodeLens.foreground"`): Color for hints. Use theme color names (e.g., `"editorCodeLens.foreground"`) or hex colors (e.g., `"#888888"`)
