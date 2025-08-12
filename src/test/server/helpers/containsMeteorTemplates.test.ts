@@ -74,4 +74,52 @@ describe('containsMeteorTemplates', () => {
     const result = containsMeteorTemplates(document);
     assert.strictEqual(result, true);
   });
+
+  it('should return false for TypeScript files even with template content', () => {
+    const content = `<template name="testTemplate"><div>{{helper}}</div></template>`;
+    const document = TextDocument.create('file:///src/helper.ts', 'typescript', 1, content);
+
+    const result = containsMeteorTemplates(document);
+    assert.strictEqual(result, false);
+  });
+
+  it('should return false for JavaScript files even with template content', () => {
+    const content = `<template name="testTemplate"><div>{{helper}}</div></template>`;
+    const document = TextDocument.create('file:///src/helper.js', 'javascript', 1, content);
+
+    const result = containsMeteorTemplates(document);
+    assert.strictEqual(result, false);
+  });
+
+  it('should return false for test files even with template content', () => {
+    const content = `<template name="testTemplate"><div>{{helper}}</div></template>`;
+    const document = TextDocument.create('file:///test/myTest.test.ts', 'typescript', 1, content);
+
+    const result = containsMeteorTemplates(document);
+    assert.strictEqual(result, false);
+  });
+
+  it('should return false for spec files even with template content', () => {
+    const content = `<template name="testTemplate"><div>{{helper}}</div></template>`;
+    const document = TextDocument.create('file:///test/myTest.spec.html', 'html', 1, content);
+
+    const result = containsMeteorTemplates(document);
+    assert.strictEqual(result, false);
+  });
+
+  it('should return false for JSON config files', () => {
+    const content = `{"template": "something"}`;
+    const document = TextDocument.create('file:///config.json', 'json', 1, content);
+
+    const result = containsMeteorTemplates(document);
+    assert.strictEqual(result, false);
+  });
+
+  it('should return true for .meteor files with templates', () => {
+    const content = `<template name="testTemplate"><div>{{helper}}</div></template>`;
+    const document = TextDocument.create('file:///template.meteor', 'meteor', 1, content);
+
+    const result = containsMeteorTemplates(document);
+    assert.strictEqual(result, true);
+  });
 });
