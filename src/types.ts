@@ -1,6 +1,7 @@
+import vscode from 'vscode';
+import { LanguageClient } from 'vscode-languageclient/node';
 import { TextDocument } from 'vscode-languageserver-textdocument';
 import { createConnection, TextDocuments } from 'vscode-languageserver/node';
-
 /**
  * Represents information about a Meteor template.
  */
@@ -84,4 +85,12 @@ export type CurrentConnectionConfig = {
   hasWorkspaceFolderCapability: boolean;
   /** Whether the server supports diagnostic-related information capabilities. */
   hasDiagnosticRelatedInformationCapability: boolean;
+};
+
+export type ExtensionConfig = {
+  /** The language client instance */
+  client: LanguageClient | null;
+  /** Decoration type for block-condition hints
+   * - created dynamically based on settings */
+  blockConditionDecorationType: vscode.TextEditorDecorationType | null;
 };
