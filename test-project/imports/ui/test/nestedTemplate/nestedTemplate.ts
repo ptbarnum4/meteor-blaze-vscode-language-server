@@ -9,6 +9,15 @@ type NestedTemplateProps = {
 
 type NestedTemplateData = {
   // Add template data here
+  thing1: string;
+  thing2: number;
+  thing3: boolean;
+  thing4: string[];
+  thing5: {
+    nestedThing1: string;
+    nestedThing2: number;
+    nestedThing3: boolean;
+  };
 };
 
 // Create the static typed template

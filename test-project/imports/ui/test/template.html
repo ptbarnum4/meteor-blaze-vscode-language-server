@@ -10,7 +10,6 @@
       {{data1}}
       {{data2}}
       {{data3}}
-
       {{#if data1}}{{data1}}{{/if}}
       {{#if condition}}
         <p>Condition is true</p>
@@ -22,8 +21,12 @@
         title="Nested Template Title"
         subtitle="Nested Template Subtitle"
         description="This is a description of the nested template."
+
       }}
-      {{> nestedTemplate}}
+      {{> nestedTemplate
+
+
+      }}
 
       <!-- Should show error: wrong closing tag type -->
 
