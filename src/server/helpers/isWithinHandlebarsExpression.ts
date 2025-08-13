@@ -39,7 +39,13 @@ export const isWithinHandlebarsExpression = (
   }
 
   if (start === -1) {
-    return { isWithin: false, expressionStart: -1, expressionEnd: -1, isTriple: false, isSingleBracket: false };
+    return {
+      isWithin: false,
+      expressionStart: -1,
+      expressionEnd: -1,
+      isTriple: false,
+      isSingleBracket: false
+    };
   }
 
   // For single brackets, we're more permissive - assume they want to type a handlebars expression
@@ -103,5 +109,11 @@ export const isWithinHandlebarsExpression = (
     }
   }
 
-  return { isWithin: false, expressionStart: -1, expressionEnd: -1, isTriple: false, isSingleBracket: false };
+  return {
+    isWithin: false,
+    expressionStart: -1,
+    expressionEnd: -1,
+    isTriple: false,
+    isSingleBracket: false
+  };
 };
