@@ -30,7 +30,9 @@ const onCompletion = (config: CurrentConnectionConfig) => {
 
     connection.console.log(`🔥 METEOR-COMPLETION: Document URI: ${document.uri}`);
     connection.console.log(`🔥 METEOR-COMPLETION: Document language ID: ${document.languageId}`);
-    connection.console.log(`🔥 METEOR-COMPLETION: Document contains templates: ${containsMeteorTemplates(document)}`);
+    connection.console.log(
+      `🔥 METEOR-COMPLETION: Document contains templates: ${containsMeteorTemplates(document)}`
+    );
 
     // Only provide Meteor completions if this HTML/Handlebars file contains templates
     if (!containsMeteorTemplates(document)) {
@@ -40,7 +42,7 @@ const onCompletion = (config: CurrentConnectionConfig) => {
 
     // Check if cursor is within handlebars expression
     const handlebarsInfo = isWithinHandlebarsExpression(text, offset);
-    
+
     // Check if we're in a template inclusion context ({{> templateName)
     const textBeforeCursor = text.substring(0, offset);
     const templateInclusionMatch = textBeforeCursor.match(/\{\{\s*>\s*([a-zA-Z0-9_]*)$/);
@@ -53,33 +55,55 @@ const onCompletion = (config: CurrentConnectionConfig) => {
     const isTemplateParameter = templateParameterMatch !== null && !isTemplateInclusion;
     const templateNameForParams = templateParameterMatch ? templateParameterMatch[1] : '';
 
-    connection.console.log(`🔥 METEOR-COMPLETION: Handlebars context: ${handlebarsInfo.isWithin}, Template inclusion: ${isTemplateInclusion}, Template parameter: ${isTemplateParameter}`);
-    connection.console.log(`🔥 METEOR-COMPLETION: Template inclusion detected: ${isTemplateInclusion}, partial: "${partialTemplateName}"`);
-    connection.console.log(`🔥 METEOR-COMPLETION: Template parameter context detected: ${isTemplateParameter}, template: "${templateNameForParams}"`);
-    connection.console.log(`🔥 METEOR-COMPLETION: Text before cursor (last 100 chars): "${textBeforeCursor.slice(-100)}"`);
+    connection.console.log(
+      `🔥 METEOR-COMPLETION: Handlebars context: ${handlebarsInfo.isWithin}, Template inclusion: ${isTemplateInclusion}, Template parameter: ${isTemplateParameter}`
+    );
+    connection.console.log(
+      `🔥 METEOR-COMPLETION: Template inclusion detected: ${isTemplateInclusion}, partial: "${partialTemplateName}"`
+    );
+    connection.console.log(
+      `🔥 METEOR-COMPLETION: Template parameter context detected: ${isTemplateParameter}, template: "${templateNameForParams}"`
+    );
+    connection.console.log(
+      `🔥 METEOR-COMPLETION: Text before cursor (last 100 chars): "${textBeforeCursor.slice(-100)}"`
+    );
 
     // If we're in a template inclusion context, provide template name completions
     if (isTemplateInclusion) {
       connection.console.log('🔥 METEOR-COMPLETION: Providing template inclusion completions');
-      const templateCompletions = await getTemplateNameCompletions(config, partialTemplateName, document);
+      const templateCompletions = await getTemplateNameCompletions(
+        config,
+        partialTemplateName,
+        document
+      );
       return templateCompletions;
     }
 
     // If we're in template parameter context, provide parameter completions
     if (isTemplateParameter) {
-      connection.console.log(`🔥 METEOR-COMPLETION: Providing template parameter completions for: ${templateNameForParams}`);
-      const parameterCompletions = await getTemplateParameterCompletions(config, templateNameForParams, document);
+      connection.console.log(
+        `🔥 METEOR-COMPLETION: Providing template parameter completions for: ${templateNameForParams}`
+      );
+      const parameterCompletions = await getTemplateParameterCompletions(
+        config,
+        templateNameForParams,
+        document
+      );
       return parameterCompletions;
     }
 
     // Only continue with regular completion if we're within handlebars and not in template contexts
     if (!handlebarsInfo.isWithin) {
-      connection.console.log('🔥 METEOR-COMPLETION: Cursor not within handlebars expression and not in template context');
+      connection.console.log(
+        '🔥 METEOR-COMPLETION: Cursor not within handlebars expression and not in template context'
+      );
       return [];
     }
 
     connection.console.log(
-      `🔥 METEOR-COMPLETION: Within handlebars expression: ${handlebarsInfo.isTriple ? 'triple' : 'double'} braces`
+      `🔥 METEOR-COMPLETION: Within handlebars expression: ${
+        handlebarsInfo.isTriple ? 'triple' : 'double'
+      } braces`
     );
 
     const completions: CompletionItem[] = [];
@@ -100,7 +124,9 @@ const onCompletion = (config: CurrentConnectionConfig) => {
 
       // If we have an exact block match (space-triggered), return focused results
       if (blockCompletion.trigger !== '#' && blockCompletions.length > 0) {
-        connection.console.log(`Returning focused block completion for: ${blockCompletion.trigger}`);
+        connection.console.log(
+          `Returning focused block completion for: ${blockCompletion.trigger}`
+        );
         return blockCompletions.filter((comp: CompletionItem) => comp.preselect === true);
       }
     }
@@ -321,7 +347,9 @@ async function getTemplateNameCompletions(
     const fs = await import('fs');
     const path = await import('path');
 
-    connection.console.log(`Using document: ${currentDocument.uri} (${currentDocument.languageId})`);
+    connection.console.log(
+      `Using document: ${currentDocument.uri} (${currentDocument.languageId})`
+    );
 
     const currentFilePath = currentDocument.uri.replace('file://', '');
     const currentDir = path.dirname(currentFilePath);
@@ -342,7 +370,9 @@ async function getTemplateNameCompletions(
 
     // Filter by partial match and create completions
     importedTemplates
-      .filter(templateName => templateName.toLowerCase().includes(partialTemplateName.toLowerCase()))
+      .filter(templateName =>
+        templateName.toLowerCase().includes(partialTemplateName.toLowerCase())
+      )
       .forEach(templateName => {
         completions.push({
           label: templateName,
@@ -356,7 +386,6 @@ async function getTemplateNameCompletions(
           filterText: templateName
         });
       });
-
   } catch (error) {
     connection.console.log(`Error getting template completions: ${error}`);
   }
@@ -396,7 +425,10 @@ function findAssociatedJSFile(
         try {
           const content = fs.readFileSync(fullPath, 'utf8');
           // Look for imports of template.html or similar patterns
-          const templateImportPattern = new RegExp(`import\\s+['"]\\./${baseName}(?:\\.html)?['"]`, 'g');
+          const templateImportPattern = new RegExp(
+            `import\\s+['"]\\./${baseName}(?:\\.html)?['"]`,
+            'g'
+          );
           if (templateImportPattern.test(content)) {
             return fullPath;
           }
@@ -469,7 +501,10 @@ function parseTemplateImports(filePath: string, fs: any, path: any): string[] {
               try {
                 const templateHtml = fs.readFileSync(templateHtmlPath, 'utf8');
                 // Check if the template.html actually defines this template
-                const templateDefPattern = new RegExp(`<template\\s+name=["']${templateName}["']`, 'i');
+                const templateDefPattern = new RegExp(
+                  `<template\\s+name=["']${templateName}["']`,
+                  'i'
+                );
                 if (templateDefPattern.test(templateHtml)) {
                   templates.push(templateName);
                 }
@@ -523,7 +558,9 @@ async function getTemplateParameterCompletions(
     const fs = await import('fs');
     const path = await import('path');
 
-    connection.console.log(`🚀 TEMPLATE-PARAMS: Getting parameter completions for template: ${templateName}`);
+    connection.console.log(
+      `🚀 TEMPLATE-PARAMS: Getting parameter completions for template: ${templateName}`
+    );
 
     const currentFilePath = currentDocument.uri.replace('file://', '');
     const currentDir = path.dirname(currentFilePath);
@@ -532,7 +569,9 @@ async function getTemplateParameterCompletions(
     // Find associated JS/TS file
     const associatedFile = findAssociatedJSFile(currentDir, currentBaseName, fs, path);
     if (!associatedFile) {
-      connection.console.log('🚀 TEMPLATE-PARAMS: No associated JS/TS file found for parameter completion');
+      connection.console.log(
+        '🚀 TEMPLATE-PARAMS: No associated JS/TS file found for parameter completion'
+      );
       return completions;
     }
 
@@ -540,15 +579,23 @@ async function getTemplateParameterCompletions(
 
     // Parse imports from the associated file to find the template
     const importedTemplates = parseTemplateImports(associatedFile, fs, path);
-    connection.console.log(`🚀 TEMPLATE-PARAMS: Found imported templates: ${importedTemplates.join(', ')}`);
-    
+    connection.console.log(
+      `🚀 TEMPLATE-PARAMS: Found imported templates: ${importedTemplates.join(', ')}`
+    );
+
     if (!importedTemplates.includes(templateName)) {
       connection.console.log(`🚀 TEMPLATE-PARAMS: Template ${templateName} not found in imports`);
       return completions;
     }
 
     // Find the template file to analyze its data usage
-    const templateFile = findImportedTemplateFile(associatedFile, templateName, fs, path, connection);
+    const templateFile = findImportedTemplateFile(
+      associatedFile,
+      templateName,
+      fs,
+      path,
+      connection
+    );
     if (!templateFile) {
       connection.console.log(`🚀 TEMPLATE-PARAMS: Template file not found for ${templateName}`);
       return completions;
@@ -560,25 +607,43 @@ async function getTemplateParameterCompletions(
     const templateContent = fs.readFileSync(templateFile, 'utf8');
     const templateDataProperties = extractDataPropertiesFromTemplate(templateContent, templateName);
 
-    connection.console.log(`🚀 TEMPLATE-PARAMS: Found template data properties: ${templateDataProperties.join(', ')}`);
+    connection.console.log(
+      `🚀 TEMPLATE-PARAMS: Found template data properties: ${templateDataProperties.join(', ')}`
+    );
 
     // Also analyze the associated TypeScript file for type definitions
     // We need to find the actual template's TypeScript file, not the importing file
-    const templateTsFile = findTemplateTypeScriptFile(associatedFile, templateName, fs, path, connection);
+    const templateTsFile = findTemplateTypeScriptFile(
+      associatedFile,
+      templateName,
+      fs,
+      path,
+      connection
+    );
     let typeDataProperties: string[] = [];
-    
+
     if (templateTsFile) {
-      connection.console.log(`🚀 TEMPLATE-PARAMS: Found template TypeScript file: ${templateTsFile}`);
+      connection.console.log(
+        `🚀 TEMPLATE-PARAMS: Found template TypeScript file: ${templateTsFile}`
+      );
       typeDataProperties = extractDataPropertiesFromTypes(templateTsFile, templateName, fs);
     } else {
-      connection.console.log(`🚀 TEMPLATE-PARAMS: No template TypeScript file found for ${templateName}`);
+      connection.console.log(
+        `🚀 TEMPLATE-PARAMS: No template TypeScript file found for ${templateName}`
+      );
     }
-    
-    connection.console.log(`🚀 TEMPLATE-PARAMS: Found type data properties: ${typeDataProperties.join(', ')}`);
+
+    connection.console.log(
+      `🚀 TEMPLATE-PARAMS: Found type data properties: ${typeDataProperties.join(', ')}`
+    );
 
     // Combine both sources of data properties
-    const allDataProperties = [...new Set([...templateDataProperties, ...typeDataProperties])].sort();
-    connection.console.log(`🚀 TEMPLATE-PARAMS: Combined data properties: ${allDataProperties.join(', ')}`);
+    const allDataProperties = [
+      ...new Set([...templateDataProperties, ...typeDataProperties])
+    ].sort();
+    connection.console.log(
+      `🚀 TEMPLATE-PARAMS: Combined data properties: ${allDataProperties.join(', ')}`
+    );
 
     // Create completions for each data property
     allDataProperties.forEach(property => {
@@ -597,11 +662,16 @@ async function getTemplateParameterCompletions(
       connection.console.log(`🚀 TEMPLATE-PARAMS: Created completion for: ${property}`);
     });
 
-    connection.console.log(`🚀 TEMPLATE-PARAMS: Created ${completions.length} parameter completions`);
-    connection.console.log(`🚀 TEMPLATE-PARAMS: Completion labels: ${completions.map(c => c.label).join(', ')}`);
-
+    connection.console.log(
+      `🚀 TEMPLATE-PARAMS: Created ${completions.length} parameter completions`
+    );
+    connection.console.log(
+      `🚀 TEMPLATE-PARAMS: Completion labels: ${completions.map(c => c.label).join(', ')}`
+    );
   } catch (error) {
-    connection.console.log(`🚀 TEMPLATE-PARAMS: Error getting template parameter completions: ${error}`);
+    connection.console.log(
+      `🚀 TEMPLATE-PARAMS: Error getting template parameter completions: ${error}`
+    );
   }
 
   connection.console.log(`🚀 TEMPLATE-PARAMS: Returning ${completions.length} completions`);
@@ -620,15 +690,19 @@ function findImportedTemplateFile(
     const jsFileContent = fs.readFileSync(jsFilePath, 'utf8');
     const dir = path.dirname(jsFilePath);
 
-    connection.console.log(`🔍 FIND-TEMPLATE: Looking for template "${templateName}" from JS file: ${jsFilePath}`);
+    connection.console.log(
+      `🔍 FIND-TEMPLATE: Looking for template "${templateName}" from JS file: ${jsFilePath}`
+    );
     connection.console.log(`🔍 FIND-TEMPLATE: JS file directory: ${dir}`);
 
     // Parse import statements to find where this template comes from
-    const importLines = jsFileContent.split('\n').filter((line: string) => 
-      line.trim().startsWith('import') && line.includes(templateName)
-    );
+    const importLines = jsFileContent
+      .split('\n')
+      .filter((line: string) => line.trim().startsWith('import') && line.includes(templateName));
 
-    connection.console.log(`🔍 FIND-TEMPLATE: Found ${importLines.length} import lines containing "${templateName}"`);
+    connection.console.log(
+      `🔍 FIND-TEMPLATE: Found ${importLines.length} import lines containing "${templateName}"`
+    );
     importLines.forEach((line: string, index: number) => {
       connection.console.log(`🔍 FIND-TEMPLATE: Import ${index + 1}: ${line.trim()}`);
     });
@@ -636,13 +710,14 @@ function findImportedTemplateFile(
     for (const importLine of importLines) {
       // Extract import path from import statement
       // Handle both: import './path' and import something from './path'
-      const importMatch = importLine.match(/from\s+['"]([^'"]+)['"]/) || 
-                         importLine.match(/import\s+['"]([^'"]+)['"]/);
-      
+      const importMatch =
+        importLine.match(/from\s+['"]([^'"]+)['"]/) ||
+        importLine.match(/import\s+['"]([^'"]+)['"]/);
+
       if (importMatch) {
         const importPath = importMatch[1];
         connection.console.log(`🔍 FIND-TEMPLATE: Extracted import path: ${importPath}`);
-        
+
         let fullImportPath: string;
 
         if (importPath.startsWith('./') || importPath.startsWith('../')) {
@@ -657,12 +732,16 @@ function findImportedTemplateFile(
         // Extract the directory part of the import path
         const importDir = path.dirname(importPath);
         const importDirResolved = path.resolve(dir, importDir);
-        connection.console.log(`🔍 FIND-TEMPLATE: Import directory resolved to: ${importDirResolved}`);
+        connection.console.log(
+          `🔍 FIND-TEMPLATE: Import directory resolved to: ${importDirResolved}`
+        );
 
         // Look for template.html in the import directory (not the full import path)
         const templateHtmlPath = path.join(importDirResolved, 'template.html');
-        connection.console.log(`🔍 FIND-TEMPLATE: Checking for template.html at: ${templateHtmlPath}`);
-        
+        connection.console.log(
+          `🔍 FIND-TEMPLATE: Checking for template.html at: ${templateHtmlPath}`
+        );
+
         if (fs.existsSync(templateHtmlPath)) {
           connection.console.log(`🔍 FIND-TEMPLATE: Found template.html!`);
           return templateHtmlPath;
@@ -672,8 +751,10 @@ function findImportedTemplateFile(
 
         // Also check in the full import path directory (original logic)
         const templateHtmlPathFull = path.join(fullImportPath, 'template.html');
-        connection.console.log(`🔍 FIND-TEMPLATE: Checking for template.html at full path: ${templateHtmlPathFull}`);
-        
+        connection.console.log(
+          `🔍 FIND-TEMPLATE: Checking for template.html at full path: ${templateHtmlPathFull}`
+        );
+
         if (fs.existsSync(templateHtmlPathFull)) {
           connection.console.log(`🔍 FIND-TEMPLATE: Found template.html at full path!`);
           return templateHtmlPathFull;
@@ -683,8 +764,10 @@ function findImportedTemplateFile(
 
         // Also try templateName.html
         const templateNamePath = path.join(path.dirname(fullImportPath), `${templateName}.html`);
-        connection.console.log(`🔍 FIND-TEMPLATE: Checking for ${templateName}.html at: ${templateNamePath}`);
-        
+        connection.console.log(
+          `🔍 FIND-TEMPLATE: Checking for ${templateName}.html at: ${templateNamePath}`
+        );
+
         if (fs.existsSync(templateNamePath)) {
           connection.console.log(`🔍 FIND-TEMPLATE: Found ${templateName}.html!`);
           return templateNamePath;
@@ -692,7 +775,9 @@ function findImportedTemplateFile(
           connection.console.log(`🔍 FIND-TEMPLATE: ${templateName}.html not found at this path`);
         }
       } else {
-        connection.console.log(`🔍 FIND-TEMPLATE: Could not extract import path from: ${importLine}`);
+        connection.console.log(
+          `🔍 FIND-TEMPLATE: Could not extract import path from: ${importLine}`
+        );
       }
     }
 
@@ -716,22 +801,25 @@ function findTemplateTypeScriptFile(
     const jsFileContent = fs.readFileSync(jsFilePath, 'utf8');
     const dir = path.dirname(jsFilePath);
 
-    connection.console.log(`🔍 FIND-TS: Looking for TypeScript file for template "${templateName}" from JS file: ${jsFilePath}`);
+    connection.console.log(
+      `🔍 FIND-TS: Looking for TypeScript file for template "${templateName}" from JS file: ${jsFilePath}`
+    );
 
     // Parse import statements to find where this template comes from
-    const importLines = jsFileContent.split('\n').filter((line: string) => 
-      line.trim().startsWith('import') && line.includes(templateName)
-    );
+    const importLines = jsFileContent
+      .split('\n')
+      .filter((line: string) => line.trim().startsWith('import') && line.includes(templateName));
 
     for (const importLine of importLines) {
       // Extract import path from import statement
-      const importMatch = importLine.match(/from\s+['"]([^'"]+)['"]/) || 
-                         importLine.match(/import\s+['"]([^'"]+)['"]/);
-      
+      const importMatch =
+        importLine.match(/from\s+['"]([^'"]+)['"]/) ||
+        importLine.match(/import\s+['"]([^'"]+)['"]/);
+
       if (importMatch) {
         const importPath = importMatch[1];
         connection.console.log(`🔍 FIND-TS: Extracted import path: ${importPath}`);
-        
+
         let fullImportPath: string;
 
         if (importPath.startsWith('./') || importPath.startsWith('../')) {
@@ -745,7 +833,7 @@ function findTemplateTypeScriptFile(
         // For imports like './nestedTemplate/nestedTemplate', look for the .ts file
         const templateTsPath = `${fullImportPath}.ts`;
         connection.console.log(`🔍 FIND-TS: Checking for TypeScript file at: ${templateTsPath}`);
-        
+
         if (fs.existsSync(templateTsPath)) {
           connection.console.log(`🔍 FIND-TS: Found TypeScript file!`);
           return templateTsPath;
@@ -757,8 +845,10 @@ function findTemplateTypeScriptFile(
         const importDir = path.dirname(importPath);
         const importDirResolved = path.resolve(dir, importDir);
         const templateTsInDir = path.join(importDirResolved, `${templateName}.ts`);
-        connection.console.log(`🔍 FIND-TS: Checking for TypeScript file in directory: ${templateTsInDir}`);
-        
+        connection.console.log(
+          `🔍 FIND-TS: Checking for TypeScript file in directory: ${templateTsInDir}`
+        );
+
         if (fs.existsSync(templateTsInDir)) {
           connection.console.log(`🔍 FIND-TS: Found TypeScript file in directory!`);
           return templateTsInDir;
@@ -777,7 +867,10 @@ function findTemplateTypeScriptFile(
 }
 
 // Helper function to extract data properties from template content
-function extractDataPropertiesFromTemplate(templateContent: string, templateName: string): string[] {
+function extractDataPropertiesFromTemplate(
+  templateContent: string,
+  templateName: string
+): string[] {
   const properties = new Set<string>();
 
   // Find the specific template block
@@ -786,7 +879,7 @@ function extractDataPropertiesFromTemplate(templateContent: string, templateName
     'i'
   );
   const templateMatch = templateContent.match(templatePattern);
-  
+
   if (!templateMatch) {
     console.log(`🔎 EXTRACT-PROPS: No template block found for "${templateName}"`);
     return [];
@@ -807,14 +900,23 @@ function extractDataPropertiesFromTemplate(templateContent: string, templateName
 
   matches.forEach(match => {
     // Clean up the match - remove {{ }} and any # or / prefixes
-    const content = match.replace(/^\{\{[#/]?/, '').replace(/\}\}$/, '').trim();
+    const content = match
+      .replace(/^\{\{[#/]?/, '')
+      .replace(/\}\}$/, '')
+      .trim();
     console.log(`🔎 EXTRACT-PROPS: Processing content: "${content}"`);
-    
+
     // Skip built-in helpers and control structures
-    if (content.startsWith('if ') || content.startsWith('each ') || 
-        content.startsWith('unless ') || content.startsWith('with ') ||
-        content === 'else' || content.startsWith('@') || 
-        content === 'this' || content.includes('(')) {
+    if (
+      content.startsWith('if ') ||
+      content.startsWith('each ') ||
+      content.startsWith('unless ') ||
+      content.startsWith('with ') ||
+      content === 'else' ||
+      content.startsWith('@') ||
+      content === 'this' ||
+      content.includes('(')
+    ) {
       console.log(`🔎 EXTRACT-PROPS: Skipping built-in/control: "${content}"`);
       return;
     }
@@ -866,10 +968,7 @@ function extractDataPropertiesFromTypes(
 
     for (const typeName of typeNames) {
       // Match type definitions: type TypeName = { ... }
-      const typePattern = new RegExp(
-        `type\\s+${typeName}\\s*=\\s*\\{([\\s\\S]*?)\\}\\s*;`,
-        'i'
-      );
+      const typePattern = new RegExp(`type\\s+${typeName}\\s*=\\s*\\{([\\s\\S]*?)\\}\\s*;`, 'i');
       const typeMatch = tsFileContent.match(typePattern);
 
       if (typeMatch) {
@@ -881,24 +980,27 @@ function extractDataPropertiesFromTypes(
         // Split by lines and process each line to avoid nested objects
         const lines = typeBody.split('\n');
         let braceDepth = 0;
-        
+
         for (const line of lines) {
           const trimmedLine = line.trim();
           console.log(`🔧 EXTRACT-TYPES: Processing line (depth ${braceDepth}): "${trimmedLine}"`);
-          
+
           // Check if this line contains a property at the current level (before counting braces)
           if (braceDepth === 0 && trimmedLine.match(/^\s*(\w+)\s*:\s*[^;{]+[;}]/)) {
             const propertyMatch = trimmedLine.match(/^\s*(\w+)\s*:\s*/);
             if (propertyMatch) {
               const propertyName = propertyMatch[1];
               // Skip comments and TypeScript keywords
-              if (!propertyName.startsWith('//') && !['readonly', 'public', 'private', 'protected'].includes(propertyName)) {
+              if (
+                !propertyName.startsWith('//') &&
+                !['readonly', 'public', 'private', 'protected'].includes(propertyName)
+              ) {
                 console.log(`🔧 EXTRACT-TYPES: Found top-level property: ${propertyName}`);
                 properties.add(propertyName);
               }
             }
           }
-          
+
           // Count braces to update depth for next iteration
           for (const char of trimmedLine) {
             if (char === '{') {
@@ -918,10 +1020,7 @@ function extractDataPropertiesFromTypes(
 
     // Also look for interface definitions: interface TemplateNameData { ... }
     for (const typeName of typeNames) {
-      const interfacePattern = new RegExp(
-        `interface\\s+${typeName}\\s*\\{([\\s\\S]*?)\\}`,
-        'i'
-      );
+      const interfacePattern = new RegExp(`interface\\s+${typeName}\\s*\\{([\\s\\S]*?)\\}`, 'i');
       const interfaceMatch = tsFileContent.match(interfacePattern);
 
       if (interfaceMatch) {
@@ -931,23 +1030,30 @@ function extractDataPropertiesFromTypes(
         // Split by lines and process each line to avoid nested objects
         const lines = interfaceBody.split('\n');
         let braceDepth = 0;
-        
+
         for (const line of lines) {
           const trimmedLine = line.trim();
-          console.log(`🔧 EXTRACT-TYPES: Processing interface line (depth ${braceDepth}): "${trimmedLine}"`);
-          
+          console.log(
+            `🔧 EXTRACT-TYPES: Processing interface line (depth ${braceDepth}): "${trimmedLine}"`
+          );
+
           // Check if this line contains a property at the current level (before counting braces)
           if (braceDepth === 0 && trimmedLine.match(/^\s*(\w+)\s*:\s*[^;{]+[;}]/)) {
             const propertyMatch = trimmedLine.match(/^\s*(\w+)\s*:\s*/);
             if (propertyMatch) {
               const propertyName = propertyMatch[1];
-              if (!propertyName.startsWith('//') && !['readonly', 'public', 'private', 'protected'].includes(propertyName)) {
-                console.log(`🔧 EXTRACT-TYPES: Found top-level interface property: ${propertyName}`);
+              if (
+                !propertyName.startsWith('//') &&
+                !['readonly', 'public', 'private', 'protected'].includes(propertyName)
+              ) {
+                console.log(
+                  `🔧 EXTRACT-TYPES: Found top-level interface property: ${propertyName}`
+                );
                 properties.add(propertyName);
               }
             }
           }
-          
+
           // Count braces to update depth for next iteration
           for (const char of trimmedLine) {
             if (char === '{') {
@@ -962,7 +1068,6 @@ function extractDataPropertiesFromTypes(
         break;
       }
     }
-
   } catch (error) {
     console.error(`🔧 EXTRACT-TYPES: Error extracting types from ${tsFilePath}:`, error);
   }
