@@ -25,11 +25,16 @@ export const isWithinHandlebarsExpression = (
     } else if (text.substring(i, i + 2) === '{{' && text.substring(i, i + 3) !== '{{{') {
       start = i;
       isTriple = false;
+      isSingleBracket = false;
       break;
-    } else if (text.charAt(i) === '{' && text.substring(i, i + 2) !== '{{') {
-      // Check if this is truly a single bracket (not part of {{)
-      // Make sure it's not preceded by another {
-      if (i === 0 || text.charAt(i - 1) !== '{') {
+    } else if (text.charAt(i) === '{') {
+      // Only consider it a single bracket if:
+      // 1. It's not followed by another { (not part of {{)
+      // 2. It's not preceded by another { (not part of {{)
+      const isFollowedByBrace = i + 1 < text.length && text.charAt(i + 1) === '{';
+      const isPrecededByBrace = i > 0 && text.charAt(i - 1) === '{';
+      
+      if (!isFollowedByBrace && !isPrecededByBrace) {
         start = i;
         isTriple = false;
         isSingleBracket = true;

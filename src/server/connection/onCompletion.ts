@@ -24,6 +24,13 @@ const onCompletion = (config: CurrentConnectionConfig) => {
       return [];
     }
 
+    // Only provide Meteor/Blaze completions for HTML template files
+    const uri = document.uri;
+    const isHtmlFile = /\.(html|htm|meteor)$/i.test(uri);
+    if (!isHtmlFile) {
+      return [];
+    }
+
     const text = document.getText();
     const offset = document.offsetAt(textDocumentPosition.position);
 
