@@ -14,7 +14,7 @@ describe('connection/onInitialized', () => {
 
   const createMockConnection = () => ({
     console: {
-      log: () => {} // Mock console.log
+      log: () => {} // Mock console log
     },
     client: {
       register: () => Promise.resolve() // Mock client.register

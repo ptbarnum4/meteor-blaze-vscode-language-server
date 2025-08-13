@@ -16,20 +16,15 @@ import {
 const onHover = (config: CurrentConnectionConfig) => {
   const { connection, documents } = config;
   return async (textDocumentPosition: TextDocumentPositionParams): Promise<Hover | null> => {
-    connection.console.log('Hover requested');
     const document = documents.get(textDocumentPosition.textDocument.uri);
     if (!document) {
-      connection.console.log('No document found for hover');
       return null;
     }
 
     // Only provide hover info if this HTML/Handlebars file contains templates
     if (!containsMeteorTemplates(document)) {
-      connection.console.log('No Meteor templates found for hover');
       return null;
     }
-
-    connection.console.log(`Hover on document: ${document.uri}`);
 
     const text = document.getText();
     const offset = document.offsetAt(textDocumentPosition.position);
@@ -62,15 +57,8 @@ const onHover = (config: CurrentConnectionConfig) => {
     // Check if we're inside a handlebars expression
     const handlebarsInfo = isWithinHandlebarsExpression(text, offset);
     if (!handlebarsInfo.isWithin) {
-      connection.console.log('Cursor not within handlebars expression for hover');
       return null;
     }
-
-    connection.console.log(`Hovering over "${word}" within handlebars expression`);
-    connection.console.log(`[HOVER DEBUG] Current template: ${currentTemplateName}`);
-    connection.console.log(`[HOVER DEBUG] File path: ${filePath}`);
-    connection.console.log(`[HOVER DEBUG] Dir: ${dir}`);
-    connection.console.log(`[HOVER DEBUG] Base name: ${baseName}`);
 
     // Check if we're hovering over a template inclusion ({{> templateName)
     const textBeforeOffset = text.substring(0, offset);
@@ -82,7 +70,7 @@ const onHover = (config: CurrentConnectionConfig) => {
     const templateInclusionMatch = precedingText.match(templateInclusionPattern);
 
     if (templateInclusionMatch && templateInclusionMatch[1] === word) {
-      connection.console.log(`Template inclusion hover detected for: ${word}`);
+
       const templateHover = await getTemplateInclusionHover(word, config, document);
       if (templateHover) {
         return {
@@ -95,27 +83,11 @@ const onHover = (config: CurrentConnectionConfig) => {
     // Check each-in context before entering the main loop
     const documentText = document.getText();
     const cursorOffset = document.offsetAt(textDocumentPosition.position);
-    connection.console.log(`[EACH DEBUG] Document text length: ${documentText.length}`);
-    connection.console.log(`[EACH DEBUG] Cursor offset: ${cursorOffset}`);
-    connection.console.log(
-      `[EACH DEBUG] Text around cursor (±50 chars): "${documentText.slice(
-        Math.max(0, cursorOffset - 50),
-        cursorOffset + 50
-      )}"`
-    );
 
     const eachCtx = findEnclosingEachInContext(documentText, cursorOffset);
-    connection.console.log(`[EACH DEBUG] Context detection: ${JSON.stringify(eachCtx)}`);
 
     // Look for this helper in analyzed files using directory-specific keys
     const dirLookupKeys = [`${dir}/${currentTemplateName}`, `${dir}/${baseName}`].filter(Boolean);
-
-    connection.console.log(`[HOVER DEBUG] Lookup keys: ${JSON.stringify(dirLookupKeys)}`);
-    connection.console.log(
-      `[HOVER DEBUG] Available helpers map keys: ${JSON.stringify(
-        Array.from(config.fileAnalysis.jsHelpers.keys())
-      )}`
-    );
 
     for (const key of dirLookupKeys) {
       const helpers = config.fileAnalysis.jsHelpers.get(key as string);
@@ -124,18 +96,6 @@ const onHover = (config: CurrentConnectionConfig) => {
       const typeName = config.fileAnalysis.dataTypeByKey?.get(key as string);
       const typeMap = config.fileAnalysis.dataPropertyTypesByKey?.get(key as string) || {};
 
-      connection.console.log(
-        `[HOVER DEBUG] Key "${key}" → Helpers: ${helpers ? JSON.stringify(helpers) : 'NONE'}`
-      );
-      connection.console.log(
-        `[HOVER DEBUG] Key "${key}" → HelperDetails: ${
-          helperDetails ? helperDetails.length + ' items' : 'NONE'
-        }`
-      );
-      connection.console.log(
-        `[HOVER DEBUG] Key "${key}" → DataProps: ${JSON.stringify(dataProps)}`
-      );
-      connection.console.log(`[HOVER DEBUG] Key "${key}" → TypeMap: ${JSON.stringify(typeMap)}`);
       if (helpers && helpers.includes(word)) {
         // Find the detailed information for this helper
         const helperInfo = helperDetails?.find(h => h.name === word);
@@ -253,7 +213,7 @@ const onHover = (config: CurrentConnectionConfig) => {
 
       // #each alias hover: allow hover on alias even if it's not part of template data properties
       if (eachCtx && eachCtx.alias === word) {
-        connection.console.log(`[EACH DEBUG] Processing alias hover for "${word}"`);
+
         const templateFileName = path.basename(filePath);
         let listType = typeMap[eachCtx.source];
 
@@ -262,16 +222,12 @@ const onHover = (config: CurrentConnectionConfig) => {
           const helperInfo = helperDetails?.find(h => h.name === eachCtx.source);
           if (helperInfo?.returnType) {
             listType = helperInfo.returnType;
-            connection.console.log(
-              `[EACH DEBUG] Found helper "${eachCtx.source}" with return type: ${listType}`
-            );
+
           } else {
-            connection.console.log(
-              `[EACH DEBUG] No helper found for "${eachCtx.source}" or no return type`
-            );
+
           }
         } else {
-          connection.console.log(`[EACH DEBUG] Found list type in typeMap: ${listType}`);
+
         }
 
         const deriveElementType = (t?: string): string | undefined => {
@@ -301,10 +257,6 @@ const onHover = (config: CurrentConnectionConfig) => {
           return undefined;
         };
         const aliasType: string | undefined = deriveElementType(listType);
-
-        connection.console.log(
-          `[EACH DEBUG] alias="${word}", source="${eachCtx.source}", listType="${listType}", aliasType="${aliasType}"`
-        );
 
         const hoverLines: string[] = [];
         hoverLines.push(`**${word}** - Each item alias in \`${eachCtx.source}\``);
@@ -688,10 +640,6 @@ async function getTemplateInclusionHover(
     const fs = await import('fs');
     const path = await import('path');
 
-    connection.console.log(
-      `Using document for hover: ${currentDocument.uri} (${currentDocument.languageId})`
-    );
-
     const currentFilePath = currentDocument.uri.replace('file://', '');
     const currentDir = path.dirname(currentFilePath);
     const currentBaseName = path.basename(currentFilePath, path.extname(currentFilePath));
@@ -760,7 +708,7 @@ async function getTemplateInclusionHover(
       return createTemplateNotFoundHover(templateName);
     }
   } catch (error) {
-    connection.console.log(`Error getting template inclusion hover: ${error}`);
+
     return null;
   }
 }
@@ -943,8 +891,6 @@ function findImportedTemplateFile(
   path: any
 ): { file: string; content: string } | null {
   try {
-    console.log(`[HOVER FILE DEBUG] Finding template file for: ${templateName}`);
-    console.log(`[HOVER FILE DEBUG] Associated file: ${associatedFile}`);
 
     const content = fs.readFileSync(associatedFile, 'utf8');
     const associatedDir = path.dirname(associatedFile);
@@ -954,17 +900,14 @@ function findImportedTemplateFile(
       `import\\s+['"](\\.\\.[^'"]*\\/${templateName}|\\.\\/${templateName}[^'"]*)['"]`,
       'g'
     );
-    console.log(`[HOVER FILE DEBUG] Import pattern: ${importPattern}`);
 
     let match;
 
     while ((match = importPattern.exec(content)) !== null) {
       const importPath = match[1];
-      console.log(`[HOVER FILE DEBUG] Found import path: ${importPath}`);
 
       // Resolve the import path
       const fullImportPath = path.resolve(associatedDir, importPath);
-      console.log(`[HOVER FILE DEBUG] Full import path: ${fullImportPath}`);
 
       // Try to find template.html in the import directory
       let templateHtmlPath;
@@ -973,11 +916,10 @@ function findImportedTemplateFile(
       // For imports like './nestedTemplate', the template.html is in the nestedTemplate directory
       const importDir = path.dirname(fullImportPath);
       templateHtmlPath = path.join(importDir, 'template.html');
-      console.log(`[HOVER FILE DEBUG] Template path (import dir): ${templateHtmlPath}`);
 
       try {
         if (fs.existsSync(templateHtmlPath)) {
-          console.log(`[HOVER FILE DEBUG] Template HTML exists: ${templateHtmlPath}`);
+
           const templateContent = fs.readFileSync(templateHtmlPath, 'utf8');
           const templatePattern = new RegExp(
             `<template\\s+name=["']${templateName}["'][^>]*>([\\s\\S]*?)<\\/template>`,
@@ -985,21 +927,20 @@ function findImportedTemplateFile(
           );
           const templateMatch = templatePattern.exec(templateContent);
           if (templateMatch) {
-            console.log(`[HOVER FILE DEBUG] Template match found!`);
+
             return { file: templateHtmlPath, content: templateMatch[1].trim() };
           } else {
-            console.log(`[HOVER FILE DEBUG] Template pattern did not match in file`);
+
           }
         } else {
-          console.log(`[HOVER FILE DEBUG] Template HTML does not exist: ${templateHtmlPath}`);
+
         }
       } catch (e) {
-        console.log(`[HOVER FILE DEBUG] Error reading template: ${e}`);
+
         // Continue trying other import paths
       }
     }
 
-    console.log(`[HOVER FILE DEBUG] No template file found for ${templateName}`);
     return null;
   } catch (error) {
     console.error(`Error finding imported template file for ${templateName}:`, error);

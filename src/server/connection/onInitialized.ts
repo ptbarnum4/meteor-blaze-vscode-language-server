@@ -10,7 +10,7 @@ const onInitialized = (config: CurrentConnectionConfig) => {
     }
     if (config.hasWorkspaceFolderCapability) {
       connection.workspace.onDidChangeWorkspaceFolders(_event => {
-        connection.console.log('Workspace folder change event received.');
+        connection.console.info('Workspace folder change event received.');
       });
     }
   };

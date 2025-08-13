@@ -112,9 +112,7 @@ export const analyzeJavaScriptFile = (filePath: string): AnalyzeJavaScriptFileRe
               }
 
               // Extract @param tags
-              const paramMatches = jsdoc.matchAll(
-                /@param\s+\{([^}]+)\}\s+(\w+)\s*([^@*]*)/g
-              );
+              const paramMatches = jsdoc.matchAll(/@param\s+\{([^}]+)\}\s+(\w+)\s*([^@*]*)/g);
               const paramDescriptions: string[] = [];
               for (const paramMatch of paramMatches) {
                 const paramType = paramMatch[1];
@@ -138,12 +136,6 @@ export const analyzeJavaScriptFile = (filePath: string): AnalyzeJavaScriptFileRe
                 extractedReturnType ? `: ${extractedReturnType}` : ''
               }`
             };
-
-            // Debug logging for helper extraction
-            console.log(`[HELPER ANALYSIS] Extracted helper: ${name}`);
-            console.log(`[HELPER ANALYSIS] JSDoc: "${parsedJSDoc}"`);
-            console.log(`[HELPER ANALYSIS] Parameters: "${extractedParameters}"`);
-            console.log(`[HELPER ANALYSIS] Return Type: "${extractedReturnType}"`);
 
             helperDetails.push(helperInfo);
           }

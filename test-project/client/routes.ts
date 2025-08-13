@@ -9,7 +9,6 @@ const exposed = FlowRouter.group({
   prefix: '/'
 }) as Group;
 
-console.log('Exposed group created:', exposed);
 exposed.route('/', {
   name: 'home',
   action: (_params, _queryParams) => {

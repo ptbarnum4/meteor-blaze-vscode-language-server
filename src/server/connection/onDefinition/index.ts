@@ -11,16 +11,13 @@ import { isWithinHandlebarsExpression } from '../../helpers/isWithinHandlebarsEx
 const onDefinition = (config: CurrentConnectionConfig) => {
   const { connection, documents } = config;
   return (params: DefinitionParams): Location[] | null => {
-    connection.console.log('Definition requested');
     const document = documents.get(params.textDocument.uri);
     if (!document) {
-      connection.console.log('No document found for definition');
       return null;
     }
 
     // Only provide definitions if this HTML/Handlebars file contains templates
     if (!containsMeteorTemplates(document)) {
-      connection.console.log('No Meteor templates found for definition');
       return null;
     }
 
@@ -44,7 +41,7 @@ const onDefinition = (config: CurrentConnectionConfig) => {
     // Check if we're inside a handlebars expression
     const handlebarsInfo = isWithinHandlebarsExpression(text, offset);
     if (!handlebarsInfo.isWithin) {
-      connection.console.log('Cursor not within handlebars expression for definition');
+
       return null;
     }
 
@@ -59,7 +56,7 @@ const onDefinition = (config: CurrentConnectionConfig) => {
       document.offsetAt(wordRange.end)
     );
 
-    connection.console.log(`Looking for definition of "${word}" within handlebars expression`);
+
 
     const eachCtx = findEnclosingEachInContext(text, offset);
 
@@ -99,9 +96,6 @@ const onDefinition = (config: CurrentConnectionConfig) => {
                 );
                 const match = helperRegex.exec(line);
                 if (match) {
-                  connection.console.log(
-                    `Found definition of "${word}" at line ${i + 1} in ${file}`
-                  );
                   return [
                     {
                       uri: `file://${file}`,
@@ -116,7 +110,7 @@ const onDefinition = (config: CurrentConnectionConfig) => {
             }
           }
         } catch (error) {
-          connection.console.log(`Error finding definition: ${error}`);
+          connection.console.error(`Error finding definition: ${error}`);
         }
       }
 
@@ -157,11 +151,6 @@ const onDefinition = (config: CurrentConnectionConfig) => {
                     );
                     const match = helperRegex.exec(line);
                     if (match) {
-                      connection.console.log(
-                        `Found definition of "${sourceHelperName}" (from alias "${word}") at line ${
-                          i + 1
-                        } in ${file}`
-                      );
                       return [
                         {
                           uri: `file://${file}`,
@@ -179,7 +168,7 @@ const onDefinition = (config: CurrentConnectionConfig) => {
                 }
               }
             } catch (error) {
-              connection.console.log(`Error finding helper definition for alias: ${error}`);
+              connection.console.error(`Error finding helper definition for alias: ${error}`);
             }
           }
         }
@@ -352,7 +341,7 @@ const onDefinition = (config: CurrentConnectionConfig) => {
             }
           }
         } catch (error) {
-          connection.console.log(`Error finding data property definition: ${error}`);
+          connection.console.error(`Error finding data property definition: ${error}`);
         }
       }
     }

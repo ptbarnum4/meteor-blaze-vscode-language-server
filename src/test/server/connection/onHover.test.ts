@@ -14,7 +14,7 @@ describe('connection/onHover', () => {
 
   const createMockConnection = () => ({
     console: {
-      log: () => {} // Mock console.log
+      log: () => {} // Mock console log
     }
   });
 

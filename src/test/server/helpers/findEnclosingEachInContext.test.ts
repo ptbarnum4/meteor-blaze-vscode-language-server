@@ -36,9 +36,6 @@ describe('findEnclosingEachInContext', () => {
 
     const result = findEnclosingEachInContext(content, boxPosition);
 
-    console.log('Content around position:', content.slice(boxPosition - 20, boxPosition + 20));
-    console.log('Result:', result);
-
     assert.ok(result, 'Should find each-in context');
     assert.strictEqual(result.alias, 'box');
     assert.strictEqual(result.source, 'boxes');
@@ -52,8 +49,6 @@ describe('findEnclosingEachInContext', () => {
     const boxPosition = content.indexOf('{{box}}') + 2; // Position inside "{{box}}"
 
     const result = findEnclosingEachInContext(content, boxPosition);
-
-    console.log('Result for opening position:', result);
 
     assert.ok(result, 'Should find each-in context');
     assert.strictEqual(result.alias, 'box');

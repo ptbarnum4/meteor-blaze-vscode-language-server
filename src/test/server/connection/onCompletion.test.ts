@@ -14,20 +14,23 @@ describe('connection/onCompletion', () => {
 
   const createMockConnection = () => ({
     console: {
-      log: () => {} // Mock console.log
+      log: () => {} // Mock console log
     },
     workspace: {
-      getConfiguration: () => Promise.resolve({
-        blazeHelpers: {
-          hashColor: '#FF6B35',
-          nameColor: '#007ACC',
-          extend: []
-        }
-      })
+      getConfiguration: () =>
+        Promise.resolve({
+          blazeHelpers: {
+            hashColor: '#FF6B35',
+            nameColor: '#007ACC',
+            extend: []
+          }
+        })
     }
   });
 
-  const createMockConfig = (overrides?: Partial<CurrentConnectionConfig>): CurrentConnectionConfig => ({
+  const createMockConfig = (
+    overrides?: Partial<CurrentConnectionConfig>
+  ): CurrentConnectionConfig => ({
     globalSettings: mockSettings,
     documentSettings: new Map(),
     fileAnalysis: {
@@ -116,13 +119,15 @@ describe('connection/onCompletion', () => {
     // Mock some helpers in the file analysis using the correct key format
     // The implementation uses directory-specific lookups
     config.fileAnalysis.jsHelpers.set('/test', ['myHelper']);
-    config.fileAnalysis.helperDetails.set('/test', [{
-      name: 'myHelper',
-      jsdoc: 'A test helper',
-      returnType: 'string',
-      parameters: 'arg: string',
-      signature: 'myHelper(arg: string): string'
-    }]);
+    config.fileAnalysis.helperDetails.set('/test', [
+      {
+        name: 'myHelper',
+        jsdoc: 'A test helper',
+        returnType: 'string',
+        parameters: 'arg: string',
+        signature: 'myHelper(arg: string): string'
+      }
+    ]);
 
     const handler = onCompletion(config);
 
@@ -148,16 +153,17 @@ describe('connection/onCompletion', () => {
 
     // Mock the workspace configuration to provide proper settings
     config.connection.workspace = {
-      getConfiguration: () => Promise.resolve({
-        blazeHelpers: {
-          extend: [],
-          hashColor: '#FF6B35',
-          nameColor: '#007ACC'
-        },
-        blockConditions: {
-          extend: []
-        }
-      })
+      getConfiguration: () =>
+        Promise.resolve({
+          blazeHelpers: {
+            extend: [],
+            hashColor: '#FF6B35',
+            nameColor: '#007ACC'
+          },
+          blockConditions: {
+            extend: []
+          }
+        })
     } as any;
 
     const handler = onCompletion(config);
@@ -168,11 +174,6 @@ describe('connection/onCompletion', () => {
     };
 
     const result = await handler(params);
-
-    // Built-in helpers should be added, but the implementation may have complex logic
-    // that prevents them from appearing in this specific context
-    const labels = result.map(item => item.label);
-    console.log('Completion labels found:', labels);
 
     // Since the implementation is complex and may not always return built-in helpers
     // based on cursor position and context, we'll just verify the handler works
@@ -196,13 +197,15 @@ describe('connection/onCompletion', () => {
     // Add custom helper to file analysis using the correct key format
     // The implementation looks for keys like "/test" and "/myTemplate"
     config.fileAnalysis.jsHelpers.set('/test', ['customHelper']);
-    config.fileAnalysis.helperDetails.set('/test', [{
-      name: 'customHelper',
-      jsdoc: 'Custom helper documentation',
-      returnType: 'string',
-      parameters: 'arg: string',
-      signature: 'customHelper(arg: string): string'
-    }]);
+    config.fileAnalysis.helperDetails.set('/test', [
+      {
+        name: 'customHelper',
+        jsdoc: 'Custom helper documentation',
+        returnType: 'string',
+        parameters: 'arg: string',
+        signature: 'customHelper(arg: string): string'
+      }
+    ]);
 
     const handler = onCompletion(config);
 

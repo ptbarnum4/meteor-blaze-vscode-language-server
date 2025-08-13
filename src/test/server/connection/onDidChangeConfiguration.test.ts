@@ -14,7 +14,7 @@ describe('connection/onDidChangeConfiguration', () => {
 
   const createMockConnection = () => ({
     console: {
-      log: () => {} // Mock console.log
+      log: () => {} // Mock console log
     },
     sendDiagnostics: () => {}, // Mock sendDiagnostics
     workspace: {
