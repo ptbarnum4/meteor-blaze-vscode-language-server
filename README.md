@@ -14,11 +14,12 @@ A VS Code extension that provides language support for Meteor/Blaze templates wi
   - Template helpers from neighboring TypeScript/JavaScript files
   - CSS classes from neighboring CSS/LESS files
   - Built-in Blaze helpers (`#each`, `#if`, `#unless`, `#with`, `#let`)
+  - Template inclusions (`{{> templateName}}`) with smart import-based filtering
 - **✨ Auto-Insert End Tags**: Automatically inserts closing tags when typing opening Blaze block tags (`{{#if}}` → `{{/if}}`)
 - **🔍 Cross-file Intelligence**: Analyzes neighboring files in the same directory for:
   - Template helpers (from `Template.templateName.helpers()` definitions)
   - CSS classes for class attribute autocompletion
-- **📋 Hover Information**: Shows helper definitions, file names, and source locations
+- **📋 Hover Information**: Shows helper definitions, file names, source locations, and template inclusion details
 - **🎯 Go-to-Definition**: Navigate from helper usage to definition
 - **🚨 Block Validation**: Detects missing or mismatched Blaze block end tags with intelligent error messages
 - **🔧 Non-intrusive**: Only activates when Meteor templates are detected; regular HTML files remain unaffected

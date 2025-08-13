@@ -13,19 +13,26 @@
 
       {{#if data1}}{{data1}}{{/if}}
       {{#if condition}}
-      <p>Condition is true</p>
+        <p>Condition is true</p>
       {{else}}
-      <p>Condition is false</p>
+        <p>Condition is false</p>
       {{/if}}
+
+      {{> nestedTemplate
+        title="Nested Template Title"
+        subtitle="Nested Template Subtitle"
+        description="This is a description of the nested template."
+      }}
+      {{> nestedTemplate}}
 
       <!-- Should show error: wrong closing tag type -->
 
       <div class="boxes">
         {{#each box in boxes}}
-        <div class="box">
-          <span class="box-text">Box</span>
-          <span class="box-number">{{pad}}</span>
-        </div>
+          <div class="box">
+            <span class="box-text">Box</span>
+            <span class="box-number">{{pad}}</span>
+          </div>
         {{/each}}
       </div>
 

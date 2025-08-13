@@ -1,5 +1,7 @@
 import { TemplateStaticTyped, Template as _Template } from 'meteor/templating';
 
+import './nestedTemplate/nestedTemplate';
+
 import './style.less';
 import './template.html';
 

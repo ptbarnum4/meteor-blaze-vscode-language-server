@@ -54,11 +54,31 @@
     "editor.suggest.insertMode": "replace",
     "editor.bracketPairColorization.enabled": false // Disable bracket pair colorization for HTML
   },
+  "html.format.indentHandlebars": true,
+  "html.format.templating": true,
+  "html.format.wrapAttributesIndentSize": null,
+  "html.format.wrapAttributes": "force",
+  "files.insertFinalNewline": true,
+  "html.format.unformattedContentDelimiter": "<!-- no-format -->",
 
   "[javascript]": {
     "editor.defaultFormatter": "vscode.typescript-language-features"
   },
   "[typescript]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "workbench.editor.customLabels.patterns": {
+    "**/README.md": "${dirname} (README)",
+    "**/index.jsx": "${dirname} (.${extname})",
+    "**/index.tsx": "${dirname} (.${extname})",
+    "**/index.js": "${dirname} (.${extname})",
+    "**/index.ts": "${dirname} (.${extname})",
+    "**/index.html": "${dirname} (.${extname})",
+    "**/template.html": "${dirname} (template.${extname})",
+    "**/index.css": "${dirname} (.${extname})",
+    "**/style.css": "${dirname} (.${extname})",
+    "**/index.less": "${dirname} (.${extname})",
+    "**/style.less": "${dirname} (.${extname})",
+    "**/styles.less": "${dirname} (.${extname})"
   }
 }

@@ -1,5 +1,6 @@
 import path from 'path';
 
+import { TextDocument } from 'vscode-languageserver-textdocument';
 import {
   CompletionItem,
   CompletionItemKind,
@@ -47,6 +48,21 @@ const onCompletion = (config: CurrentConnectionConfig) => {
     connection.console.log(
       `Within handlebars expression: ${handlebarsInfo.isTriple ? 'triple' : 'double'} braces`
     );
+
+    // Check if we're in a template inclusion context ({{> templateName)
+    const textBeforeCursor = text.substring(0, offset);
+    const templateInclusionMatch = textBeforeCursor.match(/\{\{\s*>\s*([a-zA-Z0-9_]*)$/);
+    const isTemplateInclusion = templateInclusionMatch !== null;
+    const partialTemplateName = templateInclusionMatch ? templateInclusionMatch[1] : '';
+
+    connection.console.log(`Template inclusion detected: ${isTemplateInclusion}, partial: "${partialTemplateName}"`);
+
+    // If we're in a template inclusion context, provide template name completions
+    if (isTemplateInclusion) {
+      connection.console.log('Providing template inclusion completions');
+      const templateCompletions = await getTemplateNameCompletions(config, partialTemplateName, document);
+      return templateCompletions;
+    }
 
     const completions: CompletionItem[] = [];
 
@@ -273,5 +289,207 @@ const onCompletion = (config: CurrentConnectionConfig) => {
     return completions;
   };
 };
+
+// Helper function to get template name completions for {{> templateName}} syntax
+async function getTemplateNameCompletions(
+  config: CurrentConnectionConfig,
+  partialTemplateName: string,
+  currentDocument: TextDocument
+): Promise<CompletionItem[]> {
+  const { connection } = config;
+  const completions: CompletionItem[] = [];
+
+  try {
+    const fs = await import('fs');
+    const path = await import('path');
+
+    connection.console.log(`Using document: ${currentDocument.uri} (${currentDocument.languageId})`);
+
+    const currentFilePath = currentDocument.uri.replace('file://', '');
+    const currentDir = path.dirname(currentFilePath);
+    const currentBaseName = path.basename(currentFilePath, path.extname(currentFilePath));
+
+    // Find associated JS/TS file
+    const associatedFile = findAssociatedJSFile(currentDir, currentBaseName, fs, path);
+    if (!associatedFile) {
+      connection.console.log('No associated JS/TS file found for template inclusion completion');
+      return completions;
+    }
+
+    connection.console.log(`Found associated file: ${associatedFile}`);
+
+    // Parse imports from the associated file
+    const importedTemplates = parseTemplateImports(associatedFile, fs, path);
+    connection.console.log(`Found imported templates: ${importedTemplates.join(', ')}`);
+
+    // Filter by partial match and create completions
+    importedTemplates
+      .filter(templateName => templateName.toLowerCase().includes(partialTemplateName.toLowerCase()))
+      .forEach(templateName => {
+        completions.push({
+          label: templateName,
+          kind: CompletionItemKind.Module,
+          detail: 'Imported template',
+          documentation: {
+            kind: MarkupKind.Markdown,
+            value: `Include imported template: \`{{> ${templateName}}}\`\n\nThis template is imported in the associated JavaScript/TypeScript file.`
+          },
+          insertText: templateName,
+          filterText: templateName
+        });
+      });
+
+  } catch (error) {
+    connection.console.log(`Error getting template completions: ${error}`);
+  }
+
+  return completions;
+}
+
+// Helper function to find the associated JS/TS file for a template
+function findAssociatedJSFile(
+  currentDir: string,
+  baseName: string,
+  fs: any,
+  path: any
+): string | null {
+  const possibleExtensions = ['.ts', '.js'];
+
+  // First, try exact base name match
+  for (const ext of possibleExtensions) {
+    const filePath = path.join(currentDir, baseName + ext);
+    try {
+      if (fs.existsSync(filePath)) {
+        return filePath;
+      }
+    } catch (e) {
+      // Continue trying other extensions
+    }
+  }
+
+  // If no exact match, look for any JS/TS files in the same directory
+  try {
+    const files = fs.readdirSync(currentDir);
+    for (const file of files) {
+      const ext = path.extname(file);
+      if (possibleExtensions.includes(ext)) {
+        const fullPath = path.join(currentDir, file);
+        // Check if this file imports the current HTML template
+        try {
+          const content = fs.readFileSync(fullPath, 'utf8');
+          // Look for imports of template.html or similar patterns
+          const templateImportPattern = new RegExp(`import\\s+['"]\\./${baseName}(?:\\.html)?['"]`, 'g');
+          if (templateImportPattern.test(content)) {
+            return fullPath;
+          }
+        } catch (e) {
+          // Continue checking other files
+        }
+      }
+    }
+
+    // If still no match, return the first JS/TS file found (fallback)
+    for (const file of files) {
+      const ext = path.extname(file);
+      if (possibleExtensions.includes(ext)) {
+        return path.join(currentDir, file);
+      }
+    }
+  } catch (e) {
+    // Directory read failed, continue with null
+  }
+
+  return null;
+}
+
+// Helper function to parse template imports from a JS/TS file
+function parseTemplateImports(filePath: string, fs: any, path: any): string[] {
+  try {
+    const content = fs.readFileSync(filePath, 'utf8');
+    const templates: string[] = [];
+
+    // Find all import statements (both named and unnamed)
+    const importPattern = /import\s+(?:[^'"]*\s+from\s+)?['"](\.\.?\/[^'"]*)['"]/g;
+
+    let match;
+    while ((match = importPattern.exec(content)) !== null) {
+      const importPath = match[1];
+      const fullImportPath = path.resolve(path.dirname(filePath), importPath);
+
+      // Try different file extensions for the imported file
+      const possibleExtensions = ['.ts', '.js', ''];
+      let importedFileContent = null;
+      let actualImportPath = null;
+
+      for (const ext of possibleExtensions) {
+        const testPath = fullImportPath + ext;
+        if (fs.existsSync(testPath)) {
+          try {
+            importedFileContent = fs.readFileSync(testPath, 'utf8');
+            actualImportPath = testPath;
+            break;
+          } catch (e) {
+            // Continue trying other extensions
+          }
+        }
+      }
+
+      // If we found the imported file, look for Template.templateName patterns
+      if (importedFileContent) {
+        // Match Template.templateName patterns
+        const templatePattern = /Template\.([a-zA-Z_$][a-zA-Z0-9_$]*)/g;
+        let templateMatch;
+
+        while ((templateMatch = templatePattern.exec(importedFileContent)) !== null) {
+          const templateName = templateMatch[1];
+          if (!templates.includes(templateName)) {
+            // Verify this template exists by checking for a template.html file
+            const templateDir = path.dirname(actualImportPath);
+            const templateHtmlPath = path.join(templateDir, 'template.html');
+
+            if (fs.existsSync(templateHtmlPath)) {
+              try {
+                const templateHtml = fs.readFileSync(templateHtmlPath, 'utf8');
+                // Check if the template.html actually defines this template
+                const templateDefPattern = new RegExp(`<template\\s+name=["']${templateName}["']`, 'i');
+                if (templateDefPattern.test(templateHtml)) {
+                  templates.push(templateName);
+                }
+              } catch (e) {
+                // If we can't read template.html, include the template anyway since we found Template.templateName
+                templates.push(templateName);
+              }
+            }
+          }
+        }
+      }
+
+      // Also check if this is a direct template import pattern
+      // like './templateName' where templateName directory has template.html
+      const pathParts = importPath.split('/');
+      const templateName = pathParts[pathParts.length - 1];
+
+      if (templateName && !templates.includes(templateName)) {
+        const templateHtmlPath = path.join(fullImportPath, 'template.html');
+        if (fs.existsSync(templateHtmlPath)) {
+          try {
+            const templateHtml = fs.readFileSync(templateHtmlPath, 'utf8');
+            const templateDefPattern = new RegExp(`<template\\s+name=["']${templateName}["']`, 'i');
+            if (templateDefPattern.test(templateHtml)) {
+              templates.push(templateName);
+            }
+          } catch (e) {
+            // Continue
+          }
+        }
+      }
+    }
+
+    return templates;
+  } catch (error) {
+    console.error(`Error parsing template imports from ${filePath}:`, error);
+    return [];
+  }
+}
 
 export default onCompletion;
