@@ -5,6 +5,7 @@ type IsWithinHandlebarsExpressionResult = {
   expressionStart: number;
   expressionEnd: number;
   isTriple: boolean;
+  isSingleBracket: boolean;
 };
 
 export const isWithinHandlebarsExpression = (
@@ -14,6 +15,7 @@ export const isWithinHandlebarsExpression = (
   // Look backwards for opening braces
   let start = -1;
   let isTriple = false;
+  let isSingleBracket = false;
 
   for (let i = offset - 1; i >= 0; i--) {
     if (text.substring(i, i + 3) === '{{{') {
@@ -24,14 +26,34 @@ export const isWithinHandlebarsExpression = (
       start = i;
       isTriple = false;
       break;
+    } else if (text.charAt(i) === '{' && text.substring(i, i + 2) !== '{{') {
+      // Check if this is truly a single bracket (not part of {{)
+      // Make sure it's not preceded by another {
+      if (i === 0 || text.charAt(i - 1) !== '{') {
+        start = i;
+        isTriple = false;
+        isSingleBracket = true;
+        break;
+      }
     }
   }
 
   if (start === -1) {
-    return { isWithin: false, expressionStart: -1, expressionEnd: -1, isTriple: false };
+    return { isWithin: false, expressionStart: -1, expressionEnd: -1, isTriple: false, isSingleBracket: false };
   }
 
-  // Look forwards for closing braces
+  // For single brackets, we're more permissive - assume they want to type a handlebars expression
+  if (isSingleBracket) {
+    return {
+      isWithin: true,
+      expressionStart: start + 1,
+      expressionEnd: offset,
+      isTriple: false,
+      isSingleBracket: true
+    };
+  }
+
+  // Look forwards for closing braces (existing logic for double/triple brackets)
   const searchPattern = isTriple ? '}}}' : '}}';
   const searchStart = start + (isTriple ? 3 : 2);
 
@@ -43,7 +65,8 @@ export const isWithinHandlebarsExpression = (
           isWithin: true,
           expressionStart: searchStart,
           expressionEnd: i,
-          isTriple
+          isTriple,
+          isSingleBracket: false
         };
       }
       break;
@@ -63,7 +86,8 @@ export const isWithinHandlebarsExpression = (
         isWithin: true,
         expressionStart: searchStart,
         expressionEnd: offset + nextClosing,
-        isTriple
+        isTriple,
+        isSingleBracket: false
       };
     } else {
       // No closing braces found ahead, but we're after opening braces
@@ -73,10 +97,11 @@ export const isWithinHandlebarsExpression = (
         isWithin: true,
         expressionStart: searchStart,
         expressionEnd: text.length,
-        isTriple
+        isTriple,
+        isSingleBracket: false
       };
     }
   }
 
-  return { isWithin: false, expressionStart: -1, expressionEnd: -1, isTriple: false };
+  return { isWithin: false, expressionStart: -1, expressionEnd: -1, isTriple: false, isSingleBracket: false };
 };

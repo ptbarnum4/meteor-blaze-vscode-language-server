@@ -5,7 +5,8 @@ import {
   CompletionItem,
   CompletionItemKind,
   MarkupKind,
-  TextDocumentPositionParams
+  TextDocumentPositionParams,
+  TextEdit
 } from 'vscode-languageserver/node';
 
 import { CurrentConnectionConfig } from '../../types';
@@ -333,6 +334,31 @@ const onCompletion = (config: CurrentConnectionConfig) => {
       } catch (e) {
         // Ignore config errors
       }
+    }
+
+    // If we're in a single bracket context, wrap all completions with double brackets
+    if (handlebarsInfo.isSingleBracket) {
+      completions.forEach(completion => {
+        // Calculate the range to replace (from the single bracket to the current cursor position)
+        const startPos = document.positionAt(handlebarsInfo.expressionStart - 1); // Include the single bracket
+        const endPos = document.positionAt(offset); // Current cursor position
+        
+        // Set up the completion to replace the entire range with properly formatted handlebars
+        const completionText = completion.insertText || completion.label;
+        completion.insertText = `{{${completionText}}}`;
+        
+        // Use textEdit to replace the specific range instead of additionalTextEdits
+        completion.textEdit = {
+          range: {
+            start: startPos,
+            end: endPos
+          },
+          newText: `{{${completionText}}}`
+        };
+        
+        // Remove any insertText since we're using textEdit
+        delete completion.insertText;
+      });
     }
 
     return completions;
