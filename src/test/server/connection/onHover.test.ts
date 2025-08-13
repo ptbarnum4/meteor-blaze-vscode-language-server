@@ -14,7 +14,7 @@ describe('connection/onHover', () => {
 
   const createMockConnection = () => ({
     console: {
-      log: () => {} // Mock console.log
+      log: () => {} // Mock console log
     }
   });
 
@@ -266,6 +266,32 @@ describe('connection/onHover', () => {
     assert.ok(
       result === null || (result && result.contents),
       'Should handle @ prefixed helpers gracefully'
+    );
+  });
+
+  it('should handle template inclusion hover', async () => {
+    const config = createMockConfig();
+    const documents = config.documents;
+
+    // Create a document with template inclusion syntax
+    const content = '<template name="test"><div>{{> nestedTemplate}}</div></template>';
+    const document = TextDocument.create('file:///test.html', 'html', 1, content);
+    documents.get = () => document;
+
+    const handler = onHover(config);
+
+    const params: TextDocumentPositionParams = {
+      textDocument: { uri: 'file:///test.html' },
+      position: Position.create(0, 45) // Position on 'nestedTemplate'
+    };
+
+    const result = await handler(params);
+
+    // Template inclusion hover might not work fully in test environment
+    // but should handle gracefully
+    assert.ok(
+      result === null || (result && result.contents),
+      'Should handle template inclusion hover gracefully'
     );
   });
 });

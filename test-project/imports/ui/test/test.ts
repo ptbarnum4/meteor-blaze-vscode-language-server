@@ -1,5 +1,8 @@
 import { TemplateStaticTyped, Template as _Template } from 'meteor/templating';
 
+import '../utils/helpers';
+import './nestedTemplate/nestedTemplate';
+
 import './style.less';
 import './template.html';
 
@@ -48,17 +51,16 @@ Template.test.onCreated(function () {
   this.props = {
     count: new ReactiveVar(60)
   };
-  console.log('Test template created with initial count:', this.props.count.get());
 });
 
 Template.test.onDestroyed(function () {
   // test onDestroyed
-  console.log('Test template destroyed');
+  console.info('Test template destroyed');
 });
 
 Template.test.onRendered(function () {
   // test onRendered
-  console.log('Test template rendered');
+  console.info('Test template rendered');
 });
 
 Template.test.helpers({
@@ -96,6 +98,6 @@ Template.test.events({
     event.preventDefault();
     const currentCount = instance.props.count.get();
     instance.props.count.set(currentCount + 1);
-    console.log('Count incremented to:', instance.props.count.get());
+    console.info('Count incremented to:', instance.props.count.get());
   }
 });

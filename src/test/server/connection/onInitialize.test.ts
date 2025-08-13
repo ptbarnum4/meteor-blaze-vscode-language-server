@@ -14,7 +14,7 @@ describe('connection/onInitialize', () => {
 
   const createMockConnection = () => ({
     console: {
-      log: () => {} // Mock console.log
+      log: () => {} // Mock console log
     }
   });
 

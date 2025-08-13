@@ -16,42 +16,91 @@ type AnalyzeJavaScriptFileResult = {
   templateName?: string;
 };
 
-const parseMethodBlocks = (helpersContent: string): MethodBlock[] => {
-  const blocks: MethodBlock[] = [];
-
-  // Split by method boundaries - look for JSDoc comments followed by method definitions
-  const methodPattern = /(\/\*\*[\s\S]*?\*\/\s*)?(\w+)\s*(\([^)]*\))\s*(?::\s*([^{]*))?\s*\{/g;
-
-  let match;
-  while ((match = methodPattern.exec(helpersContent)) !== null) {
-    const jsdoc = match[1];
-    const name = match[2];
-    const params = match[3];
-    const returnType = match[4];
-
-    // Skip if this looks like an if statement or other control flow
-    if (name === 'if' || name === 'for' || name === 'while' || name === 'switch') {
-      continue;
-    }
-
-    blocks.push({
-      name,
-      jsdoc: jsdoc?.trim(),
-      signature: `${name}${params}${returnType ? `: ${returnType.trim()}` : ''}`,
-      returnType: returnType?.trim(),
-      parameters: params.slice(1, -1) // Remove parentheses
-    });
-  }
-
-  return blocks;
-};
-
 export const analyzeJavaScriptFile = (filePath: string): AnalyzeJavaScriptFileResult => {
   try {
     const content = fs.readFileSync(filePath, 'utf8');
     const helpers: string[] = [];
     const helperDetails: HelperInfo[] = [];
     let extractedTemplateName: string | undefined;
+
+    const parseMethodBlocks = (content: string): MethodBlock[] => {
+      const methods: MethodBlock[] = [];
+
+      // Comprehensive list of JavaScript keywords and control flow statements to exclude
+      const jsKeywords = [
+        'if', 'else', 'for', 'while', 'do', 'switch', 'case', 'default', 'break', 'continue',
+        'function', 'return', 'var', 'let', 'const', 'try', 'catch', 'finally', 'throw',
+        'new', 'delete', 'typeof', 'instanceof', 'in', 'of', 'class', 'extends', 'super',
+        'this', 'true', 'false', 'null', 'undefined', 'NaN', 'Infinity',
+        'async', 'await', 'yield', 'import', 'export', 'from', 'as', 'with'
+      ];
+
+      // Enhanced regex patterns for different method definitions (optimized for helpers content)
+      const patterns = [
+        // Standard method with JSDoc: /** ... */ methodName(params) { ... }
+        /\/\*\*([\s\S]*?)\*\/\s*(\w+)\s*\(([^)]*)\)\s*(?::\s*([^{]+))?\s*\{/g,
+        // Arrow function with JSDoc: /** ... */ methodName: (params) => { ... }
+        /\/\*\*([\s\S]*?)\*\/\s*(\w+)\s*:\s*\(([^)]*)\)\s*=>\s*\{/g,
+        // Function property with JSDoc: /** ... */ methodName: function(params) { ... }
+        /\/\*\*([\s\S]*?)\*\/\s*(\w+)\s*:\s*function\s*\(([^)]*)\)\s*\{/g,
+        // Standard method without JSDoc: methodName(params) { ... }
+        /(\w+)\s*\(([^)]*)\)\s*(?::\s*([^{]+))?\s*\{/g,
+        // Arrow function without JSDoc: methodName: (params) => { ... }
+        /(\w+)\s*:\s*\(([^)]*)\)\s*=>\s*\{/g,
+        // Function property without JSDoc: methodName: function(params) { ... }
+        /(\w+)\s*:\s*function\s*\(([^)]*)\)\s*\{/g
+      ];
+
+      patterns.forEach((pattern, index) => {
+        // Reset the regex lastIndex to avoid state issues
+        pattern.lastIndex = 0;
+        let match;
+        while ((match = pattern.exec(content)) !== null) {
+          let methodName: string;
+          let jsdoc: string | undefined;
+          let parameters: string;
+          let returnType: string | undefined;
+
+          if (index < 3) {
+            // Patterns with JSDoc
+            jsdoc = match[1];
+            methodName = match[2];
+            parameters = match[3];
+            returnType = match[4];
+          } else {
+            // Patterns without JSDoc
+            methodName = match[1];
+            parameters = match[2];
+            returnType = match[3];
+          }
+
+          // Skip JavaScript keywords and control flow statements
+          if (jsKeywords.includes(methodName)) {
+            continue;
+          }
+
+          // Skip if we already found this method (prefer JSDoc version)
+          if (methods.some(m => m.name === methodName)) {
+            continue;
+          }
+
+          // For helpers content, we don't need complex object literal validation
+          // since we already extracted the content from inside Template.helpers({...})
+          
+          const signature = `${methodName}(${parameters || ''})${returnType ? `: ${returnType.trim()}` : ''}`;
+
+          methods.push({
+            name: methodName,
+            jsdoc: jsdoc?.trim(),
+            signature,
+            returnType: returnType?.trim(),
+            parameters: parameters?.trim()
+          });
+        }
+      });
+
+      return methods;
+    };
 
     // Find Template.name.helpers() calls with proper brace matching
     const templateHelperPattern = /Template\.(\w+)\.helpers\s*\(\s*\{/g;
@@ -96,8 +145,8 @@ export const analyzeJavaScriptFile = (filePath: string): AnalyzeJavaScriptFileRe
             let extractedParameters = parameters;
 
             if (jsdoc) {
-              // Extract description from JSDoc
-              const descMatch = jsdoc.match(/\/\*\*\s*([\s\S]*?)\s*(?:@|\*\/)/);
+              // Extract description from JSDoc - capture text before any @tag
+              const descMatch = jsdoc.match(/^\s*\*?\s*([\s\S]*?)\s*(?=@|$)/);
               if (descMatch) {
                 parsedJSDoc = descMatch[1].replace(/\s*\*\s?/g, ' ').trim();
               }
@@ -112,9 +161,7 @@ export const analyzeJavaScriptFile = (filePath: string): AnalyzeJavaScriptFileRe
               }
 
               // Extract @param tags
-              const paramMatches = jsdoc.matchAll(
-                /@param\s+\{([^}]+)\}\s+(\w+)\s*([^@*]*)/g
-              );
+              const paramMatches = jsdoc.matchAll(/@param\s+\{([^}]+)\}\s+(\w+)\s*([^@*]*)/g);
               const paramDescriptions: string[] = [];
               for (const paramMatch of paramMatches) {
                 const paramType = paramMatch[1];
@@ -139,12 +186,6 @@ export const analyzeJavaScriptFile = (filePath: string): AnalyzeJavaScriptFileRe
               }`
             };
 
-            // Debug logging for helper extraction
-            console.log(`[HELPER ANALYSIS] Extracted helper: ${name}`);
-            console.log(`[HELPER ANALYSIS] JSDoc: "${parsedJSDoc}"`);
-            console.log(`[HELPER ANALYSIS] Parameters: "${extractedParameters}"`);
-            console.log(`[HELPER ANALYSIS] Return Type: "${extractedReturnType}"`);
-
             helperDetails.push(helperInfo);
           }
         });
@@ -157,10 +198,25 @@ export const analyzeJavaScriptFile = (filePath: string): AnalyzeJavaScriptFileRe
           /(\w+)\s*:\s*\w+\s*=>\s*[\{\.]/g
         ];
 
+        // Same JavaScript keywords list for fallback patterns
+        const jsKeywords = [
+          'if', 'else', 'for', 'while', 'do', 'switch', 'case', 'default', 'break', 'continue',
+          'function', 'return', 'var', 'let', 'const', 'try', 'catch', 'finally', 'throw',
+          'new', 'delete', 'typeof', 'instanceof', 'in', 'of', 'class', 'extends', 'super',
+          'this', 'true', 'false', 'null', 'undefined', 'NaN', 'Infinity',
+          'async', 'await', 'yield', 'import', 'export', 'from', 'as', 'with'
+        ];
+
         simplePatterns.forEach(pattern => {
           let helperMatch;
           while ((helperMatch = pattern.exec(helpersContent)) !== null) {
             const helperName = helperMatch[1];
+
+            // Skip JavaScript keywords and control flow statements
+            if (jsKeywords.includes(helperName)) {
+              continue;
+            }
+
             if (!helpers.includes(helperName)) {
               helpers.push(helperName);
               helperDetails.push({

@@ -8,7 +8,31 @@ type NestedTemplateProps = {
 };
 
 type NestedTemplateData = {
-  // Add template data here
+  /**
+   * This is a test data type for the nested template.
+   * It includes various properties to demonstrate the structure.
+   */
+  thing1: string;
+  /**
+   * This is a test data type for the nested template.
+   * It includes various properties to demonstrate the structure.
+   * thing 2!!!
+   */
+  thing2: number;
+  /**
+   * This is a test data type for the nested template. thing 3 abc
+   */
+  thing3: boolean;
+  /**
+   * This is a test data type for the nested template  asdsd
+   */
+  thing4: string[];
+  // Complex nested object with additional properties
+  thing5: {
+    nestedThing1: string;
+    nestedThing2: number;
+    nestedThing3: boolean;
+  };
 };
 
 // Create the static typed template

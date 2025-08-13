@@ -4,6 +4,33 @@ All notable changes to the "meteor-blaze-vscode-language-server" extension will 
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [0.0.5] - 2025-08-13
+
+### Added
+- **Enhanced Template Completion System**: Comprehensive auto-completion for Meteor/Blaze templates
+  - **Smart Single Bracket Detection**: Automatically detects single `{` and wraps completions in double brackets `{{}}`
+  - **Template Helper Completions**: Intelligent detection and completion of Template.helpers() functions with full JSDoc support
+  - **Global Helper Support**: Auto-completion for globally registered template helpers across the workspace
+  - **Template Data Properties**: Completion suggestions for template data context properties
+  - **Built-in Blaze Helpers**: Completion support for `#if`, `#unless`, `#each`, `#with`, `#let`, and `this`
+  - **File Type Filtering**: Completions only appear in appropriate template files (`.html`, `.htm`, `.meteor`)
+
+### Enhanced
+- **Intelligent Helper Parsing**: Advanced JavaScript analysis with robust filtering
+  - Comprehensive exclusion of JavaScript keywords and control flow statements (`if`, `for`, `while`, etc.)
+  - Smart object literal context validation to ensure only actual template helpers are detected
+  - Enhanced JSDoc parsing for parameter types, return types, and documentation
+  - Support for multiple helper definition patterns (arrow functions, function expressions, standard methods)
+- **Handlebars Expression Detection**: Improved bracket matching and expression boundary detection
+  - Better handling of incomplete expressions and cursor positioning
+  - Enhanced single bracket detection with context-aware completion triggering
+
+### Technical Improvements
+- **Enhanced File Analysis**: Robust Template.helpers() block parsing with proper brace matching
+- **Improved Code Completion Engine**: More accurate completion suggestions with detailed documentation
+- **Better Error Handling**: Comprehensive error handling in file analysis and completion generation
+- **Performance Optimizations**: Efficient parsing algorithms with reduced redundant processing
+
 ## [0.0.4] - 2025-08-11
 
 ### Added

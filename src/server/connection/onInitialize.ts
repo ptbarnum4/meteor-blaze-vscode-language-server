@@ -1,16 +1,13 @@
 import {
-    InitializeParams,
-    InitializeResult,
-    TextDocumentSyncKind
+  InitializeParams,
+  InitializeResult,
+  TextDocumentSyncKind
 } from 'vscode-languageserver/node';
 
 import { CurrentConnectionConfig } from '/types';
 
 const onInitialize = (config: CurrentConnectionConfig) => {
   return (params: InitializeParams) => {
-    const connection = config.connection;
-    connection.console.log('🚀🚀🚀 METEOR LANGUAGE SERVER STARTING WITH NEW DEBUG CODE 🚀🚀🚀');
-    connection.console.log('Meteor Language Server initializing...');
     const capabilities = params.capabilities;
 
     config.hasConfigurationCapability = !!(
@@ -45,7 +42,6 @@ const onInitialize = (config: CurrentConnectionConfig) => {
       };
     }
 
-    connection.console.log('Meteor Language Server capabilities configured');
     return result;
   };
 };

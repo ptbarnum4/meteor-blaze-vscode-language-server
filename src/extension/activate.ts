@@ -15,18 +15,19 @@ import {
 import { isMeteorProject } from './helpers/meteor';
 import { ExtensionConfig } from '/types';
 
-
 export const createActivate = (extConfig: ExtensionConfig) => {
   return (context: vscode.ExtensionContext) => {
+    console.info('Meteor/Blaze Language Server: Extension activation started...');
+    
     // Check if this is a Meteor project
     if (!isMeteorProject()) {
-      console.log(
+      console.info(
         'Meteor/Blaze Language Server: No .meteor directory found. Extension will not activate.'
       );
       return;
     }
 
-    console.log('Meteor/Blaze Language Server: .meteor directory found. Activating extension...');
+    console.info('Meteor/Blaze Language Server: .meteor directory found. Activating extension...');
 
     // Register semantic token provider for Blaze blocks and expressions
     const legend = new vscode.SemanticTokensLegend([
@@ -183,23 +184,27 @@ export const createActivate = (extConfig: ExtensionConfig) => {
       );
     }
     // Prompt user to set editor.tokenColorCustomizations for Blaze token colors
-    vscode.window.showInformationMessage(
-      'For full Blaze token coloring, add editor.tokenColorCustomizations to your settings. See CONFIGURATION.md for details.',
-      'Open Configuration Guide'
-    ).then(selection => {
-      if (selection === 'Open Configuration Guide') {
-        vscode.env.openExternal(vscode.Uri.parse('https://github.com/ptbarnum4/meteor-blaze-vscode-language-server/blob/main/CONFIGURATION.md'));
-      }
-    });
-    console.log('Meteor/Blaze HTML Language Server extension activating...');
+    vscode.window
+      .showInformationMessage(
+        'For full Blaze token coloring, add editor.tokenColorCustomizations to your settings. See CONFIGURATION.md for details.',
+        'Open Configuration Guide'
+      )
+      .then(selection => {
+        if (selection === 'Open Configuration Guide') {
+          vscode.env.openExternal(
+            vscode.Uri.parse(
+              'https://github.com/ptbarnum4/meteor-blaze-vscode-language-server/blob/main/CONFIGURATION.md'
+            )
+          );
+        }
+      });
+    console.info('Meteor/Blaze HTML Language Server extension activating...');
 
     // Initialize decoration type with current settings
     extConfig.blockConditionDecorationType = createBlockConditionDecorationType();
 
     // The server is implemented in node
     const serverModule = context.asAbsolutePath(path.join('dist', 'server.js'));
-
-    console.log(`Server module path: ${serverModule}`);
 
     // Debug options for the server
     const debugOptions = { execArgv: ['--nolazy', '--inspect=6009'] }; // Server options: run configuration and debug configuration
@@ -239,6 +244,7 @@ export const createActivate = (extConfig: ExtensionConfig) => {
     };
 
     // Create the language client and start the client
+    console.info('Meteor/Blaze Language Server: Creating language client...');
     extConfig.client = new LanguageClient(
       'meteorLanguageServer',
       'Meteor/Blaze HTML Language Server',
@@ -262,7 +268,9 @@ export const createActivate = (extConfig: ExtensionConfig) => {
     context.subscriptions.push(restartCommand);
 
     // Start the client. This will also launch the server
+    console.info('Meteor/Blaze Language Server: Starting language client...');
     extConfig.client.start();
+    console.info('Meteor/Blaze Language Server: Language client started.');
 
     // Set up document change listener for inline block-condition hints
     const disposable = vscode.workspace.onDidChangeTextDocument(event => {
@@ -320,7 +328,7 @@ export const createActivate = (extConfig: ExtensionConfig) => {
     );
 
     // Log activation
-    console.log('Meteor/Blaze HTML Language Server is now active for Meteor project!');
+    console.info('Meteor/Blaze HTML Language Server is now active for Meteor project!');
     vscode.window.showInformationMessage(
       'Meteor/Blaze HTML Language Server activated for Meteor project!'
     );
