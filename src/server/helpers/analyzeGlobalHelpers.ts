@@ -1,8 +1,6 @@
 import fs from 'fs';
 import path from 'path';
 
-import { HelperInfo } from '../../types';
-
 type GlobalHelperInfo = {
   name: string;
   jsdoc?: string;
@@ -21,16 +19,16 @@ export type AnalyzeGlobalHelpersResult = {
 const extractJSDocComment = (lines: string[], targetLineIndex: number): string | undefined => {
   let jsdocLines: string[] = [];
   let inJSDoc = false;
-  
+
   // Look backwards from the target line
   for (let i = targetLineIndex - 1; i >= 0; i--) {
     const line = lines[i].trim();
-    
+
     if (line === '*/') {
       inJSDoc = true;
       continue;
     }
-    
+
     if (line.startsWith('/**')) {
       if (inJSDoc) {
         // Found the start, reverse and join
@@ -38,7 +36,7 @@ const extractJSDocComment = (lines: string[], targetLineIndex: number): string |
       }
       break;
     }
-    
+
     if (inJSDoc) {
       if (line.startsWith('*')) {
         const content = line.substring(1).trim();
@@ -47,54 +45,54 @@ const extractJSDocComment = (lines: string[], targetLineIndex: number): string |
         }
       }
     }
-    
+
     if (!inJSDoc && line.length > 0) {
       // Found non-empty, non-comment line, stop looking
       break;
     }
   }
-  
+
   return undefined;
 };
 
 // Function to analyze a single file for global helpers
 export const analyzeFileForGlobalHelpers = (filePath: string): GlobalHelperInfo[] => {
   const globalHelpers: GlobalHelperInfo[] = [];
-  
+
   try {
     const content = fs.readFileSync(filePath, 'utf8');
     const lines = content.split('\n');
-    
+
     // Look for Template.registerHelper calls
     const registerHelperPattern = /Template\.registerHelper\s*\(\s*['"`]([^'"`]+)['"`]\s*,\s*(.*)/;
-    
+
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
       const match = registerHelperPattern.exec(line);
-      
+
       if (match) {
         const helperName = match[1];
         const helperStart = match[2];
-        
+
         // Extract JSDoc comment
         const jsdoc = extractJSDocComment(lines, i);
-        
+
         // Try to extract function signature and parameters
         let signature = '';
         let parameters = '';
         let returnType = '';
-        
+
         // Look for function definition - could be arrow function or regular function
         let fullHelperCode = helperStart;
         let j = i;
         let openParens = 0;
         let foundFunction = false;
-        
+
         // Continue reading lines until we find the complete function definition
         while (j < lines.length) {
           const currentLine = j === i ? helperStart : lines[j];
-          fullHelperCode += (j === i ? '' : '\n' + currentLine);
-          
+          fullHelperCode += j === i ? '' : '\n' + currentLine;
+
           // Count parentheses to find the complete function
           for (const char of currentLine) {
             if (char === '(') {
@@ -104,11 +102,13 @@ export const analyzeFileForGlobalHelpers = (filePath: string): GlobalHelperInfo[
               openParens--;
             }
           }
-          
+
           // Look for function patterns
           const arrowFunctionMatch = fullHelperCode.match(/\(([^)]*)\)\s*(?::\s*([^=]+?))?\s*=>/);
-          const regularFunctionMatch = fullHelperCode.match(/function\s*\(([^)]*)\)\s*(?::\s*([^{]+?))?/);
-          
+          const regularFunctionMatch = fullHelperCode.match(
+            /function\s*\(([^)]*)\)\s*(?::\s*([^{]+?))?/
+          );
+
           if (arrowFunctionMatch || regularFunctionMatch) {
             const match = arrowFunctionMatch || regularFunctionMatch;
             if (match) {
@@ -119,25 +119,25 @@ export const analyzeFileForGlobalHelpers = (filePath: string): GlobalHelperInfo[
               break;
             }
           }
-          
+
           // If we've closed all parentheses and found a potential end, break
           if (openParens === 0 && (currentLine.includes(');') || currentLine.includes('})'))) {
             break;
           }
-          
+
           j++;
-          
+
           // Safety limit
           if (j - i > 20) {
             break;
           }
         }
-        
+
         // If we couldn't extract a proper signature, create a basic one
         if (!foundFunction) {
           signature = `${helperName}(...)`;
         }
-        
+
         globalHelpers.push({
           name: helperName,
           jsdoc,
@@ -151,22 +151,24 @@ export const analyzeFileForGlobalHelpers = (filePath: string): GlobalHelperInfo[
   } catch (error) {
     console.error(`Error analyzing file for global helpers: ${filePath}`, error);
   }
-  
+
   return globalHelpers;
 };
 
 // Function to scan entire project for global helpers
-export const analyzeGlobalHelpers = async (projectRoot: string): Promise<AnalyzeGlobalHelpersResult> => {
+export const analyzeGlobalHelpers = async (
+  projectRoot: string
+): Promise<AnalyzeGlobalHelpersResult> => {
   const globalHelpers: GlobalHelperInfo[] = [];
   const helperNames: string[] = [];
-  
+
   const scanDirectory = (dirPath: string) => {
     try {
       const entries = fs.readdirSync(dirPath, { withFileTypes: true });
-      
+
       for (const entry of entries) {
         const fullPath = path.join(dirPath, entry.name);
-        
+
         if (entry.isDirectory()) {
           // Skip node_modules and .meteor directories
           if (entry.name !== 'node_modules' && entry.name !== '.meteor') {
@@ -178,7 +180,7 @@ export const analyzeGlobalHelpers = async (projectRoot: string): Promise<Analyze
           if (ext === '.ts' || ext === '.js') {
             const fileHelpers = analyzeFileForGlobalHelpers(fullPath);
             globalHelpers.push(...fileHelpers);
-            
+
             for (const helper of fileHelpers) {
               if (!helperNames.includes(helper.name)) {
                 helperNames.push(helper.name);
@@ -191,9 +193,9 @@ export const analyzeGlobalHelpers = async (projectRoot: string): Promise<Analyze
       // Skip directories we can't read
     }
   };
-  
+
   scanDirectory(projectRoot);
-  
+
   return {
     helpers: helperNames,
     helperDetails: globalHelpers

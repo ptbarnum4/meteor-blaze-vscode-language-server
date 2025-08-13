@@ -9,12 +9,12 @@ import {
 } from 'vscode-languageserver/node';
 
 import { CurrentConnectionConfig } from '../../types';
+import { analyzeGlobalHelpers } from '../helpers/analyzeGlobalHelpers';
 import { createBlockCompletions, shouldProvideBlockCompletion } from '../helpers/autoInsertEndTags';
 import { containsMeteorTemplates } from '../helpers/containsMeteorTemplates';
 import { findEnclosingEachInContext } from '../helpers/findEnclosingEachInContext';
 import { findEnclosingIfOrUnlessBlock } from '../helpers/findEnclosingIfOrUnlessBlock';
 import { isWithinHandlebarsExpression } from '../helpers/isWithinHandlebarsExpression';
-import { analyzeGlobalHelpers } from '../helpers/analyzeGlobalHelpers';
 
 const onCompletion = (config: CurrentConnectionConfig) => {
   const { connection, documents } = config;
@@ -44,10 +44,14 @@ const onCompletion = (config: CurrentConnectionConfig) => {
     // Check if we're inside template inclusion parameters ({{> templateName [cursor is here] }})
     // Use a more precise pattern that only matches when cursor is within the same template inclusion
     // Look for {{> templateName followed by parameters, but stops at }} or another {{
-    const templateParameterMatch = textBeforeCursor.match(/\{\{\s*>\s*([a-zA-Z0-9_]+)(?:[^{}]|$)*$/);
-    
+    const templateParameterMatch = textBeforeCursor.match(
+      /\{\{\s*>\s*([a-zA-Z0-9_]+)(?:[^{}]|$)*$/
+    );
+
     // Also ensure we're not inside another handlebars expression after the template inclusion
-    const afterTemplateInclusion = textBeforeCursor.match(/\{\{\s*>\s*[a-zA-Z0-9_]+[\s\S]*?\}\}[\s\S]*?\{\{[^}]*$/);
+    const afterTemplateInclusion = textBeforeCursor.match(
+      /\{\{\s*>\s*[a-zA-Z0-9_]+[\s\S]*?\}\}[\s\S]*?\{\{[^}]*$/
+    );
     const isInSeparateHandlebarsExpression = afterTemplateInclusion !== null;
 
     // Check if we're positioned after an equals sign (indicating we're providing a value, not a parameter name)
@@ -55,9 +59,9 @@ const onCompletion = (config: CurrentConnectionConfig) => {
     const isAfterEquals = afterEqualsMatch !== null;
 
     const isTemplateParameter =
-      templateParameterMatch !== null && 
-      !isTemplateInclusion && 
-      !isAfterEquals && 
+      templateParameterMatch !== null &&
+      !isTemplateInclusion &&
+      !isAfterEquals &&
       !isInSeparateHandlebarsExpression;
     const templateNameForParams = templateParameterMatch ? templateParameterMatch[1] : '';
 
@@ -160,33 +164,34 @@ const onCompletion = (config: CurrentConnectionConfig) => {
       const currentFileUri = textDocumentPosition.textDocument.uri;
       const currentFilePath = currentFileUri.replace('file://', '');
       let workspaceRoot = path.dirname(currentFilePath);
-      
+
       // Walk up the directory tree to find workspace root
       while (workspaceRoot !== path.dirname(workspaceRoot)) {
         const packageJsonPath = path.join(workspaceRoot, 'package.json');
         const meteorPath = path.join(workspaceRoot, '.meteor');
-        
+
         if (require('fs').existsSync(packageJsonPath) || require('fs').existsSync(meteorPath)) {
           break;
         }
-        
+
         workspaceRoot = path.dirname(workspaceRoot);
       }
-      
+
       try {
         const globalHelpersResult = await analyzeGlobalHelpers(workspaceRoot);
-        
+
         globalHelpersResult.helperDetails.forEach((helper: any) => {
           // Avoid duplicates with existing completions
           if (!completions.find(c => c.label === helper.name)) {
-            const documentation = helper.jsdoc || `Globally registered template helper: ${helper.name}`;
+            const documentation =
+              helper.jsdoc || `Globally registered template helper: ${helper.name}`;
             completions.push({
               label: helper.name,
               kind: CompletionItemKind.Function,
               detail: 'Global template helper',
-              documentation: helper.jsdoc ? 
-                { kind: MarkupKind.Markdown, value: helper.jsdoc } : 
-                documentation
+              documentation: helper.jsdoc
+                ? { kind: MarkupKind.Markdown, value: helper.jsdoc }
+                : documentation
             });
           }
         });
@@ -616,13 +621,15 @@ async function getTemplateParameterCompletions(
 
     // Add any TypeScript-only properties that aren't in the template HTML
     const templatePropNames = new Set(templateDataProperties);
-    const typeOnlyProps = typeDataProperties.filter(prop =>
-      !templatePropNames.has(prop.name) && !helperNames.includes(prop.name)
+    const typeOnlyProps = typeDataProperties.filter(
+      prop => !templatePropNames.has(prop.name) && !helperNames.includes(prop.name)
     );
 
     // Combine both sets of properties
-    const allDataProperties: Array<{ name: string; type?: string; documentation?: string }> =
-      [...templateProps, ...typeOnlyProps].sort((a, b) => a.name.localeCompare(b.name));
+    const allDataProperties: Array<{ name: string; type?: string; documentation?: string }> = [
+      ...templateProps,
+      ...typeOnlyProps
+    ].sort((a, b) => a.name.localeCompare(b.name));
 
     // Create completions for each data property
     allDataProperties.forEach(property => {

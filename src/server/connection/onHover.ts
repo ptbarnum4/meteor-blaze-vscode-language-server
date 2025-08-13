@@ -4,6 +4,7 @@ import { TextDocument } from 'vscode-languageserver-textdocument';
 import { Hover, MarkupKind, TextDocumentPositionParams } from 'vscode-languageserver/node';
 
 import { CurrentConnectionConfig } from '../../types';
+import { analyzeGlobalHelpers } from '../helpers/analyzeGlobalHelpers';
 import { containsMeteorTemplates } from '../helpers/containsMeteorTemplates';
 import { findEnclosingEachInContext } from '../helpers/findEnclosingEachInContext';
 import { getWordRangeAtPosition } from '../helpers/getWordRangeAtPosition';
@@ -12,7 +13,6 @@ import {
   trimLanguageDocumentation,
   trimUsageDocumentation
 } from '../helpers/trimUsageDocumentation';
-import { analyzeGlobalHelpers } from '../helpers/analyzeGlobalHelpers';
 
 const onHover = (config: CurrentConnectionConfig) => {
   const { connection, documents } = config;
@@ -226,22 +226,24 @@ const onHover = (config: CurrentConnectionConfig) => {
     const currentFileUri = textDocumentPosition.textDocument.uri;
     const currentFilePath = currentFileUri.replace('file://', '');
     let workspaceRoot = path.dirname(currentFilePath);
-    
+
     // Walk up the directory tree to find workspace root
     while (workspaceRoot !== path.dirname(workspaceRoot)) {
       const packageJsonPath = path.join(workspaceRoot, 'package.json');
       const meteorPath = path.join(workspaceRoot, '.meteor');
-      
+
       if (require('fs').existsSync(packageJsonPath) || require('fs').existsSync(meteorPath)) {
         break;
       }
-      
+
       workspaceRoot = path.dirname(workspaceRoot);
     }
-    
+
     const globalHelpersResult = await analyzeGlobalHelpers(workspaceRoot);
-    
-    const globalHelper = globalHelpersResult.helperDetails.find((helper: any) => helper.name === word);
+
+    const globalHelper = globalHelpersResult.helperDetails.find(
+      (helper: any) => helper.name === word
+    );
     if (globalHelper) {
       const hoverContent = [`**${word}** - Global Template Helper`, ``];
 
@@ -1042,7 +1044,10 @@ async function getTemplateParameterHover(
 
     // Also check if we're still within the template inclusion by looking for the closing }}
     const fullContext = beforeCursor + afterCursor;
-    const templateInclusionPattern = new RegExp(`\\{\\{\\s*>\\s*${templateName}[\\s\\S]*?\\}\\}`, 'g');
+    const templateInclusionPattern = new RegExp(
+      `\\{\\{\\s*>\\s*${templateName}[\\s\\S]*?\\}\\}`,
+      'g'
+    );
     const matches = [...fullContext.matchAll(templateInclusionPattern)];
 
     // Find which match contains our current position
@@ -1062,11 +1067,11 @@ async function getTemplateParameterHover(
 
     if (!isInTemplateInclusion) {
       return null;
-    }    // Look for TypeScript file to get parameter information
+    } // Look for TypeScript file to get parameter information
     const possibleTsPaths = [
       path.join(currentDir, templateName, `${templateName}.ts`),
       path.join(currentDir, templateName, 'index.ts'),
-      path.join(currentDir, `${templateName}.ts`),
+      path.join(currentDir, `${templateName}.ts`)
     ];
 
     for (const tsPath of possibleTsPaths) {
@@ -1074,7 +1079,10 @@ async function getTemplateParameterHover(
         const content = fs.readFileSync(tsPath, 'utf8');
 
         // Check if it's a helper function first
-        const helpersPattern = new RegExp(`Template\\.${templateName}\\.helpers\\s*\\(\\s*\\{([\\s\\S]*?)\\}\\s*\\)`, 'i');
+        const helpersPattern = new RegExp(
+          `Template\\.${templateName}\\.helpers\\s*\\(\\s*\\{([\\s\\S]*?)\\}\\s*\\)`,
+          'i'
+        );
         const helpersMatch = content.match(helpersPattern);
 
         if (helpersMatch) {
@@ -1124,7 +1132,7 @@ async function getTemplateParameterHover(
               `**${word}** - Template Helper Function`,
               '',
               `**Template:** ${templateName}`,
-              `**Returns:** \`${returnType}\``,
+              `**Returns:** \`${returnType}\``
             ];
 
             if (documentation) {
@@ -1145,7 +1153,10 @@ async function getTemplateParameterHover(
         ];
 
         for (const typeName of typeNames) {
-          const typePattern = new RegExp(`type\\s+${typeName}\\s*=\\s*\\{([\\s\\S]*?)\\}\\s*;`, 'i');
+          const typePattern = new RegExp(
+            `type\\s+${typeName}\\s*=\\s*\\{([\\s\\S]*?)\\}\\s*;`,
+            'i'
+          );
           const typeMatch = content.match(typePattern);
 
           if (typeMatch) {
@@ -1191,7 +1202,7 @@ async function getTemplateParameterHover(
                   `**${word}** - Template Parameter`,
                   '',
                   `**Template:** ${templateName}`,
-                  `**Type:** \`${propertyType}\``,
+                  `**Type:** \`${propertyType}\``
                 ];
 
                 if (documentation) {
@@ -1215,7 +1226,6 @@ async function getTemplateParameterHover(
       '',
       `Parameter passed to the \`${templateName}\` template.`
     ].join('\n');
-
   } catch (error) {
     console.error(`Error getting template parameter hover for ${word}:`, error);
     return null;

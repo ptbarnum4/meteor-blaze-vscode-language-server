@@ -3,11 +3,11 @@ import path from 'path';
 import { DefinitionParams, Location } from 'vscode-languageserver/node';
 
 import { CurrentConnectionConfig } from '../../../types';
+import { analyzeGlobalHelpers } from '../../helpers/analyzeGlobalHelpers';
 import { containsMeteorTemplates } from '../../helpers/containsMeteorTemplates';
 import { findEnclosingEachInContext } from '../../helpers/findEnclosingEachInContext';
 import { getWordRangeAtPosition } from '../../helpers/getWordRangeAtPosition';
 import { isWithinHandlebarsExpression } from '../../helpers/isWithinHandlebarsExpression';
-import { analyzeGlobalHelpers } from '../../helpers/analyzeGlobalHelpers';
 
 const onDefinition = (config: CurrentConnectionConfig) => {
   const { connection, documents } = config;
@@ -42,7 +42,6 @@ const onDefinition = (config: CurrentConnectionConfig) => {
     // Check if we're inside a handlebars expression
     const handlebarsInfo = isWithinHandlebarsExpression(text, offset);
     if (!handlebarsInfo.isWithin) {
-
       return null;
     }
 
@@ -56,8 +55,6 @@ const onDefinition = (config: CurrentConnectionConfig) => {
       document.offsetAt(wordRange.start),
       document.offsetAt(wordRange.end)
     );
-
-
 
     const eachCtx = findEnclosingEachInContext(text, offset);
 
@@ -353,27 +350,29 @@ const onDefinition = (config: CurrentConnectionConfig) => {
       const currentFileUri = params.textDocument.uri;
       const currentFilePath = currentFileUri.replace('file://', '');
       let workspaceRoot = path.dirname(currentFilePath);
-      
+
       // Walk up the directory tree to find workspace root
       while (workspaceRoot !== path.dirname(workspaceRoot)) {
         const packageJsonPath = path.join(workspaceRoot, 'package.json');
         const meteorPath = path.join(workspaceRoot, '.meteor');
-        
+
         if (require('fs').existsSync(packageJsonPath) || require('fs').existsSync(meteorPath)) {
           break;
         }
-        
+
         workspaceRoot = path.dirname(workspaceRoot);
       }
-      
+
       const globalHelpersResult = await analyzeGlobalHelpers(workspaceRoot);
-      
-      const globalHelper = globalHelpersResult.helperDetails.find((helper: any) => helper.name === word);
+
+      const globalHelper = globalHelpersResult.helperDetails.find(
+        (helper: any) => helper.name === word
+      );
       if (globalHelper) {
         // Read the file and find the Template.registerHelper line
         const content = require('fs').readFileSync(globalHelper.filePath, 'utf8');
         const lines = content.split('\n');
-        
+
         for (let i = 0; i < lines.length; i++) {
           const line = lines[i];
           const helperRegex = new RegExp(`Template\\.registerHelper\\s*\\(\\s*['"\`]${word}['"\`]`);
@@ -396,7 +395,13 @@ const onDefinition = (config: CurrentConnectionConfig) => {
     }
 
     // Check for template inclusion navigation (e.g., {{> templateName}} or template parameters)
-    const templateInclusionResult = handleTemplateInclusionDefinition(text, offset, word, dir, connection);
+    const templateInclusionResult = handleTemplateInclusionDefinition(
+      text,
+      offset,
+      word,
+      dir,
+      connection
+    );
     if (templateInclusionResult) {
       return templateInclusionResult;
     }
@@ -441,7 +446,10 @@ function handleTemplateInclusionDefinition(
 
     // Also check if we're still within the template inclusion by looking for the closing }}
     const fullContext = beforeCursor + afterCursor;
-    const templateInclusionPattern = new RegExp(`\\{\\{\\s*>\\s*${templateName}[\\s\\S]*?\\}\\}`, 'g');
+    const templateInclusionPattern = new RegExp(
+      `\\{\\{\\s*>\\s*${templateName}[\\s\\S]*?\\}\\}`,
+      'g'
+    );
     const matches = [...fullContext.matchAll(templateInclusionPattern)];
 
     // Find which match contains our current position
@@ -483,7 +491,7 @@ function findTemplateDefinition(
       path.join(currentDir, `${templateName}.html`),
       // Also check parent directories
       path.join(path.dirname(currentDir), templateName, 'template.html'),
-      path.join(path.dirname(currentDir), templateName, `${templateName}.html`),
+      path.join(path.dirname(currentDir), templateName, `${templateName}.html`)
     ];
 
     for (const templatePath of possiblePaths) {
@@ -499,13 +507,15 @@ function findTemplateDefinition(
           const line = lines.length - 1;
           const character = match.index - content.lastIndexOf('\n', match.index) - 1;
 
-          return [{
-            uri: `file://${templatePath}`,
-            range: {
-              start: { line, character },
-              end: { line, character: character + templateName.length }
+          return [
+            {
+              uri: `file://${templatePath}`,
+              range: {
+                start: { line, character },
+                end: { line, character: character + templateName.length }
+              }
             }
-          }];
+          ];
         }
       }
     }
@@ -527,7 +537,13 @@ function findParameterDefinition(
 ): Location[] | null {
   try {
     // First, try to find the parameter usage in the HTML template file
-    const htmlResult = findParameterInTemplateHtml(parameterName, templateName, currentDir, fs, path);
+    const htmlResult = findParameterInTemplateHtml(
+      parameterName,
+      templateName,
+      currentDir,
+      fs,
+      path
+    );
     if (htmlResult) {
       return htmlResult;
     }
@@ -536,7 +552,7 @@ function findParameterDefinition(
     const possibleTsPaths = [
       path.join(currentDir, templateName, `${templateName}.ts`),
       path.join(currentDir, templateName, 'index.ts'),
-      path.join(currentDir, `${templateName}.ts`),
+      path.join(currentDir, `${templateName}.ts`)
     ];
 
     for (const tsPath of possibleTsPaths) {
@@ -553,7 +569,10 @@ function findParameterDefinition(
         ];
 
         for (const typeName of typeNames) {
-          const typePattern = new RegExp(`type\\s+${typeName}\\s*=\\s*\\{([\\s\\S]*?)\\}\\s*;`, 'i');
+          const typePattern = new RegExp(
+            `type\\s+${typeName}\\s*=\\s*\\{([\\s\\S]*?)\\}\\s*;`,
+            'i'
+          );
           const typeMatch = content.match(typePattern);
 
           if (typeMatch) {
@@ -567,46 +586,61 @@ function findParameterDefinition(
               if (propertyMatch) {
                 // Calculate position in the full file
                 const beforeType = content.substring(0, typeMatch.index);
-                const beforeProperty = beforeType + typeMatch[0].substring(0, typeMatch[0].indexOf(typeBody)) +
-                                    lines.slice(0, i).join('\n') + (i > 0 ? '\n' : '');
+                const beforeProperty =
+                  beforeType +
+                  typeMatch[0].substring(0, typeMatch[0].indexOf(typeBody)) +
+                  lines.slice(0, i).join('\n') +
+                  (i > 0 ? '\n' : '');
                 const lineNumber = beforeProperty.split('\n').length - 1;
                 const character = propertyMatch.index + propertyMatch[0].indexOf(parameterName);
 
-                return [{
-                  uri: `file://${tsPath}`,
-                  range: {
-                    start: { line: lineNumber, character },
-                    end: { line: lineNumber, character: character + parameterName.length }
+                return [
+                  {
+                    uri: `file://${tsPath}`,
+                    range: {
+                      start: { line: lineNumber, character },
+                      end: { line: lineNumber, character: character + parameterName.length }
+                    }
                   }
-                }];
+                ];
               }
             }
           }
         }
 
         // Also check for helper functions
-        const helpersPattern = new RegExp(`Template\\.${templateName}\\.helpers\\s*\\(\\s*\\{([\\s\\S]*?)\\}\\s*\\)`, 'i');
+        const helpersPattern = new RegExp(
+          `Template\\.${templateName}\\.helpers\\s*\\(\\s*\\{([\\s\\S]*?)\\}\\s*\\)`,
+          'i'
+        );
         const helpersMatch = content.match(helpersPattern);
 
         if (helpersMatch) {
           const helpersBody = helpersMatch[1];
-          const helperRegex = new RegExp(`(${parameterName})\\s*\\([^)]*\\)\\s*:?\\s*[^{]*\\{`, 'g');
+          const helperRegex = new RegExp(
+            `(${parameterName})\\s*\\([^)]*\\)\\s*:?\\s*[^{]*\\{`,
+            'g'
+          );
           const helperMatch = helperRegex.exec(helpersBody);
 
           if (helperMatch) {
             const beforeHelpers = content.substring(0, helpersMatch.index);
-            const beforeHelper = beforeHelpers + helpersMatch[0].substring(0, helpersMatch[0].indexOf(helpersBody)) +
-                               helpersBody.substring(0, helperMatch.index);
+            const beforeHelper =
+              beforeHelpers +
+              helpersMatch[0].substring(0, helpersMatch[0].indexOf(helpersBody)) +
+              helpersBody.substring(0, helperMatch.index);
             const lineNumber = beforeHelper.split('\n').length - 1;
             const character = helperMatch.index + helperMatch[0].indexOf(parameterName);
 
-            return [{
-              uri: `file://${tsPath}`,
-              range: {
-                start: { line: lineNumber, character },
-                end: { line: lineNumber, character: character + parameterName.length }
+            return [
+              {
+                uri: `file://${tsPath}`,
+                range: {
+                  start: { line: lineNumber, character },
+                  end: { line: lineNumber, character: character + parameterName.length }
+                }
               }
-            }];
+            ];
           }
         }
       }
@@ -634,7 +668,7 @@ function findParameterInTemplateHtml(
       path.join(currentDir, `${templateName}.html`),
       // Also check parent directories
       path.join(path.dirname(currentDir), templateName, 'template.html'),
-      path.join(path.dirname(currentDir), templateName, `${templateName}.html`),
+      path.join(path.dirname(currentDir), templateName, `${templateName}.html`)
     ];
 
     for (const templatePath of possiblePaths) {
@@ -652,13 +686,15 @@ function findParameterInTemplateHtml(
           const line = lines.length - 1;
           const character = match.index - beforeMatch.lastIndexOf('\n') - 1;
 
-          return [{
-            uri: `file://${templatePath}`,
-            range: {
-              start: { line, character: character + 2 }, // Skip {{ to point to parameter name
-              end: { line, character: character + 2 + parameterName.length }
+          return [
+            {
+              uri: `file://${templatePath}`,
+              range: {
+                start: { line, character: character + 2 }, // Skip {{ to point to parameter name
+                end: { line, character: character + 2 + parameterName.length }
+              }
             }
-          }];
+          ];
         }
       }
     }

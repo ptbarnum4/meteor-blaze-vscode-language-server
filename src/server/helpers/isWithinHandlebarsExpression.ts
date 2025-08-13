@@ -56,7 +56,7 @@ export const isWithinHandlebarsExpression = (
     // Look ahead to see if there are closing braces somewhere later
     const remainingText = text.substring(offset);
     const nextClosing = remainingText.indexOf(searchPattern);
-    
+
     if (nextClosing !== -1) {
       // There are closing braces ahead, we're probably in an incomplete expression
       return {
