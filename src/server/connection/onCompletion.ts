@@ -2,10 +2,10 @@ import path from 'path';
 
 import { TextDocument } from 'vscode-languageserver-textdocument';
 import {
-    CompletionItem,
-    CompletionItemKind,
-    MarkupKind,
-    TextDocumentPositionParams
+  CompletionItem,
+  CompletionItemKind,
+  MarkupKind,
+  TextDocumentPositionParams
 } from 'vscode-languageserver/node';
 
 import { CurrentConnectionConfig } from '../../types';
@@ -43,7 +43,13 @@ const onCompletion = (config: CurrentConnectionConfig) => {
     // Check if we're inside template inclusion parameters ({{> templateName [cursor is here] }})
     // This pattern handles multiline template inclusions by matching across line breaks
     const templateParameterMatch = textBeforeCursor.match(/\{\{\s*>\s*([a-zA-Z0-9_]+)[\s\S]*?$/);
-    const isTemplateParameter = templateParameterMatch !== null && !isTemplateInclusion;
+
+    // Check if we're positioned after an equals sign (indicating we're providing a value, not a parameter name)
+    const afterEqualsMatch = textBeforeCursor.match(/=\s*[^}\s]*$/);
+    const isAfterEquals = afterEqualsMatch !== null;
+
+    const isTemplateParameter =
+      templateParameterMatch !== null && !isTemplateInclusion && !isAfterEquals;
     const templateNameForParams = templateParameterMatch ? templateParameterMatch[1] : '';
 
     // If we're in a template inclusion context, provide template name completions
@@ -510,7 +516,6 @@ async function getTemplateParameterCompletions(
     const importedTemplates = parseTemplateImports(associatedFile, fs, path);
 
     if (!importedTemplates.includes(templateName)) {
-
       return completions;
     }
 
@@ -523,7 +528,6 @@ async function getTemplateParameterCompletions(
       connection
     );
     if (!templateFile) {
-
       return completions;
     }
 
@@ -561,7 +565,8 @@ async function getTemplateParameterCompletions(
         .map(propName => {
           const typeInfo = typePropsMap.get(propName);
           return typeInfo || { name: propName, type: 'any' };
-        }).sort((a, b) => a.name.localeCompare(b.name));
+        })
+        .sort((a, b) => a.name.localeCompare(b.name));
 
     // Create completions for each data property
     allDataProperties.forEach(property => {
@@ -580,10 +585,7 @@ async function getTemplateParameterCompletions(
       };
       completions.push(completion);
     });
-
-  } catch (error) {
-
-  }
+  } catch (error) {}
 
   return completions;
 }
@@ -605,9 +607,7 @@ function findImportedTemplateFile(
       .split('\n')
       .filter((line: string) => line.trim().startsWith('import') && line.includes(templateName));
 
-    importLines.forEach((line: string, index: number) => {
-
-    });
+    importLines.forEach((line: string, index: number) => {});
 
     for (const importLine of importLines) {
       // Extract import path from import statement
@@ -623,9 +623,7 @@ function findImportedTemplateFile(
 
         if (importPath.startsWith('./') || importPath.startsWith('../')) {
           fullImportPath = path.resolve(dir, importPath);
-
         } else {
-
           continue; // Skip non-relative imports
         }
 
@@ -638,33 +636,26 @@ function findImportedTemplateFile(
         const templateHtmlPath = path.join(importDirResolved, 'template.html');
 
         if (fs.existsSync(templateHtmlPath)) {
-
           return templateHtmlPath;
         } else {
-
         }
 
         // Also check in the full import path directory (original logic)
         const templateHtmlPathFull = path.join(fullImportPath, 'template.html');
 
         if (fs.existsSync(templateHtmlPathFull)) {
-
           return templateHtmlPathFull;
         } else {
-
         }
 
         // Also try templateName.html
         const templateNamePath = path.join(path.dirname(fullImportPath), `${templateName}.html`);
 
         if (fs.existsSync(templateNamePath)) {
-
           return templateNamePath;
         } else {
-
         }
       } else {
-
       }
     }
 
@@ -705,9 +696,7 @@ function findTemplateTypeScriptFile(
 
         if (importPath.startsWith('./') || importPath.startsWith('../')) {
           fullImportPath = path.resolve(dir, importPath);
-
         } else {
-
           continue;
         }
 
@@ -715,10 +704,8 @@ function findTemplateTypeScriptFile(
         const templateTsPath = `${fullImportPath}.ts`;
 
         if (fs.existsSync(templateTsPath)) {
-
           return templateTsPath;
         } else {
-
         }
 
         // Also try the directory approach - look in the import directory
@@ -727,10 +714,8 @@ function findTemplateTypeScriptFile(
         const templateTsInDir = path.join(importDirResolved, `${templateName}.ts`);
 
         if (fs.existsSync(templateTsInDir)) {
-
           return templateTsInDir;
         } else {
-
         }
       }
     }
@@ -757,7 +742,6 @@ function extractDataPropertiesFromTemplate(
   const templateMatch = templateContent.match(templatePattern);
 
   if (!templateMatch) {
-
     return [];
   }
 
@@ -768,9 +752,7 @@ function extractDataPropertiesFromTemplate(
   const handlebarsPattern = /\{\{[^{}]*?\}\}/g;
   const matches = templateBody.match(handlebarsPattern) || [];
 
-  matches.forEach((match, index) => {
-
-  });
+  matches.forEach((match, index) => {});
 
   matches.forEach(match => {
     // Clean up the match - remove {{ }} and any # or / prefixes
@@ -790,7 +772,6 @@ function extractDataPropertiesFromTemplate(
       content === 'this' ||
       content.includes('(')
     ) {
-
       return;
     }
 
@@ -800,13 +781,10 @@ function extractDataPropertiesFromTemplate(
       const property = propertyMatch[1];
       // Skip common template helpers that aren't data properties
       if (!['if', 'each', 'unless', 'with', 'let'].includes(property)) {
-
         properties.add(property);
       } else {
-
       }
     } else {
-
     }
   });
 
@@ -835,7 +813,6 @@ function extractDataPropertiesFromTypes(
       `${pascalTemplateName}TemplateData`,
       `${templateName}TemplateData`
     ];
-
 
     for (const typeName of typeNames) {
       // Match type definitions: type TypeName = { ... }
@@ -916,7 +893,11 @@ function extractDataPropertiesFromTypes(
           }
 
           // Reset comment after processing property or if we encounter other content
-          if (!trimmedLine.startsWith('//') && !trimmedLine.startsWith('/**') && trimmedLine.length > 0) {
+          if (
+            !trimmedLine.startsWith('//') &&
+            !trimmedLine.startsWith('/**') &&
+            trimmedLine.length > 0
+          ) {
             currentJSDocComment = '';
           }
 
@@ -931,7 +912,6 @@ function extractDataPropertiesFromTypes(
         }
         break; // Found the type, no need to check others
       } else {
-
       }
     }
 
@@ -941,7 +921,6 @@ function extractDataPropertiesFromTypes(
       const interfaceMatch = tsFileContent.match(interfacePattern);
 
       if (interfaceMatch) {
-
         const interfaceBody = interfaceMatch[1];
 
         // Split by lines and process each line to avoid nested objects
@@ -1013,7 +992,11 @@ function extractDataPropertiesFromTypes(
           }
 
           // Reset comment after processing property or if we encounter other content
-          if (!trimmedLine.startsWith('//') && !trimmedLine.startsWith('/**') && trimmedLine.length > 0) {
+          if (
+            !trimmedLine.startsWith('//') &&
+            !trimmedLine.startsWith('/**') &&
+            trimmedLine.length > 0
+          ) {
             currentJSDocComment = '';
           }
 
@@ -1037,18 +1020,17 @@ function extractDataPropertiesFromTypes(
 }
 
 // Helper function to extract helper function names from TypeScript template files
-function extractHelperNames(
-  tsFilePath: string,
-  templateName: string,
-  fs: any
-): string[] {
+function extractHelperNames(tsFilePath: string, templateName: string, fs: any): string[] {
   const helperNames: string[] = [];
 
   try {
     const tsFileContent = fs.readFileSync(tsFilePath, 'utf8');
 
     // Look for Template.templateName.helpers({ ... }) block
-    const helpersPattern = new RegExp(`Template\\.${templateName}\\.helpers\\s*\\(\\s*\\{([\\s\\S]*?)\\}\\s*\\)`, 'i');
+    const helpersPattern = new RegExp(
+      `Template\\.${templateName}\\.helpers\\s*\\(\\s*\\{([\\s\\S]*?)\\}\\s*\\)`,
+      'i'
+    );
     const helpersMatch = tsFileContent.match(helpersPattern);
 
     if (helpersMatch) {
