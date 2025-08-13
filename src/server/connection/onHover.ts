@@ -79,6 +79,15 @@ const onHover = (config: CurrentConnectionConfig) => {
       }
     }
 
+    // Check if we're hovering over a template parameter (e.g., {{> templateName param=value}})
+    const templateParameterHover = await getTemplateParameterHover(text, offset, word, dir);
+    if (templateParameterHover) {
+      return {
+        contents: templateParameterHover,
+        range: wordRange
+      };
+    }
+
     // Check each-in context before entering the main loop
     const documentText = document.getText();
     const cursorOffset = document.offsetAt(textDocumentPosition.position);
@@ -932,6 +941,194 @@ function findImportedTemplateFile(
     return null;
   } catch (error) {
     console.error(`Error finding imported template file for ${templateName}:`, error);
+    return null;
+  }
+}
+
+// Helper function to provide hover information for template parameters
+async function getTemplateParameterHover(
+  text: string,
+  offset: number,
+  word: string,
+  currentDir: string
+): Promise<string | null> {
+  const fs = require('fs');
+  const path = require('path');
+
+  try {
+    // Get text around the cursor to determine context
+    const beforeCursor = text.substring(Math.max(0, offset - 100), offset);
+    const afterCursor = text.substring(offset, Math.min(text.length, offset + 100));
+
+    // Check if we're in template parameters: {{> templateName param=value}}
+    const parameterMatch = beforeCursor.match(/\{\{\s*>\s*([a-zA-Z0-9_]+)[^}]*$/);
+    if (!parameterMatch) {
+      return null;
+    }
+
+    const templateName = parameterMatch[1];
+
+    // If the word is the template name itself, don't show parameter hover
+    if (word === templateName) {
+      return null;
+    }
+
+    // Look for TypeScript file to get parameter information
+    const possibleTsPaths = [
+      path.join(currentDir, templateName, `${templateName}.ts`),
+      path.join(currentDir, templateName, 'index.ts'),
+      path.join(currentDir, `${templateName}.ts`),
+    ];
+
+    for (const tsPath of possibleTsPaths) {
+      if (fs.existsSync(tsPath)) {
+        const content = fs.readFileSync(tsPath, 'utf8');
+
+        // Check if it's a helper function first
+        const helpersPattern = new RegExp(`Template\\.${templateName}\\.helpers\\s*\\(\\s*\\{([\\s\\S]*?)\\}\\s*\\)`, 'i');
+        const helpersMatch = content.match(helpersPattern);
+
+        if (helpersMatch) {
+          const helpersBody = helpersMatch[1];
+
+          // Look for the parameter as a helper function
+          const helperRegex = new RegExp(`\\b${word}\\s*\\([^)]*\\)\\s*:?\\s*([^{]*)\\{`, 'g');
+          const helperMatch = helperRegex.exec(helpersBody);
+
+          if (helperMatch) {
+            const returnType = helperMatch[1].trim().replace(/^:\s*/, '') || 'any';
+
+            // Try to extract JSDoc comment
+            const lines = helpersBody.split('\n');
+            let documentation = '';
+
+            for (let i = 0; i < lines.length; i++) {
+              if (lines[i].includes(`${word}(`)) {
+                // Look backwards for JSDoc comment
+                for (let j = i - 1; j >= 0; j--) {
+                  const line = lines[j].trim();
+                  if (line.startsWith('/**')) {
+                    // Found start of JSDoc, collect all lines
+                    let jsdocLines = [];
+                    for (let k = j; k <= i - 1; k++) {
+                      const docLine = lines[k].trim();
+                      if (docLine === '/**' || docLine === '*/') {
+                        continue;
+                      }
+                      if (docLine.startsWith('*')) {
+                        jsdocLines.push(docLine.substring(1).trim());
+                      }
+                    }
+                    documentation = jsdocLines.join(' ').trim();
+                    break;
+                  } else if (line.length === 0) {
+                    continue;
+                  } else {
+                    break;
+                  }
+                }
+                break;
+              }
+            }
+
+            const hoverContent = [
+              `**${word}** - Template Helper Function`,
+              '',
+              `**Template:** ${templateName}`,
+              `**Returns:** \`${returnType}\``,
+            ];
+
+            if (documentation) {
+              hoverContent.splice(2, 0, `**Description:** ${documentation}`, '');
+            }
+
+            return hoverContent.join('\n');
+          }
+        }
+
+        // Look for the parameter in type definitions
+        const pascalTemplateName = templateName.charAt(0).toUpperCase() + templateName.slice(1);
+        const typeNames = [
+          `${pascalTemplateName}Data`,
+          `${templateName}Data`,
+          `${pascalTemplateName}TemplateData`,
+          `${templateName}TemplateData`
+        ];
+
+        for (const typeName of typeNames) {
+          const typePattern = new RegExp(`type\\s+${typeName}\\s*=\\s*\\{([\\s\\S]*?)\\}\\s*;`, 'i');
+          const typeMatch = content.match(typePattern);
+
+          if (typeMatch) {
+            const typeBody = typeMatch[1];
+            const lines = typeBody.split('\n');
+
+            for (let i = 0; i < lines.length; i++) {
+              const line = lines[i];
+              const propertyMatch = line.match(new RegExp(`^\\s*(${word})\\s*:\\s*([^;]+);?`));
+
+              if (propertyMatch) {
+                const propertyType = propertyMatch[2].trim();
+
+                // Look for JSDoc comment above this property
+                let documentation = '';
+                for (let j = i - 1; j >= 0; j--) {
+                  const prevLine = lines[j].trim();
+                  if (prevLine.startsWith('/**')) {
+                    // Found start of JSDoc, collect all lines
+                    let jsdocLines = [];
+                    for (let k = j; k < i; k++) {
+                      const docLine = lines[k].trim();
+                      if (docLine === '/**' || docLine === '*/') {
+                        continue;
+                      }
+                      if (docLine.startsWith('*')) {
+                        jsdocLines.push(docLine.substring(1).trim());
+                      }
+                    }
+                    documentation = jsdocLines.join(' ').trim();
+                    break;
+                  } else if (prevLine.startsWith('//')) {
+                    documentation = prevLine.replace(/^\/\/\s*/, '').trim();
+                    break;
+                  } else if (prevLine.length === 0) {
+                    continue;
+                  } else {
+                    break;
+                  }
+                }
+
+                const hoverContent = [
+                  `**${word}** - Template Parameter`,
+                  '',
+                  `**Template:** ${templateName}`,
+                  `**Type:** \`${propertyType}\``,
+                ];
+
+                if (documentation) {
+                  hoverContent.splice(2, 0, `**Description:** ${documentation}`, '');
+                }
+
+                return hoverContent.join('\n');
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // If no TypeScript information found, provide basic parameter info
+    return [
+      `**${word}** - Template Parameter`,
+      '',
+      `**Template:** ${templateName}`,
+      `**Type:** \`any\``,
+      '',
+      `Parameter passed to the \`${templateName}\` template.`
+    ].join('\n');
+
+  } catch (error) {
+    console.error(`Error getting template parameter hover for ${word}:`, error);
     return null;
   }
 }

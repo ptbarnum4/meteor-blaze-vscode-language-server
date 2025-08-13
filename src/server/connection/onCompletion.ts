@@ -2,10 +2,10 @@ import path from 'path';
 
 import { TextDocument } from 'vscode-languageserver-textdocument';
 import {
-  CompletionItem,
-  CompletionItemKind,
-  MarkupKind,
-  TextDocumentPositionParams
+    CompletionItem,
+    CompletionItemKind,
+    MarkupKind,
+    TextDocumentPositionParams
 } from 'vscode-languageserver/node';
 
 import { CurrentConnectionConfig } from '../../types';
@@ -540,35 +540,45 @@ async function getTemplateParameterCompletions(
       path,
       connection
     );
-    let typeDataProperties: string[] = [];
+    let typeDataProperties: Array<{ name: string; type?: string; documentation?: string }> = [];
 
     if (templateTsFile) {
-
       typeDataProperties = extractDataPropertiesFromTypes(templateTsFile, templateName, fs);
-    } else {
-
     }
 
-    // Combine both sources of data properties
-    const allDataProperties = [
-      ...new Set([...templateDataProperties, ...typeDataProperties])
-    ].sort();
+    // Extract helper function names from the TypeScript file to exclude them from parameters
+    const helperNames = templateTsFile ? extractHelperNames(templateTsFile, templateName, fs) : [];
+
+    // Combine TypeScript properties (with enhanced type info) and template properties (with default any type)
+    // Create a map of TypeScript properties for easy lookup
+    const typePropsMap = new Map(typeDataProperties.map(prop => [prop.name, prop]));
+
+    // Start with all template properties, then enhance with TypeScript info where available
+    // Filter out any properties that are actually helper functions
+    const allDataProperties: Array<{ name: string; type?: string; documentation?: string }> =
+      templateDataProperties
+        .filter(propName => !helperNames.includes(propName)) // Exclude helper functions
+        .map(propName => {
+          const typeInfo = typePropsMap.get(propName);
+          return typeInfo || { name: propName, type: 'any' };
+        }).sort((a, b) => a.name.localeCompare(b.name));
 
     // Create completions for each data property
     allDataProperties.forEach(property => {
       const completion = {
-        label: property,
+        label: property.name,
         kind: CompletionItemKind.Property,
-        detail: 'Template parameter',
+        detail: `Template parameter: ${property.type || 'any'}`,
         documentation: {
           kind: MarkupKind.Markdown,
-          value: `Data property that can be passed to the \`${templateName}\` template.\n\nUsage: \`{{> ${templateName} ${property}=value}}\``
+          value: property.documentation
+            ? `${property.documentation}\n\nUsage: \`{{> ${templateName} ${property.name}=value}}\``
+            : `Data property that can be passed to the \`${templateName}\` template.\n\nUsage: \`{{> ${templateName} ${property.name}=value}}\`.\n\nNote: This property is not declared in the TypeScript types, but is being used in the template, so it defaults to 'any'.`
         },
-        insertText: `${property}=`,
-        filterText: property
+        insertText: `${property.name}=`,
+        filterText: property.name
       };
       completions.push(completion);
-
     });
 
   } catch (error) {
@@ -660,7 +670,7 @@ function findImportedTemplateFile(
 
     return null;
   } catch (error) {
-    console.error(`🔍 FIND-TEMPLATE: Error finding template file for ${templateName}:`, error);
+    console.error(`Error finding template file for ${templateName}:`, error);
     return null;
   }
 }
@@ -727,7 +737,7 @@ function findTemplateTypeScriptFile(
 
     return null;
   } catch (error) {
-    console.error(`🔍 FIND-TS: Error finding TypeScript file for ${templateName}:`, error);
+    console.error(`Error finding TypeScript file for ${templateName}:`, error);
     return null;
   }
 }
@@ -810,8 +820,8 @@ function extractDataPropertiesFromTypes(
   tsFilePath: string,
   templateName: string,
   fs: any
-): string[] {
-  const properties = new Set<string>();
+): Array<{ name: string; type?: string; documentation?: string }> {
+  const properties: Array<{ name: string; type?: string; documentation?: string }> = [];
 
   try {
     const tsFileContent = fs.readFileSync(tsFilePath, 'utf8');
@@ -826,47 +836,96 @@ function extractDataPropertiesFromTypes(
       `${templateName}TemplateData`
     ];
 
+
     for (const typeName of typeNames) {
       // Match type definitions: type TypeName = { ... }
       const typePattern = new RegExp(`type\\s+${typeName}\\s*=\\s*\\{([\\s\\S]*?)\\}\\s*;`, 'i');
       const typeMatch = tsFileContent.match(typePattern);
 
       if (typeMatch) {
-
         const typeBody = typeMatch[1];
 
         // Extract property names from the type body
         // Split by lines and process each line to avoid nested objects
         const lines = typeBody.split('\n');
         let braceDepth = 0;
+        let currentJSDocComment = '';
 
-        for (const line of lines) {
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i];
           const trimmedLine = line.trim();
+
+          // Check for JSDoc comment blocks (/** ... */)
+          if (trimmedLine.startsWith('/**')) {
+            currentJSDocComment = '';
+            let j = i;
+            while (j < lines.length) {
+              const commentLine = lines[j].trim();
+              if (commentLine.includes('*/')) {
+                // Extract content before */
+                const endContent = commentLine.substring(0, commentLine.indexOf('*/'));
+                if (endContent.replace(/^\s*\*?\s*/, '').length > 0) {
+                  currentJSDocComment += endContent.replace(/^\s*\*?\s*/, '');
+                }
+                i = j; // Skip to end of comment block
+                break;
+              } else if (j > i) {
+                // Extract content from comment lines, removing * prefix
+                const content = commentLine.replace(/^\s*\*?\s*/, '');
+                if (content.length > 0) {
+                  if (currentJSDocComment) {
+                    currentJSDocComment += ' ';
+                  }
+                  currentJSDocComment += content;
+                }
+              }
+              j++;
+            }
+            continue;
+          }
+
+          // Check for single-line JSDoc comments
+          if (trimmedLine.startsWith('//')) {
+            currentJSDocComment = trimmedLine.replace(/^\/\/\s*/, '');
+            continue;
+          }
 
           // Check if this line contains a property at the current level (before counting braces)
           if (braceDepth === 0 && trimmedLine.match(/^\s*(\w+)\s*:\s*[^;{]+[;}]/)) {
-            const propertyMatch = trimmedLine.match(/^\s*(\w+)\s*:\s*/);
+            const propertyMatch = trimmedLine.match(/^\s*(\w+)\s*:\s*([^;{]+)[;}]/);
             if (propertyMatch) {
               const propertyName = propertyMatch[1];
+              const propertyType = propertyMatch[2].trim();
               // Skip comments and TypeScript keywords
               if (
                 !propertyName.startsWith('//') &&
                 !['readonly', 'public', 'private', 'protected'].includes(propertyName)
               ) {
+                const propertyInfo: { name: string; type?: string; documentation?: string } = {
+                  name: propertyName,
+                  type: propertyType
+                };
 
-                properties.add(propertyName);
+                if (currentJSDocComment) {
+                  propertyInfo.documentation = currentJSDocComment;
+                }
+
+                properties.push(propertyInfo);
               }
             }
+          }
+
+          // Reset comment after processing property or if we encounter other content
+          if (!trimmedLine.startsWith('//') && !trimmedLine.startsWith('/**') && trimmedLine.length > 0) {
+            currentJSDocComment = '';
           }
 
           // Count braces to update depth for next iteration
           for (const char of trimmedLine) {
             if (char === '{') {
               braceDepth++;
-
             } else if (char === '}') {
               braceDepth--;
-
             }
           }
         }
@@ -888,32 +947,82 @@ function extractDataPropertiesFromTypes(
         // Split by lines and process each line to avoid nested objects
         const lines = interfaceBody.split('\n');
         let braceDepth = 0;
+        let currentJSDocComment = '';
 
-        for (const line of lines) {
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i];
           const trimmedLine = line.trim();
+
+          // Check for JSDoc comment blocks (/** ... */)
+          if (trimmedLine.startsWith('/**')) {
+            currentJSDocComment = '';
+            let j = i;
+            while (j < lines.length) {
+              const commentLine = lines[j].trim();
+              if (commentLine.includes('*/')) {
+                // Extract content before */
+                const endContent = commentLine.substring(0, commentLine.indexOf('*/'));
+                if (endContent.replace(/^\s*\*?\s*/, '').length > 0) {
+                  currentJSDocComment += endContent.replace(/^\s*\*?\s*/, '');
+                }
+                i = j; // Skip to end of comment block
+                break;
+              } else if (j > i) {
+                // Extract content from comment lines, removing * prefix
+                const content = commentLine.replace(/^\s*\*?\s*/, '');
+                if (content.length > 0) {
+                  if (currentJSDocComment) {
+                    currentJSDocComment += ' ';
+                  }
+                  currentJSDocComment += content;
+                }
+              }
+              j++;
+            }
+            continue;
+          }
+
+          // Check for single-line JSDoc comments
+          if (trimmedLine.startsWith('//')) {
+            currentJSDocComment = trimmedLine.replace(/^\/\/\s*/, '');
+            continue;
+          }
 
           // Check if this line contains a property at the current level (before counting braces)
           if (braceDepth === 0 && trimmedLine.match(/^\s*(\w+)\s*:\s*[^;{]+[;}]/)) {
-            const propertyMatch = trimmedLine.match(/^\s*(\w+)\s*:\s*/);
+            const propertyMatch = trimmedLine.match(/^\s*(\w+)\s*:\s*([^;{]+)[;}]/);
             if (propertyMatch) {
               const propertyName = propertyMatch[1];
+              const propertyType = propertyMatch[2].trim();
               if (
                 !propertyName.startsWith('//') &&
                 !['readonly', 'public', 'private', 'protected'].includes(propertyName)
               ) {
-                properties.add(propertyName);
+                const propertyInfo: { name: string; type?: string; documentation?: string } = {
+                  name: propertyName,
+                  type: propertyType
+                };
+
+                if (currentJSDocComment) {
+                  propertyInfo.documentation = currentJSDocComment;
+                }
+
+                properties.push(propertyInfo);
               }
             }
+          }
+
+          // Reset comment after processing property or if we encounter other content
+          if (!trimmedLine.startsWith('//') && !trimmedLine.startsWith('/**') && trimmedLine.length > 0) {
+            currentJSDocComment = '';
           }
 
           // Count braces to update depth for next iteration
           for (const char of trimmedLine) {
             if (char === '{') {
               braceDepth++;
-
             } else if (char === '}') {
               braceDepth--;
-
             }
           }
         }
@@ -921,12 +1030,47 @@ function extractDataPropertiesFromTypes(
       }
     }
   } catch (error) {
-    console.error(`🔧 EXTRACT-TYPES: Error extracting types from ${tsFilePath}:`, error);
+    console.error(`Error extracting types from ${tsFilePath}:`, error);
   }
 
-  const result = Array.from(properties).sort();
+  return properties;
+}
 
-  return result;
+// Helper function to extract helper function names from TypeScript template files
+function extractHelperNames(
+  tsFilePath: string,
+  templateName: string,
+  fs: any
+): string[] {
+  const helperNames: string[] = [];
+
+  try {
+    const tsFileContent = fs.readFileSync(tsFilePath, 'utf8');
+
+    // Look for Template.templateName.helpers({ ... }) block
+    const helpersPattern = new RegExp(`Template\\.${templateName}\\.helpers\\s*\\(\\s*\\{([\\s\\S]*?)\\}\\s*\\)`, 'i');
+    const helpersMatch = tsFileContent.match(helpersPattern);
+
+    if (helpersMatch) {
+      const helpersBody = helpersMatch[1];
+
+      // Extract function names from the helpers object
+      // Match patterns like: functionName(): type { or functionName() {
+      const functionPattern = /(\w+)\s*\([^)]*\)\s*:?\s*[^{]*\{/g;
+      let match;
+
+      while ((match = functionPattern.exec(helpersBody)) !== null) {
+        const functionName = match[1];
+        if (functionName && !helperNames.includes(functionName)) {
+          helperNames.push(functionName);
+        }
+      }
+    }
+  } catch (error) {
+    console.error(`Error extracting helper names from ${tsFilePath}:`, error);
+  }
+
+  return helperNames;
 }
 
 export default onCompletion;
