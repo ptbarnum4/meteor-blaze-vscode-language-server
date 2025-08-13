@@ -70,7 +70,6 @@ const onHover = (config: CurrentConnectionConfig) => {
     const templateInclusionMatch = precedingText.match(templateInclusionPattern);
 
     if (templateInclusionMatch && templateInclusionMatch[1] === word) {
-
       const templateHover = await getTemplateInclusionHover(word, config, document);
       if (templateHover) {
         return {
@@ -213,7 +212,6 @@ const onHover = (config: CurrentConnectionConfig) => {
 
       // #each alias hover: allow hover on alias even if it's not part of template data properties
       if (eachCtx && eachCtx.alias === word) {
-
         const templateFileName = path.basename(filePath);
         let listType = typeMap[eachCtx.source];
 
@@ -222,12 +220,9 @@ const onHover = (config: CurrentConnectionConfig) => {
           const helperInfo = helperDetails?.find(h => h.name === eachCtx.source);
           if (helperInfo?.returnType) {
             listType = helperInfo.returnType;
-
           } else {
-
           }
         } else {
-
         }
 
         const deriveElementType = (t?: string): string | undefined => {
@@ -708,7 +703,6 @@ async function getTemplateInclusionHover(
       return createTemplateNotFoundHover(templateName);
     }
   } catch (error) {
-
     return null;
   }
 }
@@ -891,7 +885,6 @@ function findImportedTemplateFile(
   path: any
 ): { file: string; content: string } | null {
   try {
-
     const content = fs.readFileSync(associatedFile, 'utf8');
     const associatedDir = path.dirname(associatedFile);
 
@@ -919,7 +912,6 @@ function findImportedTemplateFile(
 
       try {
         if (fs.existsSync(templateHtmlPath)) {
-
           const templateContent = fs.readFileSync(templateHtmlPath, 'utf8');
           const templatePattern = new RegExp(
             `<template\\s+name=["']${templateName}["'][^>]*>([\\s\\S]*?)<\\/template>`,
@@ -927,16 +919,12 @@ function findImportedTemplateFile(
           );
           const templateMatch = templatePattern.exec(templateContent);
           if (templateMatch) {
-
             return { file: templateHtmlPath, content: templateMatch[1].trim() };
           } else {
-
           }
         } else {
-
         }
       } catch (e) {
-
         // Continue trying other import paths
       }
     }
