@@ -35,23 +35,25 @@ export const analyzeJavaScriptFile = (filePath: string): AnalyzeJavaScriptFileRe
         'async', 'await', 'yield', 'import', 'export', 'from', 'as', 'with'
       ];
 
-      // Enhanced regex patterns for different method definitions
+      // Enhanced regex patterns for different method definitions (optimized for helpers content)
       const patterns = [
-        // Standard method: methodName(params) { ... }
-        /\/\*\*((?:\*(?!\/)|[^*])*)\*\/\s*(\w+)\s*\(([^)]*)\)\s*(?::\s*([^{]+))?\s*\{/g,
-        // Arrow function: methodName: (params) => { ... }
-        /\/\*\*((?:\*(?!\/)|[^*])*)\*\/\s*(\w+)\s*:\s*\(([^)]*)\)\s*=>\s*(?:\s*([^{]+\s*))?\{/g,
-        // Function property: methodName: function(params) { ... }
-        /\/\*\*((?:\*(?!\/)|[^*])*)\*\/\s*(\w+)\s*:\s*function\s*\(([^)]*)\)\s*(?::\s*([^{]+))?\s*\{/g,
-        // Without JSDoc - Standard method: methodName(params) { ... }
-        /(?:^|\n|\s)(\w+)\s*\(([^)]*)\)\s*(?::\s*([^{]+))?\s*\{/g,
-        // Without JSDoc - Arrow function: methodName: (params) => { ... }
-        /(?:^|\n|\s)(\w+)\s*:\s*\(([^)]*)\)\s*=>\s*(?:\s*([^{]+\s*))?\{/g,
-        // Without JSDoc - Function property: methodName: function(params) { ... }
-        /(?:^|\n|\s)(\w+)\s*:\s*function\s*\(([^)]*)\)\s*(?::\s*([^{]+))?\s*\{/g
+        // Standard method with JSDoc: /** ... */ methodName(params) { ... }
+        /\/\*\*([\s\S]*?)\*\/\s*(\w+)\s*\(([^)]*)\)\s*(?::\s*([^{]+))?\s*\{/g,
+        // Arrow function with JSDoc: /** ... */ methodName: (params) => { ... }
+        /\/\*\*([\s\S]*?)\*\/\s*(\w+)\s*:\s*\(([^)]*)\)\s*=>\s*\{/g,
+        // Function property with JSDoc: /** ... */ methodName: function(params) { ... }
+        /\/\*\*([\s\S]*?)\*\/\s*(\w+)\s*:\s*function\s*\(([^)]*)\)\s*\{/g,
+        // Standard method without JSDoc: methodName(params) { ... }
+        /(\w+)\s*\(([^)]*)\)\s*(?::\s*([^{]+))?\s*\{/g,
+        // Arrow function without JSDoc: methodName: (params) => { ... }
+        /(\w+)\s*:\s*\(([^)]*)\)\s*=>\s*\{/g,
+        // Function property without JSDoc: methodName: function(params) { ... }
+        /(\w+)\s*:\s*function\s*\(([^)]*)\)\s*\{/g
       ];
 
       patterns.forEach((pattern, index) => {
+        // Reset the regex lastIndex to avoid state issues
+        pattern.lastIndex = 0;
         let match;
         while ((match = pattern.exec(content)) !== null) {
           let methodName: string;
@@ -77,17 +79,14 @@ export const analyzeJavaScriptFile = (filePath: string): AnalyzeJavaScriptFileRe
             continue;
           }
 
-          // Basic validation to ensure we're in an object literal context
-          const beforeMatch = content.substring(0, match.index || 0);
-          const lastOpenBrace = beforeMatch.lastIndexOf('{');
-          const lastCloseBrace = beforeMatch.lastIndexOf('}');
-
-          // If there's no open brace or the last close brace is after the last open brace,
-          // we're likely not in an object literal context
-          if (lastOpenBrace === -1 || lastCloseBrace > lastOpenBrace) {
+          // Skip if we already found this method (prefer JSDoc version)
+          if (methods.some(m => m.name === methodName)) {
             continue;
           }
 
+          // For helpers content, we don't need complex object literal validation
+          // since we already extracted the content from inside Template.helpers({...})
+          
           const signature = `${methodName}(${parameters || ''})${returnType ? `: ${returnType.trim()}` : ''}`;
 
           methods.push({
@@ -146,8 +145,8 @@ export const analyzeJavaScriptFile = (filePath: string): AnalyzeJavaScriptFileRe
             let extractedParameters = parameters;
 
             if (jsdoc) {
-              // Extract description from JSDoc
-              const descMatch = jsdoc.match(/\/\*\*\s*([\s\S]*?)\s*(?:@|\*\/)/);
+              // Extract description from JSDoc - capture text before any @tag
+              const descMatch = jsdoc.match(/^\s*\*?\s*([\s\S]*?)\s*(?=@|$)/);
               if (descMatch) {
                 parsedJSDoc = descMatch[1].replace(/\s*\*\s?/g, ' ').trim();
               }

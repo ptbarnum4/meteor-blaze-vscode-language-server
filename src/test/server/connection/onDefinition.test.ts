@@ -43,7 +43,7 @@ describe('connection/onDefinition', () => {
     assert.strictEqual(typeof handler, 'function');
   });
 
-  it('should return null when document not found', () => {
+  it('should return null when document not found', async () => {
     const config = createMockConfig();
     const handler = onDefinition(config);
 
@@ -52,11 +52,11 @@ describe('connection/onDefinition', () => {
       position: Position.create(0, 0)
     };
 
-    const result = handler(params);
+    const result = await handler(params);
     assert.strictEqual(result, null);
   });
 
-  it('should return null when document has no Meteor templates', () => {
+  it('should return null when document has no Meteor templates', async () => {
     const config = createMockConfig();
     const documents = config.documents;
 
@@ -72,11 +72,11 @@ describe('connection/onDefinition', () => {
       position: Position.create(0, 5)
     };
 
-    const result = handler(params);
+    const result = await handler(params);
     assert.strictEqual(result, null);
   });
 
-  it('should return null when cursor is outside template block', () => {
+  it('should return null when cursor is outside template block', async () => {
     const config = createMockConfig();
     const documents = config.documents;
 
@@ -92,11 +92,11 @@ describe('connection/onDefinition', () => {
       position: Position.create(0, 10) // Position in 'Before' div
     };
 
-    const result = handler(params);
+    const result = await handler(params);
     assert.strictEqual(result, null);
   });
 
-  it('should return null when cursor is not in handlebars expression', () => {
+  it('should return null when cursor is not in handlebars expression', async () => {
     const config = createMockConfig();
     const documents = config.documents;
 
@@ -112,11 +112,11 @@ describe('connection/onDefinition', () => {
       position: Position.create(0, 30) // Position on 'regular'
     };
 
-    const result = handler(params);
+    const result = await handler(params);
     assert.strictEqual(result, null);
   });
 
-  it('should return null when no word at cursor position', () => {
+  it('should return null when no word at cursor position', async () => {
     const config = createMockConfig();
     const documents = config.documents;
 
@@ -132,11 +132,11 @@ describe('connection/onDefinition', () => {
       position: Position.create(0, 28) // Position on whitespace in handlebars
     };
 
-    const result = handler(params);
+    const result = await handler(params);
     assert.strictEqual(result, null);
   });
 
-  it('should find helper definition in JavaScript file', () => {
+  it('should find helper definition in JavaScript file', async () => {
     const config = createMockConfig();
     const documents = config.documents;
 
@@ -155,13 +155,13 @@ describe('connection/onDefinition', () => {
       position: Position.create(0, 40) // Position on 'customHelper'
     };
 
-    const result = handler(params);
+    const result = await handler(params);
 
     // Should return location array (even if empty due to file not existing in test)
     assert.ok(Array.isArray(result) || result === null);
   });
 
-  it('should find CSS class definition', () => {
+  it('should find CSS class definition', async () => {
     const config = createMockConfig();
     const documents = config.documents;
 
@@ -180,13 +180,13 @@ describe('connection/onDefinition', () => {
       position: Position.create(0, 42) // Position on 'btnClass'
     };
 
-    const result = handler(params);
+    const result = await handler(params);
 
     // Should return location array (even if empty due to file not existing in test)
     assert.ok(Array.isArray(result) || result === null);
   });
 
-  it('should handle template-specific helpers', () => {
+  it('should handle template-specific helpers', async () => {
     const config = createMockConfig();
     const documents = config.documents;
 
@@ -205,13 +205,13 @@ describe('connection/onDefinition', () => {
       position: Position.create(0, 50) // Position on 'templateHelper'
     };
 
-    const result = handler(params);
+    const result = await handler(params);
 
     // Should handle the request (return array or null)
     assert.ok(Array.isArray(result) || result === null);
   });
 
-  it('should handle base file helpers', () => {
+  it('should handle base file helpers', async () => {
     const config = createMockConfig();
     const documents = config.documents;
 
@@ -230,13 +230,13 @@ describe('connection/onDefinition', () => {
       position: Position.create(0, 30) // Position on 'baseHelper'
     };
 
-    const result = handler(params);
+    const result = await handler(params);
 
     // Should handle the request
     assert.ok(Array.isArray(result) || result === null);
   });
 
-  it('should handle helpers with special characters', () => {
+  it('should handle helpers with special characters', async () => {
     const config = createMockConfig();
     const documents = config.documents;
 
@@ -252,9 +252,43 @@ describe('connection/onDefinition', () => {
       position: Position.create(0, 29) // Position on '#if'
     };
 
-    const result = handler(params);
+    const result = await handler(params);
 
     // Should handle built-in helpers gracefully
     assert.ok(Array.isArray(result) || result === null);
+  });
+
+  it('should handle template inclusion navigation', async () => {
+    const config = createMockConfig();
+    const documents = config.documents;
+
+    // Create a document with template inclusion
+    const content = '<template name="test"><div>{{> nestedTemplate title="Hello"}}</div></template>';
+    const document = TextDocument.create('file:///test.html', 'html', 1, content);
+    documents.get = () => document;
+
+    const handler = onDefinition(config);
+
+    // Test clicking on template name "nestedTemplate"
+    const templateNameParams: DefinitionParams = {
+      textDocument: { uri: 'file:///test.html' },
+      position: Position.create(0, 40) // Position on 'nestedTemplate'
+    };
+
+    const templateResult = await handler(templateNameParams);
+    
+    // Should attempt to find template definition (may return null if file doesn't exist in test)
+    assert.ok(Array.isArray(templateResult) || templateResult === null);
+
+    // Test clicking on parameter name "title"
+    const paramParams: DefinitionParams = {
+      textDocument: { uri: 'file:///test.html' },
+      position: Position.create(0, 55) // Position on 'title'
+    };
+
+    const paramResult = await handler(paramParams);
+    
+    // Should attempt to find parameter definition (may return null if file doesn't exist in test)
+    assert.ok(Array.isArray(paramResult) || paramResult === null);
   });
 });

@@ -17,6 +17,8 @@ import { ExtensionConfig } from '/types';
 
 export const createActivate = (extConfig: ExtensionConfig) => {
   return (context: vscode.ExtensionContext) => {
+    console.info('Meteor/Blaze Language Server: Extension activation started...');
+    
     // Check if this is a Meteor project
     if (!isMeteorProject()) {
       console.info(
@@ -242,6 +244,7 @@ export const createActivate = (extConfig: ExtensionConfig) => {
     };
 
     // Create the language client and start the client
+    console.info('Meteor/Blaze Language Server: Creating language client...');
     extConfig.client = new LanguageClient(
       'meteorLanguageServer',
       'Meteor/Blaze HTML Language Server',
@@ -265,7 +268,9 @@ export const createActivate = (extConfig: ExtensionConfig) => {
     context.subscriptions.push(restartCommand);
 
     // Start the client. This will also launch the server
+    console.info('Meteor/Blaze Language Server: Starting language client...');
     extConfig.client.start();
+    console.info('Meteor/Blaze Language Server: Language client started.');
 
     // Set up document change listener for inline block-condition hints
     const disposable = vscode.workspace.onDidChangeTextDocument(event => {

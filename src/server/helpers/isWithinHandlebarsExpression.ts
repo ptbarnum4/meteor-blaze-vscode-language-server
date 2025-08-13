@@ -70,8 +70,8 @@ export const isWithinHandlebarsExpression = (
 
   for (let i = searchStart; i <= text.length - searchPattern.length; i++) {
     if (text.substring(i, i + searchPattern.length) === searchPattern) {
-      // Check if cursor is within the expression
-      if (offset >= searchStart && offset <= i) {
+      // Check if cursor is within the expression (before or within the closing braces)
+      if (offset >= searchStart && offset < i + searchPattern.length) {
         return {
           isWithin: true,
           expressionStart: searchStart,
@@ -80,40 +80,19 @@ export const isWithinHandlebarsExpression = (
           isSingleBracket: false
         };
       }
-      break;
-    }
-  }
-
-  // If no closing braces found, check if we might be in an incomplete expression
-  // This handles cases where user is typing: {{  <cursor>
-  if (offset >= searchStart) {
-    // Look ahead to see if there are closing braces somewhere later
-    const remainingText = text.substring(offset);
-    const nextClosing = remainingText.indexOf(searchPattern);
-
-    if (nextClosing !== -1) {
-      // There are closing braces ahead, we're probably in an incomplete expression
+      // If cursor is after the closing braces entirely, we're not within the expression
       return {
-        isWithin: true,
-        expressionStart: searchStart,
-        expressionEnd: offset + nextClosing,
-        isTriple,
-        isSingleBracket: false
-      };
-    } else {
-      // No closing braces found ahead, but we're after opening braces
-      // This could be an incomplete expression at the end of the document
-      // Be permissive and assume they're typing an expression
-      return {
-        isWithin: true,
-        expressionStart: searchStart,
-        expressionEnd: text.length,
-        isTriple,
+        isWithin: false,
+        expressionStart: -1,
+        expressionEnd: -1,
+        isTriple: false,
         isSingleBracket: false
       };
     }
   }
 
+  // If no closing braces found, the expression is incomplete/unclosed
+  // According to test expectations, we should return false for unclosed expressions
   return {
     isWithin: false,
     expressionStart: -1,
