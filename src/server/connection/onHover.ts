@@ -12,6 +12,7 @@ import {
   trimLanguageDocumentation,
   trimUsageDocumentation
 } from '../helpers/trimUsageDocumentation';
+import { analyzeGlobalHelpers } from '../helpers/analyzeGlobalHelpers';
 
 const onHover = (config: CurrentConnectionConfig) => {
   const { connection, documents } = config;
@@ -218,6 +219,75 @@ const onHover = (config: CurrentConnectionConfig) => {
           range: wordRange
         };
       }
+    }
+
+    // Check for global helpers from Template.registerHelper
+    // Find workspace root by looking for package.json or .meteor directory
+    const currentFileUri = textDocumentPosition.textDocument.uri;
+    const currentFilePath = currentFileUri.replace('file://', '');
+    let workspaceRoot = path.dirname(currentFilePath);
+    
+    // Walk up the directory tree to find workspace root
+    while (workspaceRoot !== path.dirname(workspaceRoot)) {
+      const packageJsonPath = path.join(workspaceRoot, 'package.json');
+      const meteorPath = path.join(workspaceRoot, '.meteor');
+      
+      if (require('fs').existsSync(packageJsonPath) || require('fs').existsSync(meteorPath)) {
+        break;
+      }
+      
+      workspaceRoot = path.dirname(workspaceRoot);
+    }
+    
+    const globalHelpersResult = await analyzeGlobalHelpers(workspaceRoot);
+    
+    const globalHelper = globalHelpersResult.helperDetails.find((helper: any) => helper.name === word);
+    if (globalHelper) {
+      const hoverContent = [`**${word}** - Global Template Helper`, ``];
+
+      // Add JSDoc description if available
+      if (globalHelper.jsdoc) {
+        hoverContent.push(`**Description:** ${globalHelper.jsdoc}`);
+        hoverContent.push(``);
+      }
+
+      // Add signature information
+      if (globalHelper.signature) {
+        hoverContent.push(`**Signature:** \`${globalHelper.signature}\``);
+        hoverContent.push(``);
+      }
+
+      // Add return type if available
+      if (globalHelper.returnType) {
+        hoverContent.push(`**Returns:** \`${globalHelper.returnType}\``);
+        hoverContent.push(``);
+      }
+
+      // Add parameters if available
+      if (globalHelper.parameters) {
+        hoverContent.push(`**Parameters:** ${globalHelper.parameters}`);
+        hoverContent.push(``);
+      }
+
+      hoverContent.push(`**Source:** ${path.basename(globalHelper.filePath)}`);
+      hoverContent.push(``);
+      hoverContent.push(`**Usage:** \`{{${word}}}\``);
+
+      return {
+        contents: {
+          kind: MarkupKind.Markdown,
+          value: hoverContent.join('\n')
+        },
+        range: wordRange
+      };
+    }
+
+    for (const key of dirLookupKeys) {
+      const helpers = config.fileAnalysis.jsHelpers.get(key as string);
+      const helperDetails = config.fileAnalysis.helperDetails.get(key as string);
+      const dataProps = config.fileAnalysis.dataProperties?.get(key as string) || [];
+      const typeName = config.fileAnalysis.dataTypeByKey?.get(key as string);
+      const typeMap = config.fileAnalysis.dataPropertyTypesByKey?.get(key as string) || {};
 
       // #each alias hover: allow hover on alias even if it's not part of template data properties
       if (eachCtx && eachCtx.alias === word) {

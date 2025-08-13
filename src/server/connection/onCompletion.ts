@@ -14,6 +14,7 @@ import { containsMeteorTemplates } from '../helpers/containsMeteorTemplates';
 import { findEnclosingEachInContext } from '../helpers/findEnclosingEachInContext';
 import { findEnclosingIfOrUnlessBlock } from '../helpers/findEnclosingIfOrUnlessBlock';
 import { isWithinHandlebarsExpression } from '../helpers/isWithinHandlebarsExpression';
+import { analyzeGlobalHelpers } from '../helpers/analyzeGlobalHelpers';
 
 const onCompletion = (config: CurrentConnectionConfig) => {
   const { connection, documents } = config;
@@ -41,15 +42,23 @@ const onCompletion = (config: CurrentConnectionConfig) => {
     const partialTemplateName = templateInclusionMatch ? templateInclusionMatch[1] : '';
 
     // Check if we're inside template inclusion parameters ({{> templateName [cursor is here] }})
-    // This pattern handles multiline template inclusions by matching across line breaks
-    const templateParameterMatch = textBeforeCursor.match(/\{\{\s*>\s*([a-zA-Z0-9_]+)[\s\S]*?$/);
+    // Use a more precise pattern that only matches when cursor is within the same template inclusion
+    // Look for {{> templateName followed by parameters, but stops at }} or another {{
+    const templateParameterMatch = textBeforeCursor.match(/\{\{\s*>\s*([a-zA-Z0-9_]+)(?:[^{}]|$)*$/);
+    
+    // Also ensure we're not inside another handlebars expression after the template inclusion
+    const afterTemplateInclusion = textBeforeCursor.match(/\{\{\s*>\s*[a-zA-Z0-9_]+[\s\S]*?\}\}[\s\S]*?\{\{[^}]*$/);
+    const isInSeparateHandlebarsExpression = afterTemplateInclusion !== null;
 
     // Check if we're positioned after an equals sign (indicating we're providing a value, not a parameter name)
     const afterEqualsMatch = textBeforeCursor.match(/=\s*[^}\s]*$/);
     const isAfterEquals = afterEqualsMatch !== null;
 
     const isTemplateParameter =
-      templateParameterMatch !== null && !isTemplateInclusion && !isAfterEquals;
+      templateParameterMatch !== null && 
+      !isTemplateInclusion && 
+      !isAfterEquals && 
+      !isInSeparateHandlebarsExpression;
     const templateNameForParams = templateParameterMatch ? templateParameterMatch[1] : '';
 
     // If we're in a template inclusion context, provide template name completions
@@ -145,6 +154,45 @@ const onCompletion = (config: CurrentConnectionConfig) => {
           });
         }
       });
+
+      // Add global helpers from Template.registerHelper
+      // Find workspace root by looking for package.json or .meteor directory
+      const currentFileUri = textDocumentPosition.textDocument.uri;
+      const currentFilePath = currentFileUri.replace('file://', '');
+      let workspaceRoot = path.dirname(currentFilePath);
+      
+      // Walk up the directory tree to find workspace root
+      while (workspaceRoot !== path.dirname(workspaceRoot)) {
+        const packageJsonPath = path.join(workspaceRoot, 'package.json');
+        const meteorPath = path.join(workspaceRoot, '.meteor');
+        
+        if (require('fs').existsSync(packageJsonPath) || require('fs').existsSync(meteorPath)) {
+          break;
+        }
+        
+        workspaceRoot = path.dirname(workspaceRoot);
+      }
+      
+      try {
+        const globalHelpersResult = await analyzeGlobalHelpers(workspaceRoot);
+        
+        globalHelpersResult.helperDetails.forEach((helper: any) => {
+          // Avoid duplicates with existing completions
+          if (!completions.find(c => c.label === helper.name)) {
+            const documentation = helper.jsdoc || `Globally registered template helper: ${helper.name}`;
+            completions.push({
+              label: helper.name,
+              kind: CompletionItemKind.Function,
+              detail: 'Global template helper',
+              documentation: helper.jsdoc ? 
+                { kind: MarkupKind.Markdown, value: helper.jsdoc } : 
+                documentation
+            });
+          }
+        });
+      } catch (error) {
+        connection.console.error(`Error analyzing global helpers: ${error}`);
+      }
 
       // Fetch config for blockConditions and blazeHelpers
       let blockTypes = [
@@ -615,8 +663,6 @@ function findImportedTemplateFile(
       .split('\n')
       .filter((line: string) => line.trim().startsWith('import') && line.includes(templateName));
 
-    importLines.forEach((line: string, index: number) => {});
-
     for (const importLine of importLines) {
       // Extract import path from import statement
       // Handle both: import './path' and import something from './path'
@@ -753,8 +799,6 @@ function extractDataPropertiesFromTemplate(
   // Match patterns like {{property}}, {{#if property}}, {{property.subprop}}, etc.
   const handlebarsPattern = /\{\{[^{}]*?\}\}/g;
   const matches = templateBody.match(handlebarsPattern) || [];
-
-  matches.forEach((match, index) => {});
 
   matches.forEach(match => {
     // Clean up the match - remove {{ }} and any # or / prefixes

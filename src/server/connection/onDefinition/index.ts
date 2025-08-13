@@ -7,10 +7,11 @@ import { containsMeteorTemplates } from '../../helpers/containsMeteorTemplates';
 import { findEnclosingEachInContext } from '../../helpers/findEnclosingEachInContext';
 import { getWordRangeAtPosition } from '../../helpers/getWordRangeAtPosition';
 import { isWithinHandlebarsExpression } from '../../helpers/isWithinHandlebarsExpression';
+import { analyzeGlobalHelpers } from '../../helpers/analyzeGlobalHelpers';
 
 const onDefinition = (config: CurrentConnectionConfig) => {
   const { connection, documents } = config;
-  return (params: DefinitionParams): Location[] | null => {
+  return async (params: DefinitionParams): Promise<Location[] | null> => {
     const document = documents.get(params.textDocument.uri);
     if (!document) {
       return null;
@@ -344,6 +345,54 @@ const onDefinition = (config: CurrentConnectionConfig) => {
           connection.console.error(`Error finding data property definition: ${error}`);
         }
       }
+    }
+
+    // Check for global helpers from Template.registerHelper
+    try {
+      // Find workspace root by looking for package.json or .meteor directory
+      const currentFileUri = params.textDocument.uri;
+      const currentFilePath = currentFileUri.replace('file://', '');
+      let workspaceRoot = path.dirname(currentFilePath);
+      
+      // Walk up the directory tree to find workspace root
+      while (workspaceRoot !== path.dirname(workspaceRoot)) {
+        const packageJsonPath = path.join(workspaceRoot, 'package.json');
+        const meteorPath = path.join(workspaceRoot, '.meteor');
+        
+        if (require('fs').existsSync(packageJsonPath) || require('fs').existsSync(meteorPath)) {
+          break;
+        }
+        
+        workspaceRoot = path.dirname(workspaceRoot);
+      }
+      
+      const globalHelpersResult = await analyzeGlobalHelpers(workspaceRoot);
+      
+      const globalHelper = globalHelpersResult.helperDetails.find((helper: any) => helper.name === word);
+      if (globalHelper) {
+        // Read the file and find the Template.registerHelper line
+        const content = require('fs').readFileSync(globalHelper.filePath, 'utf8');
+        const lines = content.split('\n');
+        
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i];
+          const helperRegex = new RegExp(`Template\\.registerHelper\\s*\\(\\s*['"\`]${word}['"\`]`);
+          const match = helperRegex.exec(line);
+          if (match) {
+            return [
+              {
+                uri: `file://${globalHelper.filePath}`,
+                range: {
+                  start: { line: i, character: match.index || 0 },
+                  end: { line: i, character: (match.index || 0) + match[0].length }
+                }
+              }
+            ];
+          }
+        }
+      }
+    } catch (error) {
+      connection.console.error(`Error finding global helper definition: ${error}`);
     }
 
     // Check for template inclusion navigation (e.g., {{> templateName}} or template parameters)

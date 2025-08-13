@@ -50,5 +50,33 @@ export const isWithinHandlebarsExpression = (
     }
   }
 
+  // If no closing braces found, check if we might be in an incomplete expression
+  // This handles cases where user is typing: {{  <cursor>
+  if (offset >= searchStart) {
+    // Look ahead to see if there are closing braces somewhere later
+    const remainingText = text.substring(offset);
+    const nextClosing = remainingText.indexOf(searchPattern);
+    
+    if (nextClosing !== -1) {
+      // There are closing braces ahead, we're probably in an incomplete expression
+      return {
+        isWithin: true,
+        expressionStart: searchStart,
+        expressionEnd: offset + nextClosing,
+        isTriple
+      };
+    } else {
+      // No closing braces found ahead, but we're after opening braces
+      // This could be an incomplete expression at the end of the document
+      // Be permissive and assume they're typing an expression
+      return {
+        isWithin: true,
+        expressionStart: searchStart,
+        expressionEnd: text.length,
+        isTriple
+      };
+    }
+  }
+
   return { isWithin: false, expressionStart: -1, expressionEnd: -1, isTriple: false };
 };
