@@ -559,14 +559,22 @@ async function getTemplateParameterCompletions(
 
     // Start with all template properties, then enhance with TypeScript info where available
     // Filter out any properties that are actually helper functions
+    const templateProps = templateDataProperties
+      .filter(propName => !helperNames.includes(propName)) // Exclude helper functions
+      .map(propName => {
+        const typeInfo = typePropsMap.get(propName);
+        return typeInfo || { name: propName, type: 'any' };
+      });
+
+    // Add any TypeScript-only properties that aren't in the template HTML
+    const templatePropNames = new Set(templateDataProperties);
+    const typeOnlyProps = typeDataProperties.filter(prop =>
+      !templatePropNames.has(prop.name) && !helperNames.includes(prop.name)
+    );
+
+    // Combine both sets of properties
     const allDataProperties: Array<{ name: string; type?: string; documentation?: string }> =
-      templateDataProperties
-        .filter(propName => !helperNames.includes(propName)) // Exclude helper functions
-        .map(propName => {
-          const typeInfo = typePropsMap.get(propName);
-          return typeInfo || { name: propName, type: 'any' };
-        })
-        .sort((a, b) => a.name.localeCompare(b.name));
+      [...templateProps, ...typeOnlyProps].sort((a, b) => a.name.localeCompare(b.name));
 
     // Create completions for each data property
     allDataProperties.forEach(property => {
@@ -637,7 +645,6 @@ function findImportedTemplateFile(
 
         if (fs.existsSync(templateHtmlPath)) {
           return templateHtmlPath;
-        } else {
         }
 
         // Also check in the full import path directory (original logic)
@@ -645,7 +652,6 @@ function findImportedTemplateFile(
 
         if (fs.existsSync(templateHtmlPathFull)) {
           return templateHtmlPathFull;
-        } else {
         }
 
         // Also try templateName.html
@@ -653,9 +659,7 @@ function findImportedTemplateFile(
 
         if (fs.existsSync(templateNamePath)) {
           return templateNamePath;
-        } else {
         }
-      } else {
       }
     }
 
@@ -705,7 +709,6 @@ function findTemplateTypeScriptFile(
 
         if (fs.existsSync(templateTsPath)) {
           return templateTsPath;
-        } else {
         }
 
         // Also try the directory approach - look in the import directory
@@ -715,7 +718,6 @@ function findTemplateTypeScriptFile(
 
         if (fs.existsSync(templateTsInDir)) {
           return templateTsInDir;
-        } else {
         }
       }
     }

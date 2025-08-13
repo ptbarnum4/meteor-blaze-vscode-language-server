@@ -368,8 +368,8 @@ function handleTemplateInclusionDefinition(
   const path = require('path');
 
   // Get text around the cursor to determine context
-  const beforeCursor = text.substring(Math.max(0, offset - 100), offset);
-  const afterCursor = text.substring(offset, Math.min(text.length, offset + 100));
+  const beforeCursor = text.substring(Math.max(0, offset - 200), offset);
+  const afterCursor = text.substring(offset, Math.min(text.length, offset + 200));
   const context = beforeCursor + afterCursor;
 
   // Check if we're in a template inclusion: {{> templateName}}
@@ -380,7 +380,8 @@ function handleTemplateInclusionDefinition(
   }
 
   // Check if we're in template parameters: {{> templateName param=value}}
-  const parameterMatch = beforeCursor.match(/\{\{\s*>\s*([a-zA-Z0-9_]+)[^}]*$/);
+  // Use a more flexible pattern that handles multiline parameters
+  const parameterMatch = beforeCursor.match(/\{\{\s*>\s*([a-zA-Z0-9_]+)[\s\S]*$/);
   if (parameterMatch) {
     const templateName = parameterMatch[1];
 
@@ -389,8 +390,30 @@ function handleTemplateInclusionDefinition(
       return findTemplateDefinition(templateName, currentDir, fs, path);
     }
 
-    // If the word is a parameter name, navigate to the parameter definition
-    return findParameterDefinition(word, templateName, currentDir, fs, path, connection);
+    // Also check if we're still within the template inclusion by looking for the closing }}
+    const fullContext = beforeCursor + afterCursor;
+    const templateInclusionPattern = new RegExp(`\\{\\{\\s*>\\s*${templateName}[\\s\\S]*?\\}\\}`, 'g');
+    const matches = [...fullContext.matchAll(templateInclusionPattern)];
+
+    // Find which match contains our current position
+    let isInTemplateInclusion = false;
+    for (const match of matches) {
+      if (match.index !== undefined) {
+        const matchStart = match.index;
+        const matchEnd = match.index + match[0].length;
+        const currentPos = beforeCursor.length; // Our position in the full context
+
+        if (currentPos >= matchStart && currentPos <= matchEnd) {
+          isInTemplateInclusion = true;
+          break;
+        }
+      }
+    }
+
+    if (isInTemplateInclusion) {
+      // If the word is a parameter name, navigate to the parameter definition
+      return findParameterDefinition(word, templateName, currentDir, fs, path, connection);
+    }
   }
 
   return null;
