@@ -25,7 +25,7 @@ export const analyzeJavaScriptFile = (filePath: string): AnalyzeJavaScriptFileRe
 
     const parseMethodBlocks = (content: string): MethodBlock[] => {
       const methods: MethodBlock[] = [];
-      
+
       // Comprehensive list of JavaScript keywords and control flow statements to exclude
       const jsKeywords = [
         'if', 'else', 'for', 'while', 'do', 'switch', 'case', 'default', 'break', 'continue',
@@ -81,7 +81,7 @@ export const analyzeJavaScriptFile = (filePath: string): AnalyzeJavaScriptFileRe
           const beforeMatch = content.substring(0, match.index || 0);
           const lastOpenBrace = beforeMatch.lastIndexOf('{');
           const lastCloseBrace = beforeMatch.lastIndexOf('}');
-          
+
           // If there's no open brace or the last close brace is after the last open brace,
           // we're likely not in an object literal context
           if (lastOpenBrace === -1 || lastCloseBrace > lastOpenBrace) {
@@ -212,12 +212,12 @@ export const analyzeJavaScriptFile = (filePath: string): AnalyzeJavaScriptFileRe
           let helperMatch;
           while ((helperMatch = pattern.exec(helpersContent)) !== null) {
             const helperName = helperMatch[1];
-            
+
             // Skip JavaScript keywords and control flow statements
             if (jsKeywords.includes(helperName)) {
               continue;
             }
-            
+
             if (!helpers.includes(helperName)) {
               helpers.push(helperName);
               helperDetails.push({

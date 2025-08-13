@@ -33,7 +33,7 @@ export const isWithinHandlebarsExpression = (
       // 2. It's not preceded by another { (not part of {{)
       const isFollowedByBrace = i + 1 < text.length && text.charAt(i + 1) === '{';
       const isPrecededByBrace = i > 0 && text.charAt(i - 1) === '{';
-      
+
       if (!isFollowedByBrace && !isPrecededByBrace) {
         start = i;
         isTriple = false;
