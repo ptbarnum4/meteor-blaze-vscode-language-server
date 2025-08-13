@@ -2,10 +2,10 @@ import path from 'path';
 
 import { TextDocument } from 'vscode-languageserver-textdocument';
 import {
-  CompletionItem,
-  CompletionItemKind,
-  MarkupKind,
-  TextDocumentPositionParams
+    CompletionItem,
+    CompletionItemKind,
+    MarkupKind,
+    TextDocumentPositionParams
 } from 'vscode-languageserver/node';
 
 import { CurrentConnectionConfig } from '../../types';
@@ -184,9 +184,9 @@ const onCompletion = (config: CurrentConnectionConfig) => {
 
       try {
         // Skip global helpers analysis in test environment or for test URIs
-        if (process.env.NODE_ENV === 'test' || 
+        if (process.env.NODE_ENV === 'test' ||
             workspaceRoot.includes('test') ||
-            currentFileUri.includes('/nonexistent.') || 
+            currentFileUri.includes('/nonexistent.') ||
             currentFileUri.includes('/test.') ||
             currentFileUri.includes('test-project')) {
           // Skip global helpers during testing
@@ -195,7 +195,7 @@ const onCompletion = (config: CurrentConnectionConfig) => {
           const timeoutPromise = new Promise<never>((_, reject) => {
             setTimeout(() => reject(new Error('Global helpers analysis timed out')), 5000);
           });
-          
+
           const globalHelpersResult = await Promise.race([
             analyzeGlobalHelpers(workspaceRoot),
             timeoutPromise

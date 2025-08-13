@@ -41,7 +41,7 @@ const onDefinition = (config: CurrentConnectionConfig) => {
 
     // Check if we're inside a handlebars expression
     const handlebarsInfo = isWithinHandlebarsExpression(text, offset);
-    
+
     if (!handlebarsInfo.isWithin) {
       return null;
     }
@@ -362,16 +362,16 @@ const onDefinition = (config: CurrentConnectionConfig) => {
     try {
       // Find workspace root by looking for package.json or .meteor directory
       const currentFileUri = params.textDocument.uri;
-      
+
       // Skip global helpers analysis in test environment or for test URIs
-      if (process.env.NODE_ENV === 'test' || 
-          currentFileUri.includes('/nonexistent.') || 
+      if (process.env.NODE_ENV === 'test' ||
+          currentFileUri.includes('/nonexistent.') ||
           currentFileUri.includes('/test.') ||
           currentFileUri.includes('test-project')) {
         // Skip global helpers during testing
         return null;
       }
-      
+
       const currentFilePath = currentFileUri.replace('file://', '');
       let workspaceRoot = path.dirname(currentFilePath);
 
@@ -398,7 +398,7 @@ const onDefinition = (config: CurrentConnectionConfig) => {
         const timeoutPromise = new Promise<never>((_, reject) => {
           setTimeout(() => reject(new Error('Global helpers analysis timed out')), 5000);
         });
-        
+
         const globalHelpersResult = await Promise.race([
           analyzeGlobalHelpers(workspaceRoot),
           timeoutPromise
@@ -458,7 +458,7 @@ function handleTemplateInclusionDefinition(
 
   // Check if we're in a template inclusion: {{> templateName}}
   const templateInclusionMatch = context.match(/\{\{\s*>\s*([a-zA-Z0-9_]+)/);
-  
+
   if (templateInclusionMatch && templateInclusionMatch[1] === word) {
     // Navigate to the template definition
     return findTemplateDefinition(word, currentDir, fs, path);
@@ -467,7 +467,7 @@ function handleTemplateInclusionDefinition(
   // Check if we're in template parameters: {{> templateName param=value}}
   // Use a more flexible pattern that handles multiline parameters
   const parameterMatch = beforeCursor.match(/\{\{\s*>\s*([a-zA-Z0-9_]+)[\s\S]*$/);
-  
+
   if (parameterMatch) {
     const templateName = parameterMatch[1];
 

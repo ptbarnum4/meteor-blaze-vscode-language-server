@@ -4,7 +4,7 @@ import { TextDocument } from 'vscode-languageserver-textdocument';
 export const containsMeteorTemplates = (document: TextDocument): boolean => {
   // Only validate files with appropriate extensions for Meteor templates
   const uri = document.uri;
-  
+
   const validExtensions = ['.html', '.htm', '.meteor'];
   const hasValidExtension = validExtensions.some(ext => uri.endsWith(ext));
 

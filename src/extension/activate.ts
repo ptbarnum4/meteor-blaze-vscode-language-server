@@ -1,16 +1,16 @@
 import path from 'path';
 import vscode from 'vscode';
 import {
-  LanguageClient,
-  LanguageClientOptions,
-  ServerOptions,
-  TransportKind
+    LanguageClient,
+    LanguageClientOptions,
+    ServerOptions,
+    TransportKind
 } from 'vscode-languageclient/node';
 
 import {
-  createBlockConditionDecorationType,
-  updateBlockConditionDecorations,
-  updateDecorationType
+    createBlockConditionDecorationType,
+    updateBlockConditionDecorations,
+    updateDecorationType
 } from './helpers/blockConditions/decorationType';
 import { isMeteorProject } from './helpers/meteor';
 import { ExtensionConfig } from '/types';
@@ -18,7 +18,7 @@ import { ExtensionConfig } from '/types';
 export const createActivate = (extConfig: ExtensionConfig) => {
   return (context: vscode.ExtensionContext) => {
     console.info('Meteor/Blaze Language Server: Extension activation started...');
-    
+
     // Check if this is a Meteor project
     if (!isMeteorProject()) {
       console.info(

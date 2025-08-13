@@ -10,8 +10,8 @@ import { findEnclosingEachInContext } from '../helpers/findEnclosingEachInContex
 import { getWordRangeAtPosition } from '../helpers/getWordRangeAtPosition';
 import { isWithinHandlebarsExpression } from '../helpers/isWithinHandlebarsExpression';
 import {
-  trimLanguageDocumentation,
-  trimUsageDocumentation
+    trimLanguageDocumentation,
+    trimUsageDocumentation
 } from '../helpers/trimUsageDocumentation';
 
 const onHover = (config: CurrentConnectionConfig) => {
@@ -242,11 +242,11 @@ const onHover = (config: CurrentConnectionConfig) => {
     try {
       // Find workspace root by looking for package.json or .meteor directory
       const currentFileUri = textDocumentPosition.textDocument.uri;
-      
+
       // Skip global helpers analysis in test environment or for test URIs
-      if (process.env.NODE_ENV === 'test' || 
+      if (process.env.NODE_ENV === 'test' ||
           workspaceRoot.includes('test') ||
-          currentFileUri.includes('/nonexistent.') || 
+          currentFileUri.includes('/nonexistent.') ||
           currentFileUri.includes('/test.') ||
           currentFileUri.includes('test-project')) {
         // Skip global helpers during testing
@@ -257,7 +257,7 @@ const onHover = (config: CurrentConnectionConfig) => {
       const timeoutPromise = new Promise<never>((_, reject) => {
         setTimeout(() => reject(new Error('Global helpers analysis timed out')), 5000);
       });
-      
+
       const globalHelpersResult = await Promise.race([
         analyzeGlobalHelpers(workspaceRoot),
         timeoutPromise

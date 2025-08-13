@@ -276,7 +276,7 @@ describe('connection/onDefinition', () => {
     };
 
     const templateResult = await handler(templateNameParams);
-    
+
     // Should attempt to find template definition (may return null if file doesn't exist in test)
     assert.ok(Array.isArray(templateResult) || templateResult === null);
 
@@ -287,7 +287,7 @@ describe('connection/onDefinition', () => {
     };
 
     const paramResult = await handler(paramParams);
-    
+
     // Should attempt to find parameter definition (may return null if file doesn't exist in test)
     assert.ok(Array.isArray(paramResult) || paramResult === null);
   });
