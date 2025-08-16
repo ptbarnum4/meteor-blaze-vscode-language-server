@@ -16,6 +16,6 @@ exposed.route('/', {
   },
 
   waitOn: (_params, _qs) => {
-    return [import('/imports/ui/test/test')];
+    return [import('/imports/ui/template2/template2')];
   }
 });

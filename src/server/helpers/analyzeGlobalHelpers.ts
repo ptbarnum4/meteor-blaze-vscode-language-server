@@ -1,5 +1,6 @@
-import fs from 'fs';
+import fsSync from 'fs'; // for existsSync and where sync is needed
 import path from 'path';
+const fs = fsSync.promises; // where available, read files async
 
 type GlobalHelperInfo = {
   name: string;
@@ -60,22 +61,50 @@ export const analyzeFileForGlobalHelpers = (filePath: string): GlobalHelperInfo[
   const globalHelpers: GlobalHelperInfo[] = [];
 
   try {
-    const content = fs.readFileSync(filePath, 'utf8');
+    const content = fsSync.readFileSync(filePath, 'utf8');
     const lines = content.split('\n');
 
-    // Look for Template.registerHelper calls
+    // Look for Template.registerHelper calls - handle both single-line and multi-line patterns
     const registerHelperPattern = /Template\.registerHelper\s*\(\s*['"`]([^'"`]+)['"`]\s*,\s*(.*)/;
+    const registerHelperStartPattern = /Template\.registerHelper\s*\(\s*$/;
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
-      const match = registerHelperPattern.exec(line);
+      let match = registerHelperPattern.exec(line);
+      let helperName = '';
+      let helperStart = '';
+      let startLine = i;
 
       if (match) {
-        const helperName = match[1];
-        const helperStart = match[2];
+        // Single-line pattern: Template.registerHelper('name', ...)
+        helperName = match[1];
+        helperStart = match[2];
+      } else if (registerHelperStartPattern.test(line)) {
+        // Multi-line pattern: Template.registerHelper(\n  'name',\n  ...
+        // Look for the helper name on the next lines
+        for (let j = i + 1; j < Math.min(i + 5, lines.length); j++) {
+          const nextLine = lines[j].trim();
+          const nameMatch = nextLine.match(/^['"`]([^'"`]+)['"`]\s*,?\s*$/);
+          if (nameMatch) {
+            helperName = nameMatch[1];
+            // Find the start of the function definition
+            for (let k = j + 1; k < Math.min(j + 3, lines.length); k++) {
+              const funcLine = lines[k].trim();
+              if (funcLine.includes('(') || funcLine.includes('=>') || funcLine.includes('function')) {
+                helperStart = funcLine;
+                startLine = k;
+                break;
+              }
+            }
+            break;
+          }
+        }
+      }
+
+      if (helperName) {
 
         // Extract JSDoc comment
-        const jsdoc = extractJSDocComment(lines, i);
+        const jsdoc = extractJSDocComment(lines, startLine);
 
         // Try to extract function signature and parameters
         let signature = '';
@@ -84,14 +113,14 @@ export const analyzeFileForGlobalHelpers = (filePath: string): GlobalHelperInfo[
 
         // Look for function definition - could be arrow function or regular function
         let fullHelperCode = helperStart;
-        let j = i;
+        let j = startLine;
         let openParens = 0;
         let foundFunction = false;
 
         // Continue reading lines until we find the complete function definition
         while (j < lines.length) {
-          const currentLine = j === i ? helperStart : lines[j];
-          fullHelperCode += j === i ? '' : '\n' + currentLine;
+          const currentLine = j === startLine ? helperStart : lines[j];
+          fullHelperCode += j === startLine ? '' : '\n' + currentLine;
 
           // Count parentheses to find the complete function
           for (const char of currentLine) {
@@ -128,7 +157,7 @@ export const analyzeFileForGlobalHelpers = (filePath: string): GlobalHelperInfo[
           j++;
 
           // Safety limit
-          if (j - i > 20) {
+          if (j - startLine > 20) {
             break;
           }
         }
@@ -164,7 +193,7 @@ export const analyzeGlobalHelpers = async (
 
   const scanDirectory = (dirPath: string) => {
     try {
-      const entries = fs.readdirSync(dirPath, { withFileTypes: true });
+      const entries = fsSync.readdirSync(dirPath, { withFileTypes: true });
 
       for (const entry of entries) {
         const fullPath = path.join(dirPath, entry.name);

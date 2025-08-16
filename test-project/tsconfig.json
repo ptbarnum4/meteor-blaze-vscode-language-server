@@ -29,13 +29,13 @@
     "baseUrl": ".",
     "paths": {
       /* Support absolute /imports/* with a leading '/' */
-      "/*": ["*"],
       "meteor/*": [
         ".meteor/local/types/packages.d.ts",
         "node_modules/@types/meteor/*"
         // "types/meteor.ts"
       ],
-      "/imports/*": ["imports/*.ts", "imports/*"]
+      "/imports/*": ["imports/*.ts", "imports/*"],
+      "/*": ["*"]
     },
     "moduleResolution": "node",
     "resolveJsonModule": true,

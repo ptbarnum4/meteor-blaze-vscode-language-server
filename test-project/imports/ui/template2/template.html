@@ -1,5 +1,5 @@
-<template name="test">
-  <div id="test">
+<template name="template2">
+  <div id="template2">
     <h1 class="test-title">Make Boxes!</h1>
 
     <div class="button-wrapper">
@@ -17,6 +17,11 @@
         <p>Condition is false</p>
       {{/if}}
 
+
+      {{ifTrue}}
+      {{percentage}}
+
+
       {{> nestedTemplate
         title="Nested Template Title"
         subtitle="Nested Template Subtitle"
@@ -29,10 +34,6 @@
         description=="This is another description of the nested template."
         thing1="Thing 1"
       }}
-
-
-      {{ifTrue}}
-      {{percentage}}
 
       <!-- Should show error: wrong closing tag type -->
 

@@ -1,12 +1,15 @@
+import fsSync from 'fs'; // for existsSync and where sync is needed
 import path from 'path';
+const fs = fsSync.promises; // where available, read files async
 
 import { TextDocument } from 'vscode-languageserver-textdocument';
 import {
-    CompletionItem,
-    CompletionItemKind,
-    MarkupKind,
-    TextDocumentPositionParams
+  CompletionItem,
+  CompletionItemKind,
+  MarkupKind,
+  TextDocumentPositionParams
 } from 'vscode-languageserver/node';
+
 
 import { CurrentConnectionConfig } from '../../types';
 import { analyzeGlobalHelpers } from '../helpers/analyzeGlobalHelpers';
@@ -183,40 +186,31 @@ const onCompletion = (config: CurrentConnectionConfig) => {
       }
 
       try {
-        // Skip global helpers analysis in test environment or for test URIs
-        if (process.env.NODE_ENV === 'test' ||
-            workspaceRoot.includes('test') ||
-            currentFileUri.includes('/nonexistent.') ||
-            currentFileUri.includes('/test.') ||
-            currentFileUri.includes('test-project')) {
-          // Skip global helpers during testing
-        } else {
-          // Add timeout to prevent hanging during tests or large projects
-          const timeoutPromise = new Promise<never>((_, reject) => {
-            setTimeout(() => reject(new Error('Global helpers analysis timed out')), 5000);
-          });
+        // Add timeout to prevent hanging during tests or large projects
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          setTimeout(() => reject(new Error('Global helpers analysis timed out')), 5000);
+        });
 
-          const globalHelpersResult = await Promise.race([
-            analyzeGlobalHelpers(workspaceRoot),
-            timeoutPromise
-          ]);
+        const globalHelpersResult = await Promise.race([
+          analyzeGlobalHelpers(workspaceRoot),
+          timeoutPromise
+        ]);
 
-          globalHelpersResult.helperDetails.forEach((helper: any) => {
-            // Avoid duplicates with existing completions
-            if (!completions.find(c => c.label === helper.name)) {
-              const documentation =
-                helper.jsdoc || `Globally registered template helper: ${helper.name}`;
-              completions.push({
-                label: helper.name,
+        globalHelpersResult.helperDetails.forEach((helper: any) => {
+          // Avoid duplicates with existing completions
+          if (!completions.find(c => c.label === helper.name)) {
+            const documentation =
+              helper.jsdoc || `Globally registered template helper: ${helper.name}`;
+            completions.push({
+              label: helper.name,
                 kind: CompletionItemKind.Function,
-                detail: 'Global template helper',
-                documentation: helper.jsdoc
-                  ? { kind: MarkupKind.Markdown, value: helper.jsdoc }
-                  : documentation
-              });
-            }
-          });
-        }
+              detail: 'Global template helper',
+              documentation: helper.jsdoc
+                ? { kind: MarkupKind.Markdown, value: helper.jsdoc }
+                : documentation
+            });
+          }
+        });
       } catch (error) {
         connection.console.error(`Error analyzing global helpers: ${error}`);
       }
@@ -396,21 +390,18 @@ async function getTemplateNameCompletions(
   const completions: CompletionItem[] = [];
 
   try {
-    const fs = await import('fs');
-    const path = await import('path');
-
     const currentFilePath = currentDocument.uri.replace('file://', '');
     const currentDir = path.dirname(currentFilePath);
     const currentBaseName = path.basename(currentFilePath, path.extname(currentFilePath));
 
     // Find associated JS/TS file
-    const associatedFile = findAssociatedJSFile(currentDir, currentBaseName, fs, path);
+    const associatedFile = findAssociatedJSFile(currentDir, currentBaseName);
     if (!associatedFile) {
       return completions;
     }
 
     // Parse imports from the associated file
-    const importedTemplates = parseTemplateImports(associatedFile, fs, path);
+    const importedTemplates = parseTemplateImports(associatedFile);
 
     // Filter by partial match and create completions
     importedTemplates
@@ -440,9 +431,7 @@ async function getTemplateNameCompletions(
 // Helper function to find the associated JS/TS file for a template
 function findAssociatedJSFile(
   currentDir: string,
-  baseName: string,
-  fs: any,
-  path: any
+  baseName: string
 ): string | null {
   const possibleExtensions = ['.ts', '.js'];
 
@@ -450,7 +439,7 @@ function findAssociatedJSFile(
   for (const ext of possibleExtensions) {
     const filePath = path.join(currentDir, baseName + ext);
     try {
-      if (fs.existsSync(filePath)) {
+      if (fsSync.existsSync(filePath)) {
         return filePath;
       }
     } catch (e) {
@@ -460,14 +449,14 @@ function findAssociatedJSFile(
 
   // If no exact match, look for any JS/TS files in the same directory
   try {
-    const files = fs.readdirSync(currentDir);
+    const files = fsSync.readdirSync(currentDir);
     for (const file of files) {
       const ext = path.extname(file);
       if (possibleExtensions.includes(ext)) {
         const fullPath = path.join(currentDir, file);
         // Check if this file imports the current HTML template
         try {
-          const content = fs.readFileSync(fullPath, 'utf8');
+          const content = fsSync.readFileSync(fullPath, 'utf8');
           // Look for imports of template.html or similar patterns
           const templateImportPattern = new RegExp(
             `import\\s+['"]\\./${baseName}(?:\\.html)?['"]`,
@@ -496,19 +485,132 @@ function findAssociatedJSFile(
   return null;
 }
 
+// Helper function to find tsconfig.json in the same directory as .meteor
+function findTsConfigForMeteorProject(startPath: string): any {
+  let currentDir = startPath;
+
+  // Walk up the directory tree to find .meteor directory
+  while (currentDir !== path.dirname(currentDir)) {
+    const meteorDir = path.join(currentDir, '.meteor');
+    if (fsSync.existsSync(meteorDir)) {
+      // Found .meteor directory, look for tsconfig.json in the same directory
+      const tsconfigPath = path.join(currentDir, 'tsconfig.json');
+      if (fsSync.existsSync(tsconfigPath)) {
+        try {
+          const tsconfigContent = fsSync.readFileSync(tsconfigPath, 'utf8');
+          // Remove comments and parse JSON (basic comment removal)
+          const cleanContent = tsconfigContent
+            .replace(/\/\*[\s\S]*?\*\//g, '') // Remove /* */ comments
+            .replace(/\/\/.*$/gm, ''); // Remove // comments
+          return JSON.parse(cleanContent);
+        } catch (e) {
+          console.error('Error parsing tsconfig.json:', e);
+          return null;
+        }
+      }
+      break;
+    }
+    currentDir = path.dirname(currentDir);
+  }
+
+  return null;
+}
+
+// Helper function to resolve TypeScript path aliases
+function resolveTsPath(importPath: string, tsconfig: any, projectRoot: string): string | null {
+  if (!tsconfig?.compilerOptions?.paths) {
+    return null;
+  }
+
+  const { baseUrl = '.', paths } = tsconfig.compilerOptions;
+  const absoluteBaseUrl = path.resolve(projectRoot, baseUrl);
+
+  // Try to match the import path against configured path patterns
+  for (const [pattern, mappings] of Object.entries(paths)) {
+    const regexPattern = pattern.replace(/\*/g, '(.*)');
+    const regex = new RegExp(`^${regexPattern}$`);
+    const match = importPath.match(regex);
+
+    if (match) {
+      // Try each mapping option
+      for (const mapping of mappings as string[]) {
+        let resolvedPath = mapping;
+
+        // Replace * with the captured group
+        if (match[1] !== undefined) {
+          resolvedPath = resolvedPath.replace(/\*/g, match[1]);
+        }
+
+        // Resolve relative to baseUrl
+        const fullPath = path.resolve(absoluteBaseUrl, resolvedPath);
+        return fullPath;
+      }
+    }
+  }
+
+  return null;
+}
+
 // Helper function to parse template imports from a JS/TS file
-function parseTemplateImports(filePath: string, fs: any, path: any): string[] {
+function parseTemplateImports(filePath: string): string[] {
   try {
-    const content = fs.readFileSync(filePath, 'utf8');
+    const content = fsSync.readFileSync(filePath, 'utf8');
     const templates: string[] = [];
 
-    // Find all import statements (both named and unnamed)
-    const importPattern = /import\s+(?:[^'"]*\s+from\s+)?['"](\.\.?\/[^'"]*)['"]/g;
+    // Find tsconfig.json for this Meteor project
+    const tsconfig = findTsConfigForMeteorProject(path.dirname(filePath));
+
+    // Find all import statements (both named and unnamed, including absolute paths)
+    const importPattern = /import\s+(?:[^'"]*\s+from\s+)?['"]((?:\.\.?\/|\/)[^'"]*)['"]/g;
 
     let match;
     while ((match = importPattern.exec(content)) !== null) {
       const importPath = match[1];
-      const fullImportPath = path.resolve(path.dirname(filePath), importPath);
+
+      let fullImportPath;
+      if (importPath.startsWith('/')) {
+        // Absolute import - try TypeScript path resolution first
+        if (tsconfig) {
+          // Find project root (directory containing .meteor)
+          let currentDir = path.dirname(filePath);
+          let projectRoot = currentDir;
+
+          while (currentDir !== path.dirname(currentDir)) {
+            if (fsSync.existsSync(path.join(currentDir, '.meteor'))) {
+              projectRoot = currentDir;
+              break;
+            }
+            currentDir = path.dirname(currentDir);
+          }
+
+          // Try TypeScript path resolution
+          const tsResolvedPath = resolveTsPath(importPath, tsconfig, projectRoot);
+          if (tsResolvedPath) {
+            fullImportPath = tsResolvedPath;
+          } else {
+            // Fallback to simple resolution
+            fullImportPath = path.join(projectRoot, importPath.substring(1)); // Remove leading /
+          }
+        } else {
+          // No tsconfig, use simple resolution
+          // Find the project root by looking for package.json
+          let currentDir = path.dirname(filePath);
+          let projectRoot = currentDir;
+
+          while (currentDir !== path.dirname(currentDir)) {
+            if (fsSync.existsSync(path.join(currentDir, 'package.json'))) {
+              projectRoot = currentDir;
+              break;
+            }
+            currentDir = path.dirname(currentDir);
+          }
+
+          fullImportPath = path.join(projectRoot, importPath.substring(1)); // Remove leading /
+        }
+      } else {
+        // Relative import
+        fullImportPath = path.resolve(path.dirname(filePath), importPath);
+      }
 
       // Try different file extensions for the imported file
       const possibleExtensions = ['.ts', '.js', ''];
@@ -517,9 +619,9 @@ function parseTemplateImports(filePath: string, fs: any, path: any): string[] {
 
       for (const ext of possibleExtensions) {
         const testPath = fullImportPath + ext;
-        if (fs.existsSync(testPath)) {
+        if (fsSync.existsSync(testPath)) {
           try {
-            importedFileContent = fs.readFileSync(testPath, 'utf8');
+            importedFileContent = fsSync.readFileSync(testPath, 'utf8');
             actualImportPath = testPath;
             break;
           } catch (e) {
@@ -529,7 +631,7 @@ function parseTemplateImports(filePath: string, fs: any, path: any): string[] {
       }
 
       // If we found the imported file, look for Template.templateName patterns
-      if (importedFileContent) {
+      if (importedFileContent && actualImportPath) {
         // Match Template.templateName patterns
         const templatePattern = /Template\.([a-zA-Z_$][a-zA-Z0-9_$]*)/g;
         let templateMatch;
@@ -537,26 +639,50 @@ function parseTemplateImports(filePath: string, fs: any, path: any): string[] {
         while ((templateMatch = templatePattern.exec(importedFileContent)) !== null) {
           const templateName = templateMatch[1];
           if (!templates.includes(templateName)) {
-            // Verify this template exists by checking for a template.html file
-            const templateDir = path.dirname(actualImportPath);
-            const templateHtmlPath = path.join(templateDir, 'template.html');
+            templates.push(templateName);
+          }
+        }
 
-            if (fs.existsSync(templateHtmlPath)) {
-              try {
-                const templateHtml = fs.readFileSync(templateHtmlPath, 'utf8');
-                // Check if the template.html actually defines this template
-                const templateDefPattern = new RegExp(
-                  `<template\\s+name=["']${templateName}["']`,
-                  'i'
-                );
-                if (templateDefPattern.test(templateHtml)) {
-                  templates.push(templateName);
-                }
-              } catch (e) {
-                // If we can't read template.html, include the template anyway since we found Template.templateName
+        // Also check for template.html files in the same directory and extract template names
+        const templateDir = path.dirname(actualImportPath);
+        const templateHtmlPath = path.join(templateDir, 'template.html');
+
+        if (fsSync.existsSync(templateHtmlPath)) {
+          try {
+            const templateHtml = fsSync.readFileSync(templateHtmlPath, 'utf8');
+            // Extract template names from template definitions
+            const htmlTemplatePattern = /<template\s+name=["']([^"']+)["']/g;
+            let htmlTemplateMatch;
+
+            while ((htmlTemplateMatch = htmlTemplatePattern.exec(templateHtml)) !== null) {
+              const templateName = htmlTemplateMatch[1];
+              if (!templates.includes(templateName)) {
                 templates.push(templateName);
               }
             }
+          } catch (e) {
+            // Continue if we can't read the template.html file
+          }
+        }
+      }
+
+      // For imports that directly import .html files
+      if (importPath.endsWith('.html')) {
+        const htmlPath = path.resolve(path.dirname(filePath), importPath);
+        if (fsSync.existsSync(htmlPath)) {
+          try {
+            const templateHtml = fsSync.readFileSync(htmlPath, 'utf8');
+            const htmlTemplatePattern = /<template\s+name=["']([^"']+)["']/g;
+            let htmlTemplateMatch;
+
+            while ((htmlTemplateMatch = htmlTemplatePattern.exec(templateHtml)) !== null) {
+              const templateName = htmlTemplateMatch[1];
+              if (!templates.includes(templateName)) {
+                templates.push(templateName);
+              }
+            }
+          } catch (e) {
+            // Continue if we can't read the HTML file
           }
         }
       }
@@ -568,9 +694,9 @@ function parseTemplateImports(filePath: string, fs: any, path: any): string[] {
 
       if (templateName && !templates.includes(templateName)) {
         const templateHtmlPath = path.join(fullImportPath, 'template.html');
-        if (fs.existsSync(templateHtmlPath)) {
+        if (fsSync.existsSync(templateHtmlPath)) {
           try {
-            const templateHtml = fs.readFileSync(templateHtmlPath, 'utf8');
+            const templateHtml = fsSync.readFileSync(templateHtmlPath, 'utf8');
             const templateDefPattern = new RegExp(`<template\\s+name=["']${templateName}["']`, 'i');
             if (templateDefPattern.test(templateHtml)) {
               templates.push(templateName);
@@ -599,21 +725,18 @@ async function getTemplateParameterCompletions(
   const completions: CompletionItem[] = [];
 
   try {
-    const fs = await import('fs');
-    const path = await import('path');
-
     const currentFilePath = currentDocument.uri.replace('file://', '');
     const currentDir = path.dirname(currentFilePath);
     const currentBaseName = path.basename(currentFilePath, path.extname(currentFilePath));
 
     // Find associated JS/TS file
-    const associatedFile = findAssociatedJSFile(currentDir, currentBaseName, fs, path);
+    const associatedFile = findAssociatedJSFile(currentDir, currentBaseName);
     if (!associatedFile) {
       return completions;
     }
 
     // Parse imports from the associated file to find the template
-    const importedTemplates = parseTemplateImports(associatedFile, fs, path);
+    const importedTemplates = parseTemplateImports(associatedFile);
 
     if (!importedTemplates.includes(templateName)) {
       return completions;
@@ -623,8 +746,6 @@ async function getTemplateParameterCompletions(
     const templateFile = findImportedTemplateFile(
       associatedFile,
       templateName,
-      fs,
-      path,
       connection
     );
     if (!templateFile) {
@@ -632,7 +753,7 @@ async function getTemplateParameterCompletions(
     }
 
     // Read and analyze the template file for data properties
-    const templateContent = fs.readFileSync(templateFile, 'utf8');
+    const templateContent = fsSync.readFileSync(templateFile, 'utf8');
     const templateDataProperties = extractDataPropertiesFromTemplate(templateContent, templateName);
 
     // Also analyze the associated TypeScript file for type definitions
@@ -640,18 +761,16 @@ async function getTemplateParameterCompletions(
     const templateTsFile = findTemplateTypeScriptFile(
       associatedFile,
       templateName,
-      fs,
-      path,
       connection
     );
     let typeDataProperties: Array<{ name: string; type?: string; documentation?: string }> = [];
 
     if (templateTsFile) {
-      typeDataProperties = extractDataPropertiesFromTypes(templateTsFile, templateName, fs);
+      typeDataProperties = extractDataPropertiesFromTypes(templateTsFile, templateName);
     }
 
     // Extract helper function names from the TypeScript file to exclude them from parameters
-    const helperNames = templateTsFile ? extractHelperNames(templateTsFile, templateName, fs) : [];
+    const helperNames = templateTsFile ? extractHelperNames(templateTsFile, templateName) : [];
 
     // Combine TypeScript properties (with enhanced type info) and template properties (with default any type)
     // Create a map of TypeScript properties for easy lookup
@@ -704,12 +823,10 @@ async function getTemplateParameterCompletions(
 function findImportedTemplateFile(
   jsFilePath: string,
   templateName: string,
-  fs: any,
-  path: any,
   connection: any
 ): string | null {
   try {
-    const jsFileContent = fs.readFileSync(jsFilePath, 'utf8');
+    const jsFileContent = fsSync.readFileSync(jsFilePath, 'utf8');
     const dir = path.dirname(jsFilePath);
 
     // Parse import statements to find where this template comes from
@@ -743,21 +860,21 @@ function findImportedTemplateFile(
         // Look for template.html in the import directory (not the full import path)
         const templateHtmlPath = path.join(importDirResolved, 'template.html');
 
-        if (fs.existsSync(templateHtmlPath)) {
+        if (fsSync.existsSync(templateHtmlPath)) {
           return templateHtmlPath;
         }
 
         // Also check in the full import path directory (original logic)
         const templateHtmlPathFull = path.join(fullImportPath, 'template.html');
 
-        if (fs.existsSync(templateHtmlPathFull)) {
+        if (fsSync.existsSync(templateHtmlPathFull)) {
           return templateHtmlPathFull;
         }
 
         // Also try templateName.html
         const templateNamePath = path.join(path.dirname(fullImportPath), `${templateName}.html`);
 
-        if (fs.existsSync(templateNamePath)) {
+        if (fsSync.existsSync(templateNamePath)) {
           return templateNamePath;
         }
       }
@@ -774,12 +891,10 @@ function findImportedTemplateFile(
 function findTemplateTypeScriptFile(
   jsFilePath: string,
   templateName: string,
-  fs: any,
-  path: any,
   connection: any
 ): string | null {
   try {
-    const jsFileContent = fs.readFileSync(jsFilePath, 'utf8');
+    const jsFileContent = fsSync.readFileSync(jsFilePath, 'utf8');
     const dir = path.dirname(jsFilePath);
 
     // Parse import statements to find where this template comes from
@@ -807,7 +922,7 @@ function findTemplateTypeScriptFile(
         // For imports like './nestedTemplate/nestedTemplate', look for the .ts file
         const templateTsPath = `${fullImportPath}.ts`;
 
-        if (fs.existsSync(templateTsPath)) {
+        if (fsSync.existsSync(templateTsPath)) {
           return templateTsPath;
         }
 
@@ -816,7 +931,7 @@ function findTemplateTypeScriptFile(
         const importDirResolved = path.resolve(dir, importDir);
         const templateTsInDir = path.join(importDirResolved, `${templateName}.ts`);
 
-        if (fs.existsSync(templateTsInDir)) {
+        if (fsSync.existsSync(templateTsInDir)) {
           return templateTsInDir;
         }
       }
@@ -896,13 +1011,12 @@ function extractDataPropertiesFromTemplate(
 // Helper function to extract data properties from TypeScript type definitions
 function extractDataPropertiesFromTypes(
   tsFilePath: string,
-  templateName: string,
-  fs: any
+  templateName: string
 ): Array<{ name: string; type?: string; documentation?: string }> {
   const properties: Array<{ name: string; type?: string; documentation?: string }> = [];
 
   try {
-    const tsFileContent = fs.readFileSync(tsFilePath, 'utf8');
+    const tsFileContent = fsSync.readFileSync(tsFilePath, 'utf8');
 
     // Look for type definitions like: type TemplateNameData = { ... }
     // Convert templateName to PascalCase for type name matching
@@ -1120,11 +1234,11 @@ function extractDataPropertiesFromTypes(
 }
 
 // Helper function to extract helper function names from TypeScript template files
-function extractHelperNames(tsFilePath: string, templateName: string, fs: any): string[] {
+function extractHelperNames(tsFilePath: string, templateName: string): string[] {
   const helperNames: string[] = [];
 
   try {
-    const tsFileContent = fs.readFileSync(tsFilePath, 'utf8');
+    const tsFileContent = fsSync.readFileSync(tsFilePath, 'utf8');
 
     // Look for Template.templateName.helpers({ ... }) block
     const helpersPattern = new RegExp(
