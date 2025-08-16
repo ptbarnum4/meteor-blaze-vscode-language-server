@@ -1,16 +1,16 @@
 import path from 'path';
 import vscode from 'vscode';
 import {
-    LanguageClient,
-    LanguageClientOptions,
-    ServerOptions,
-    TransportKind
+  LanguageClient,
+  LanguageClientOptions,
+  ServerOptions,
+  TransportKind
 } from 'vscode-languageclient/node';
 
 import {
-    createBlockConditionDecorationType,
-    updateBlockConditionDecorations,
-    updateDecorationType
+  createBlockConditionDecorationType,
+  updateBlockConditionDecorations,
+  updateDecorationType
 } from './helpers/blockConditions/decorationType';
 import { isMeteorProject } from './helpers/meteor';
 import { ExtensionConfig } from '/types';
@@ -184,20 +184,27 @@ export const createActivate = (extConfig: ExtensionConfig) => {
       );
     }
     // Prompt user to set editor.tokenColorCustomizations for Blaze token colors
-    vscode.window
-      .showInformationMessage(
-        'For full Blaze token coloring, add editor.tokenColorCustomizations to your settings. See CONFIGURATION.md for details.',
-        'Open Configuration Guide'
-      )
-      .then(selection => {
-        if (selection === 'Open Configuration Guide') {
-          vscode.env.openExternal(
-            vscode.Uri.parse(
-              'https://github.com/ptbarnum4/meteor-blaze-vscode-language-server/blob/main/CONFIGURATION.md'
-            )
-          );
-        }
-      });
+    // Only show this if they don't already have Blaze-specific configurations
+
+
+
+    // Only show popup if none of the Blaze-specific configurations are set
+    if (!checkHasAnyConfigsSet()) {
+      vscode.window
+        .showInformationMessage(
+          'For full Blaze token coloring, add editor.tokenColorCustomizations to your settings. See CONFIGURATION.md for details.',
+          'Open Configuration Guide'
+        )
+        .then(selection => {
+          if (selection === 'Open Configuration Guide') {
+            vscode.env.openExternal(
+              vscode.Uri.parse(
+                'https://github.com/ptbarnum4/meteor-blaze-vscode-language-server/blob/main/CONFIGURATION.md'
+              )
+            );
+          }
+        });
+    }
     console.info('Meteor/Blaze HTML Language Server extension activating...');
 
     // Initialize decoration type with current settings
@@ -400,3 +407,37 @@ export const createActivate = (extConfig: ExtensionConfig) => {
     );
   };
 };
+
+function checkHasAnyConfigsSet() {
+  try {
+    const editorConfig = vscode.workspace.getConfiguration('editor');
+    const meteorConfig = vscode.workspace.getConfiguration('meteorLanguageServer');
+
+    // Check for semantic token color customizations
+    const semanticTokenRules = editorConfig.get('semanticTokenColorCustomizations.rules');
+    const hasSemanticTokenRules =
+      semanticTokenRules &&
+      typeof semanticTokenRules === 'object' &&
+      ('blazeBlockHash' in semanticTokenRules ||
+        'blazeBlockName' in semanticTokenRules ||
+        'blazeBlockArgs' in semanticTokenRules ||
+        'blazeBlockFirstArg' in semanticTokenRules ||
+        'blazeBlockSingleArg' in semanticTokenRules ||
+        'blazeExpression' in semanticTokenRules ||
+        'blazeBlockIn' in semanticTokenRules);
+
+    // Check for meteor-specific configurations
+    const blockConditionsConfig = meteorConfig.get('blockConditions') ?? {};
+    const blazeHelpersConfig = meteorConfig.has('blazeHelpers') ?? {};
+
+    const hasBlockConditionsConfig = !!Object.keys(blockConditionsConfig).length;
+
+    const hasBlazeHelpersConfig = !!Object.keys(blazeHelpersConfig).length;
+
+    // Return true if any of the configurations are set
+    return hasSemanticTokenRules || hasBlockConditionsConfig || hasBlazeHelpersConfig;
+  } catch (error) {
+    console.error('Error checking configurations:', error);
+    return false; // If we can't read configs, assume no configs are set
+  }
+}
