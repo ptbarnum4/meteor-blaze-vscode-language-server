@@ -6,7 +6,7 @@ import vscode from 'vscode';
  * Checks if the current workspace is a Meteor project by looking for a .meteor directory.
  * @returns {boolean} True if it's a Meteor project, false otherwise.
  */
-export const isMeteorProject = (): boolean => {
+export const isMeteorProject = async (): Promise<boolean> => {
   const workspaceFolders = vscode.workspace.workspaceFolders;
   if (!workspaceFolders) {
     return false;
