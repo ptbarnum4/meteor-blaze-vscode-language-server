@@ -33,7 +33,7 @@ const extractJSDocComment = (lines: string[], targetLineIndex: number): string |
     if (line.startsWith('/**')) {
       if (inJSDoc) {
         // Found the start, reverse and join
-        return jsdocLines.reverse().join(' ').trim();
+        return jsdocLines.reverse().join('\n').trim();
       }
       break;
     }
@@ -90,7 +90,11 @@ export const analyzeFileForGlobalHelpers = (filePath: string): GlobalHelperInfo[
             // Find the start of the function definition
             for (let k = j + 1; k < Math.min(j + 3, lines.length); k++) {
               const funcLine = lines[k].trim();
-              if (funcLine.includes('(') || funcLine.includes('=>') || funcLine.includes('function')) {
+              if (
+                funcLine.includes('(') ||
+                funcLine.includes('=>') ||
+                funcLine.includes('function')
+              ) {
                 helperStart = funcLine;
                 startLine = k;
                 break;
@@ -102,7 +106,6 @@ export const analyzeFileForGlobalHelpers = (filePath: string): GlobalHelperInfo[
       }
 
       if (helperName) {
-
         // Extract JSDoc comment
         const jsdoc = extractJSDocComment(lines, startLine);
 

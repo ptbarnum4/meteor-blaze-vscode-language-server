@@ -10,8 +10,8 @@ import { findEnclosingEachInContext } from '../helpers/findEnclosingEachInContex
 import { getWordRangeAtPosition } from '../helpers/getWordRangeAtPosition';
 import { isWithinHandlebarsExpression } from '../helpers/isWithinHandlebarsExpression';
 import {
-    trimLanguageDocumentation,
-    trimUsageDocumentation
+  trimLanguageDocumentation,
+  trimUsageDocumentation
 } from '../helpers/trimUsageDocumentation';
 
 const onHover = (config: CurrentConnectionConfig) => {
@@ -244,11 +244,11 @@ const onHover = (config: CurrentConnectionConfig) => {
       const currentFileUri = textDocumentPosition.textDocument.uri;
 
       // Skip global helpers analysis in test environment or for test URIs
-      if (process.env.NODE_ENV === 'test' ||
-          workspaceRoot.includes('test') ||
-          currentFileUri.includes('/nonexistent.') ||
-          currentFileUri.includes('/test.') ||
-          currentFileUri.includes('test-project')) {
+      if (
+        process.env.NODE_ENV === 'test' ||
+        currentFileUri.includes('/nonexistent.') ||
+        currentFileUri.includes('/test.')
+      ) {
         // Skip global helpers during testing
         return null;
       }
@@ -267,11 +267,11 @@ const onHover = (config: CurrentConnectionConfig) => {
         (helper: any) => helper.name === word
       );
       if (globalHelper) {
-        const hoverContent = [`**${word}** - Global Template Helper`, ``];
+        const hoverContent = [`**\`${word}\`** - Global Template Helper`, ``];
 
         // Add JSDoc description if available
         if (globalHelper.jsdoc) {
-          hoverContent.push(`**Description:** ${globalHelper.jsdoc}`);
+          hoverContent.push('```ts\n/**\n * ' + globalHelper.jsdoc.split('\n').join('\n * ') + '\n*/\n```');
           hoverContent.push(``);
         }
 
@@ -300,11 +300,11 @@ const onHover = (config: CurrentConnectionConfig) => {
         return {
           contents: {
             kind: MarkupKind.Markdown,
-          value: hoverContent.join('\n')
-        },
-        range: wordRange
-      };
-    }
+            value: hoverContent.join('\n')
+          },
+          range: wordRange
+        };
+      }
     } catch (error) {
       // Handle errors in global helpers analysis
       connection.console.error(`Error analyzing global helpers for hover: ${error}`);

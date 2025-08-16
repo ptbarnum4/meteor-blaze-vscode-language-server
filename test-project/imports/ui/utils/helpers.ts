@@ -4,9 +4,9 @@ type TrueOrFalse = string | boolean | number;
 
 Template.registerHelper(
   'ifTrue',
-  (value: any, ifTrue: TrueOrFalse = '', ifFalse: TrueOrFalse = '') => {
+  <T extends TrueOrFalse = string>(value: any, ifTrue: T, ifFalse: T): T => {
     const t = typeof ifTrue === 'string' ? ifTrue : '';
     const f = typeof ifFalse === 'string' ? ifFalse : '';
-    return !!value ? t : f;
+    return (!!value ? t : f) as T;
   }
 );

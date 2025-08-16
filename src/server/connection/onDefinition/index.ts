@@ -366,8 +366,7 @@ const onDefinition = (config: CurrentConnectionConfig) => {
       // Skip global helpers analysis in test environment or for test URIs
       if (process.env.NODE_ENV === 'test' ||
           currentFileUri.includes('/nonexistent.') ||
-          currentFileUri.includes('/test.') ||
-          currentFileUri.includes('test-project')) {
+          currentFileUri.includes('/test.')) {
         // Skip global helpers during testing
         return null;
       }
@@ -389,7 +388,7 @@ const onDefinition = (config: CurrentConnectionConfig) => {
 
       try {
         // Skip global helpers analysis in test environment to prevent hanging
-        if (process.env.NODE_ENV === 'test' || workspaceRoot.includes('test')) {
+        if (process.env.NODE_ENV === 'test') {
           // Skip global helpers during testing
           return null;
         }
@@ -414,18 +413,41 @@ const onDefinition = (config: CurrentConnectionConfig) => {
 
           for (let i = 0; i < lines.length; i++) {
             const line = lines[i];
-            const helperRegex = new RegExp(`Template\\.registerHelper\\s*\\(\\s*['"\`]${word}['"\`]`);
-            const match = helperRegex.exec(line);
-            if (match) {
+
+            // First try single-line pattern: Template.registerHelper('name', ...)
+            const singleLineRegex = new RegExp(`Template\\.registerHelper\\s*\\(\\s*['"\`]${word}['"\`]`);
+            const singleLineMatch = singleLineRegex.exec(line);
+            if (singleLineMatch) {
               return [
                 {
                   uri: `file://${globalHelper.filePath}`,
                   range: {
-                    start: { line: i, character: match.index || 0 },
-                    end: { line: i, character: (match.index || 0) + match[0].length }
+                    start: { line: i, character: singleLineMatch.index || 0 },
+                    end: { line: i, character: (singleLineMatch.index || 0) + singleLineMatch[0].length }
                   }
                 }
               ];
+            }
+
+            // Then try multiline pattern: Template.registerHelper(\n  'name',
+            const multiLineStart = /Template\.registerHelper\s*\(\s*$/.exec(line);
+            if (multiLineStart) {
+              // Look for the helper name in the next few lines
+              for (let j = i + 1; j < Math.min(i + 5, lines.length); j++) {
+                const nextLine = lines[j];
+                const nameMatch = new RegExp(`^\\s*['"\`]${word}['"\`]\\s*,?\\s*$`).exec(nextLine);
+                if (nameMatch) {
+                  return [
+                    {
+                      uri: `file://${globalHelper.filePath}`,
+                      range: {
+                        start: { line: j, character: nameMatch.index || 0 },
+                        end: { line: j, character: (nameMatch.index || 0) + nameMatch[0].length }
+                      }
+                    }
+                  ];
+                }
+              }
             }
           }
         }
