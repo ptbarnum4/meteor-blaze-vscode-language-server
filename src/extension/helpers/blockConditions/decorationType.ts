@@ -3,8 +3,8 @@ import vscode from 'vscode';
 import { ExtensionConfig } from '/types';
 
 import { containsMeteorTemplates } from '../meteor';
-import { findEnclosingBlockForElse } from './findEnclosingBlockForElse';
-import { findMatchingBlockCondition } from './findMatchingBlockCondition';
+import { findEnclosingBlockForElseWithIndex } from './findEnclosingBlockForElse';
+import { findMatchingBlockConditionWithIndex } from './findMatchingBlockCondition';
 
 /**
  * Update block condition decorations in the active editor for the given document.
@@ -92,21 +92,27 @@ export const updateBlockConditionDecorations = (
     while ((match = endBlockRegex.exec(text)) !== null) {
       // Look backwards to find the matching {{#blockType}} condition
       const beforeEndBlock = text.substring(0, match.index);
-      const condition = findMatchingBlockCondition(beforeEndBlock, type);
+      const matchResult = findMatchingBlockConditionWithIndex(beforeEndBlock, type);
 
       let propText = '';
       if (propNames && propNames.length > 0) {
         propText = ` [props: ${propNames.join(', ')}]`;
       }
 
-      if (condition) {
+      if (matchResult) {
         const endPos = document.positionAt(match.index + match[0].length);
+        const startPos = document.positionAt(matchResult.index);
+
+        // Skip decoration if start and end are on the same line
+        if (startPos.line === endPos.line) {
+          continue;
+        }
 
         decorations.push({
           range: new vscode.Range(endPos, endPos),
           renderOptions: {
             after: {
-              contentText: `// END ${label}${propText} ${condition}`
+              contentText: `// END ${label}${propText} ${matchResult.condition}`
             }
           }
         });
@@ -119,13 +125,20 @@ export const updateBlockConditionDecorations = (
       let elseMatch;
 
       while ((elseMatch = elseRegex.exec(text)) !== null) {
-        // Use the new function to find the enclosing block
-        const enclosingBlock = findEnclosingBlockForElse(text, elseMatch.index);
+        // Use the new function to find the enclosing block with index
+        const enclosingBlock = findEnclosingBlockForElseWithIndex(text, elseMatch.index);
 
         if (enclosingBlock && enclosingBlock.type === type) {
+          const elsePos = document.positionAt(elseMatch.index + elseMatch[0].length);
+          const startPos = document.positionAt(enclosingBlock.index);
+
+          // Skip decoration if start and else are on the same line
+          if (startPos.line === elsePos.line) {
+            continue;
+          }
+
           // Determine the prefix based on block type
           const prefix = type === 'unless' ? 'IS' : 'NOT';
-          const elsePos = document.positionAt(elseMatch.index + elseMatch[0].length);
 
           decorations.push({
             range: new vscode.Range(elsePos, elsePos),
