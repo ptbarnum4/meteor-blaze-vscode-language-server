@@ -2,10 +2,10 @@ import vscode from 'vscode';
 
 import { ExtensionConfig } from '/types';
 
+import { isWithinComment } from '../activate/isWithinComment';
 import { containsMeteorTemplates } from '../meteor';
 import { findEnclosingBlockForElseWithIndex } from './findEnclosingBlockForElse';
 import { findMatchingBlockConditionWithIndex } from './findMatchingBlockCondition';
-import { isWithinComment } from '../activate/isWithinComment';
 
 /**
  * Update block condition decorations in the active editor for the given document.

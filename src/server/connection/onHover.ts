@@ -8,8 +8,8 @@ import { analyzeGlobalHelpers } from '../helpers/analyzeGlobalHelpers';
 import { containsMeteorTemplates } from '../helpers/containsMeteorTemplates';
 import { findEnclosingEachInContext } from '../helpers/findEnclosingEachInContext';
 import { getWordRangeAtPosition } from '../helpers/getWordRangeAtPosition';
-import { isWithinHandlebarsExpression } from '../helpers/isWithinHandlebarsExpression';
 import { isWithinComment } from '../helpers/isWithinComment';
+import { isWithinHandlebarsExpression } from '../helpers/isWithinHandlebarsExpression';
 import {
   trimLanguageDocumentation,
   trimUsageDocumentation

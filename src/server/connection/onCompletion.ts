@@ -16,8 +16,8 @@ import { createBlockCompletions, shouldProvideBlockCompletion } from '../helpers
 import { containsMeteorTemplates } from '../helpers/containsMeteorTemplates';
 import { findEnclosingEachInContext } from '../helpers/findEnclosingEachInContext';
 import { findEnclosingIfOrUnlessBlock } from '../helpers/findEnclosingIfOrUnlessBlock';
-import { isWithinHandlebarsExpression } from '../helpers/isWithinHandlebarsExpression';
 import { isWithinComment } from '../helpers/isWithinComment';
+import { isWithinHandlebarsExpression } from '../helpers/isWithinHandlebarsExpression';
 
 const onCompletion = (config: CurrentConnectionConfig) => {
   const { connection, documents } = config;

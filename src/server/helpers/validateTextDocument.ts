@@ -3,8 +3,8 @@ import { Diagnostic, DiagnosticSeverity, Range } from 'vscode-languageserver/nod
 
 import { CurrentConnectionConfig } from '../../types';
 import { containsMeteorTemplates } from './containsMeteorTemplates';
-import { isWithinComment } from './isWithinComment';
 import getDocumentSettings from './getDocumentSettings';
+import { isWithinComment } from './isWithinComment';
 
 /**
  * Finds unmatched Blaze block opening tags that don't have corresponding closing tags
@@ -52,7 +52,7 @@ async function findUnmatchedBlazeBlocks(text: string, document: TextDocument, co
     let match;
     while ((match = pattern.regex.exec(text)) !== null) {
       const matchOffset = match.index;
-      
+
       // Check if this match is within a comment
       const commentInfo = isWithinComment(text, matchOffset);
       if (commentInfo.isWithin) {
