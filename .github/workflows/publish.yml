@@ -28,7 +28,35 @@ jobs:
       - name: Install vsce
         run: npm install -g @vscode/vsce
 
+      - name: Package VSIX
+        run: vsce package
+
+      - name: Get package version
+        id: package-version
+        run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+
+      - name: List generated files
+        run: ls -la *.vsix
+
+      - name: Attach VSIX to Release
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v1
+        with:
+          files: meteor-blaze-vscode-language-server-${{ steps.package-version.outputs.version }}.vsix
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload VSIX as Artifact
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: meteor-blaze-vscode-language-server-${{ steps.package-version.outputs.version }}
+          path: meteor-blaze-vscode-language-server-${{ steps.package-version.outputs.version }}.vsix
+          retention-days: 30
+
       - name: Publish to VS Code Marketplace
         env:
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
-        run: vsce publish --baseImagesUrl https://raw.githubusercontent.com/${{ github.repository }}/main --baseContentUrl https://github.com/${{ github.repository }}
+        run: |
+          echo "Publishing version ${{ steps.package-version.outputs.version }} to VS Code Marketplace..."
+          vsce publish --baseImagesUrl https://raw.githubusercontent.com/${{ github.repository }}/main --baseContentUrl https://github.com/${{ github.repository }}
