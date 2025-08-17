@@ -1282,13 +1282,13 @@ async function getTemplateParameterHover(
     if (!isInTemplateInclusion) {
       const beforeText = text.substring(0, offset);
       const afterText = text.substring(offset);
-      
+
       // Find the last template inclusion start before our position
       const lastTemplateMatch = beforeText.match(/\{\{\s*>\s*([a-zA-Z0-9_]+)[^}]*$/);
-      
+
       // Find the next }} after our position
       const nextCloseMatch = afterText.match(/^[^}]*\}\}/);
-      
+
       if (lastTemplateMatch && nextCloseMatch && lastTemplateMatch[1] === templateName) {
         isInTemplateInclusion = true;
       }
