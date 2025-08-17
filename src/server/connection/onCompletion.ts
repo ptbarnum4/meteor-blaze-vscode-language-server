@@ -88,7 +88,8 @@ const onCompletion = (config: CurrentConnectionConfig) => {
       const parameterCompletions = await getTemplateParameterCompletions(
         config,
         templateNameForParams,
-        document
+        document,
+        textBeforeCursor
       );
       return parameterCompletions;
     }
@@ -784,7 +785,8 @@ function parseTemplateImports(filePath: string): string[] {
 async function getTemplateParameterCompletions(
   config: CurrentConnectionConfig,
   templateName: string,
-  currentDocument: TextDocument
+  currentDocument: TextDocument,
+  textBeforeCursor: string
 ): Promise<CompletionItem[]> {
   const { connection } = config;
   const completions: CompletionItem[] = [];
@@ -793,6 +795,9 @@ async function getTemplateParameterCompletions(
     const currentFilePath = currentDocument.uri.replace('file://', '');
     const currentDir = path.dirname(currentFilePath);
     const currentBaseName = path.basename(currentFilePath, path.extname(currentFilePath));
+
+    // Parse already used parameters from the current template inclusion
+    const usedParameters = parseUsedParameters(textBeforeCursor, templateName);
 
     // Find associated JS/TS file
     const associatedFile = findAssociatedJSFile(currentDir, currentBaseName);
@@ -848,13 +853,15 @@ async function getTemplateParameterCompletions(
       prop => !templatePropNames.has(prop.name) && !helperNames.includes(prop.name)
     );
 
-    // Combine both sets of properties
+    // Combine both sets of properties and filter out already used parameters
     const allDataProperties: Array<{ name: string; type?: string; documentation?: string }> = [
       ...templateProps,
       ...typeOnlyProps
-    ].sort((a, b) => a.name.localeCompare(b.name));
+    ]
+      .filter(property => !usedParameters.includes(property.name)) // Filter out used parameters
+      .sort((a, b) => a.name.localeCompare(b.name));
 
-    // Create completions for each data property
+    // Create completions for each available data property
     allDataProperties.forEach(property => {
       const completion = {
         label: property.name,
@@ -874,6 +881,36 @@ async function getTemplateParameterCompletions(
   } catch (error) {}
 
   return completions;
+}
+
+// Helper function to parse already used parameters in the current template inclusion
+function parseUsedParameters(textBeforeCursor: string, templateName: string): string[] {
+  const usedParams: string[] = [];
+
+  try {
+    // Find the start of the current template inclusion
+    const templateInclusionPattern = new RegExp(`\\{\\{\\s*>\\s*${templateName}\\b([^}]*)$`);
+    const match = textBeforeCursor.match(templateInclusionPattern);
+
+    if (match) {
+      const parametersSection = match[1];
+
+      // Extract parameter names using regex to find param=value patterns
+      const parameterPattern = /\b([a-zA-Z_$][a-zA-Z0-9_$]*)\s*=/g;
+      let paramMatch;
+
+      while ((paramMatch = parameterPattern.exec(parametersSection)) !== null) {
+        const paramName = paramMatch[1];
+        if (!usedParams.includes(paramName)) {
+          usedParams.push(paramName);
+        }
+      }
+    }
+  } catch (error) {
+    // If parsing fails, return empty array to not block completions
+  }
+
+  return usedParams;
 }
 
 // Helper function to find the template file for a given template name

@@ -169,6 +169,92 @@ async function findUnmatchedBlazeBlocks(text: string, document: TextDocument, co
   return diagnostics;
 }
 
+// Helper function to find duplicate template parameters
+function findDuplicateTemplateParameters(
+  text: string,
+  textDocument: TextDocument
+): Diagnostic[] {
+  const diagnostics: Diagnostic[] = [];
+
+  try {
+    // Find all template inclusions in the document
+    const templateInclusionPattern = /\{\{\s*>\s*([a-zA-Z0-9_]+)\b([^}]*)\}\}/g;
+    let match;
+
+    while ((match = templateInclusionPattern.exec(text)) !== null) {
+      const templateName = match[1];
+      const parametersSection = match[2];
+      const inclusionStart = match.index;
+      const inclusionEnd = match.index + match[0].length;
+
+      // Extract all parameter names from this template inclusion
+      const parameterPattern = /\b([a-zA-Z_$][a-zA-Z0-9_$]*)\s*=/g;
+      const usedParams: Array<{ name: string; start: number; end: number }> = [];
+      let paramMatch;
+
+      while ((paramMatch = parameterPattern.exec(parametersSection)) !== null) {
+        const paramName = paramMatch[1];
+        const paramStart = inclusionStart + match[1].length + 3 + paramMatch.index; // 3 for {{>
+        const paramEnd = paramStart + paramName.length;
+
+        usedParams.push({
+          name: paramName,
+          start: paramStart,
+          end: paramEnd
+        });
+      }
+
+      // Check for duplicates
+      const seenParams = new Map<string, { start: number; end: number }>();
+
+      for (const param of usedParams) {
+        if (seenParams.has(param.name)) {
+          // Found a duplicate parameter
+          const originalParam = seenParams.get(param.name)!;
+
+          // Create diagnostic for the duplicate (second occurrence)
+          const startPos = textDocument.positionAt(param.start);
+          const endPos = textDocument.positionAt(param.end);
+
+          const diagnostic: Diagnostic = {
+            severity: DiagnosticSeverity.Error,
+            range: {
+              start: startPos,
+              end: endPos
+            },
+            message: `Duplicate parameter '${param.name}' in template inclusion '${templateName}'. This parameter was already specified.`,
+            source: 'meteor-blaze'
+          };
+
+          diagnostics.push(diagnostic);
+
+          // Also create a diagnostic for the original (first occurrence) as an info
+          const originalStartPos = textDocument.positionAt(originalParam.start);
+          const originalEndPos = textDocument.positionAt(originalParam.end);
+
+          const originalDiagnostic: Diagnostic = {
+            severity: DiagnosticSeverity.Information,
+            range: {
+              start: originalStartPos,
+              end: originalEndPos
+            },
+            message: `Parameter '${param.name}' is duplicated later in this template inclusion.`,
+            source: 'meteor-blaze'
+          };
+
+          diagnostics.push(originalDiagnostic);
+        } else {
+          seenParams.set(param.name, param);
+        }
+      }
+    }
+  } catch (error) {
+    // If parsing fails, don't add diagnostics to avoid false positives
+  }
+
+  return diagnostics;
+}
+
 export const validateTextDocument = async (
   config: CurrentConnectionConfig,
   textDocument: TextDocument
@@ -183,6 +269,10 @@ export const validateTextDocument = async (
     // Check for unmatched Blaze blocks
     const blazeBlockDiagnostics = await findUnmatchedBlazeBlocks(text, textDocument, config);
     diagnostics.push(...blazeBlockDiagnostics);
+
+    // Check for duplicate template parameters
+    const duplicateParamDiagnostics = findDuplicateTemplateParameters(text, textDocument);
+    diagnostics.push(...duplicateParamDiagnostics);
   }
 
   // Send diagnostics to the client
