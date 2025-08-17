@@ -18,6 +18,8 @@
         <p>Condition is false</p>
       {{/if}}
 
+      {{}}
+
       {{> nestedTemplate
         title="Nested Template Title"
         subtitle="Nested Template Subtitle"
@@ -28,6 +30,18 @@
         title="Another Nested Template"
         subtitle="Another Subtitle"
         description=="This is another description of the nested template."
+        thing1="Thing 1"
+      }}
+
+      {{> nestedTemplate2
+        title="Nested Template 2 Title"
+        subtitle="Nested Template 2 Subtitle"
+        description="This is a description of the second nested template."
+      }}
+      {{> nestedTemplate
+        title="Another Nested Template 2"
+        subtitle="Another Subtitle 2"
+        description=="This is another description of the second nested template."
         thing1="Thing 1"
       }}
 

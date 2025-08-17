@@ -2,30 +2,20 @@ import fs from 'fs';
 import path from 'path';
 import vscode from 'vscode';
 
-/**
- * Checks if the current workspace is a Meteor project by looking for a .meteor directory.
- * @returns {boolean} True if it's a Meteor project, false otherwise.
- */
-export const isMeteorProject = async (): Promise<boolean> => {
+export const getMeteorProjectRoot = (): string | null => {
   const workspaceFolders = vscode.workspace.workspaceFolders;
   if (!workspaceFolders) {
-    return false;
+    return null;
   }
 
-  // Check each workspace folder for a .meteor directory (recursively up 5 levels)
   for (const folder of workspaceFolders) {
     let currentPath = folder.uri.fsPath;
 
     // Check current directory and up to 5 parent directories
     for (let level = 0; level <= 5; level++) {
       const meteorPath = path.join(currentPath, '.meteor');
-      try {
-        if (fs.existsSync(meteorPath) && fs.statSync(meteorPath).isDirectory()) {
-          return true;
-        }
-      } catch (error) {
-        // Ignore errors and continue checking
-        console.error(`Error checking for .meteor directory in ${currentPath}:`, error);
+      if (fs.existsSync(meteorPath) && fs.statSync(meteorPath).isDirectory()) {
+        return currentPath; // Return the root path of the Meteor project
       }
 
       // Move up one directory level
@@ -39,10 +29,18 @@ export const isMeteorProject = async (): Promise<boolean> => {
       currentPath = parentPath;
     }
   }
-
-  return false;
+  return null; // No Meteor project root found
 };
 
+/**
+ * Checks if the current workspace is a Meteor project by looking for a .meteor directory.
+ * @returns {boolean} True if it's a Meteor project, false otherwise.
+ */
+export const isMeteorProject = async (): Promise<boolean> => {
+  const meteorProjectRoot = getMeteorProjectRoot();
+
+  return !!meteorProjectRoot; // Returns true if a Meteor project root was found
+};
 
 /**
  * Check if a file contains a `<template>` tag with a `name` attribute.

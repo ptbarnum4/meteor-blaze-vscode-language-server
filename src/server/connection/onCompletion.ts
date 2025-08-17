@@ -10,7 +10,6 @@ import {
   TextDocumentPositionParams
 } from 'vscode-languageserver/node';
 
-
 import { CurrentConnectionConfig } from '../../types';
 import { analyzeGlobalHelpers } from '../helpers/analyzeGlobalHelpers';
 import { createBlockCompletions, shouldProvideBlockCompletion } from '../helpers/autoInsertEndTags';
@@ -53,9 +52,7 @@ const onCompletion = (config: CurrentConnectionConfig) => {
 
     // Check if we're inside template inclusion parameters ({{> templateName [cursor is here] }})
     // Look for the most recent {{> templateName that hasn't been closed yet
-    const templateParameterMatch = textBeforeCursor.match(
-      /\{\{\s*>\s*([a-zA-Z0-9_]+)(?:[^{}])*$/
-    );
+    const templateParameterMatch = textBeforeCursor.match(/\{\{\s*>\s*([a-zA-Z0-9_]+)(?:[^{}])*$/);
 
     // Check if we're positioned after an equals sign (indicating we're providing a value, not a parameter name)
     const afterEqualsMatch = textBeforeCursor.match(/=\s*[^}\s]*$/);
@@ -66,9 +63,7 @@ const onCompletion = (config: CurrentConnectionConfig) => {
     // 2. We're not completing the template name itself (isTemplateInclusion is false)
     // 3. We're not after an equals sign (completing parameter name, not value)
     const isTemplateParameter =
-      templateParameterMatch !== null &&
-      !isTemplateInclusion &&
-      !isAfterEquals;
+      templateParameterMatch !== null && !isTemplateInclusion && !isAfterEquals;
     const templateNameForParams = templateParameterMatch ? templateParameterMatch[1] : '';
 
     // If we're in a template inclusion context, provide template name completions
@@ -203,7 +198,7 @@ const onCompletion = (config: CurrentConnectionConfig) => {
               helper.jsdoc || `Globally registered template helper: ${helper.name}`;
             completions.push({
               label: helper.name,
-                kind: CompletionItemKind.Function,
+              kind: CompletionItemKind.Function,
               detail: 'Global template helper',
               documentation: helper.jsdoc
                 ? { kind: MarkupKind.Markdown, value: helper.jsdoc }
@@ -429,10 +424,7 @@ async function getTemplateNameCompletions(
 }
 
 // Helper function to find the associated JS/TS file for a template
-function findAssociatedJSFile(
-  currentDir: string,
-  baseName: string
-): string | null {
+function findAssociatedJSFile(currentDir: string, baseName: string): string | null {
   const possibleExtensions = ['.ts', '.js'];
 
   // First, try exact base name match
@@ -743,11 +735,7 @@ async function getTemplateParameterCompletions(
     }
 
     // Find the template file to analyze its data usage
-    const templateFile = findImportedTemplateFile(
-      associatedFile,
-      templateName,
-      connection
-    );
+    const templateFile = findImportedTemplateFile(associatedFile, templateName, connection);
     if (!templateFile) {
       return completions;
     }
@@ -758,11 +746,7 @@ async function getTemplateParameterCompletions(
 
     // Also analyze the associated TypeScript file for type definitions
     // We need to find the actual template's TypeScript file, not the importing file
-    const templateTsFile = findTemplateTypeScriptFile(
-      associatedFile,
-      templateName,
-      connection
-    );
+    const templateTsFile = findTemplateTypeScriptFile(associatedFile, templateName, connection);
     let typeDataProperties: Array<{ name: string; type?: string; documentation?: string }> = [];
 
     if (templateTsFile) {
@@ -1257,8 +1241,10 @@ function extractHelperNames(tsFilePath: string, templateName: string): string[] 
 
       while ((match = functionPattern.exec(helpersBody)) !== null) {
         const functionName = match[1];
-        if (functionName && !helperNames.includes(functionName)) {
-          helperNames.push(functionName);
+        if (functionName) {
+          if (!helperNames.includes(functionName)) {
+            helperNames.push(functionName);
+          }
         }
       }
     }
