@@ -1236,8 +1236,9 @@ async function getTemplateParameterHover(
 
   try {
     // Get text around the cursor to determine context
-    const beforeCursor = text.substring(Math.max(0, offset - 200), offset);
-    const afterCursor = text.substring(offset, Math.min(text.length, offset + 200));
+    // Increase the window size to handle longer template inclusions
+    const beforeCursor = text.substring(Math.max(0, offset - 500), offset);
+    const afterCursor = text.substring(offset, Math.min(text.length, offset + 500));
 
     // Check if we're in template parameters: {{> templateName param=value}}
     // Use a more flexible pattern that handles multiline parameters
@@ -1273,6 +1274,23 @@ async function getTemplateParameterHover(
           isInTemplateInclusion = true;
           break;
         }
+      }
+    }
+
+    // If the above check failed, try a more lenient approach
+    // Look for the most recent {{> templateName and the next }} after our position
+    if (!isInTemplateInclusion) {
+      const beforeText = text.substring(0, offset);
+      const afterText = text.substring(offset);
+      
+      // Find the last template inclusion start before our position
+      const lastTemplateMatch = beforeText.match(/\{\{\s*>\s*([a-zA-Z0-9_]+)[^}]*$/);
+      
+      // Find the next }} after our position
+      const nextCloseMatch = afterText.match(/^[^}]*\}\}/);
+      
+      if (lastTemplateMatch && nextCloseMatch && lastTemplateMatch[1] === templateName) {
+        isInTemplateInclusion = true;
       }
     }
 
