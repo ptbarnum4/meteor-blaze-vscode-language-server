@@ -490,13 +490,18 @@ function findTsConfigForMeteorProject(startPath: string): any {
       if (fsSync.existsSync(tsconfigPath)) {
         try {
           const tsconfigContent = fsSync.readFileSync(tsconfigPath, 'utf8');
-          // Remove comments and parse JSON (basic comment removal)
-          const cleanContent = tsconfigContent
-            .replace(/\/\*[\s\S]*?\*\//g, '') // Remove /* */ comments
-            .replace(/\/\/.*$/gm, ''); // Remove // comments
-          return JSON.parse(cleanContent);
+
+          // Try parsing as-is first (in case it's valid JSON without comments)
+          try {
+            return JSON.parse(tsconfigContent);
+          } catch (e) {
+            // If that fails, try safer comment removal
+            const cleanContent = safelyRemoveJsonComments(tsconfigContent);
+            return JSON.parse(cleanContent);
+          }
         } catch (e) {
           console.error('Error parsing tsconfig.json:', e);
+          console.error('File path:', tsconfigPath);
           return null;
         }
       }
@@ -506,6 +511,67 @@ function findTsConfigForMeteorProject(startPath: string): any {
   }
 
   return null;
+}
+
+// Safely remove comments from JSON content
+function safelyRemoveJsonComments(content: string): string {
+  const result: string[] = [];
+  let inString = false;
+  let inLineComment = false;
+  let inBlockComment = false;
+  let i = 0;
+
+  while (i < content.length) {
+    const char = content[i];
+    const nextChar = i + 1 < content.length ? content[i + 1] : '';
+
+    // Handle block comments
+    if (inBlockComment) {
+      if (char === '*' && nextChar === '/') {
+        inBlockComment = false;
+        i += 2; // Skip the */
+        continue;
+      }
+      i++;
+      continue;
+    }
+
+    // Handle line comments
+    if (inLineComment) {
+      if (char === '\n') {
+        inLineComment = false;
+        result.push(char); // Keep the newline
+      }
+      i++;
+      continue;
+    }
+
+    // Handle strings (don't process comments inside strings)
+    if (char === '"' && (i === 0 || content[i - 1] !== '\\')) {
+      inString = !inString;
+      result.push(char);
+      i++;
+      continue;
+    }
+
+    // Look for comment starts only outside strings
+    if (!inString) {
+      if (char === '/' && nextChar === '/') {
+        inLineComment = true;
+        i += 2;
+        continue;
+      } else if (char === '/' && nextChar === '*') {
+        inBlockComment = true;
+        i += 2;
+        continue;
+      }
+    }
+
+    result.push(char);
+    i++;
+  }
+
+  return result.join('');
 }
 
 // Helper function to resolve TypeScript path aliases
