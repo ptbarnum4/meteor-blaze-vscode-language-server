@@ -17,6 +17,7 @@ import { containsMeteorTemplates } from '../helpers/containsMeteorTemplates';
 import { findEnclosingEachInContext } from '../helpers/findEnclosingEachInContext';
 import { findEnclosingIfOrUnlessBlock } from '../helpers/findEnclosingIfOrUnlessBlock';
 import { isWithinHandlebarsExpression } from '../helpers/isWithinHandlebarsExpression';
+import { isWithinComment } from '../helpers/isWithinComment';
 
 const onCompletion = (config: CurrentConnectionConfig) => {
   const { connection, documents } = config;
@@ -35,6 +36,12 @@ const onCompletion = (config: CurrentConnectionConfig) => {
 
     const text = document.getText();
     const offset = document.offsetAt(textDocumentPosition.position);
+
+    // Check if we're inside any type of comment (HTML, Handlebars, JS/TS)
+    const commentInfo = isWithinComment(text, offset);
+    if (commentInfo.isWithin) {
+      return []; // Don't provide completions inside comments
+    }
 
     // Only provide Meteor completions if this HTML/Handlebars file contains templates
     if (!containsMeteorTemplates(document)) {

@@ -3,6 +3,7 @@ import { Diagnostic, DiagnosticSeverity, Range } from 'vscode-languageserver/nod
 
 import { CurrentConnectionConfig } from '../../types';
 import { containsMeteorTemplates } from './containsMeteorTemplates';
+import { isWithinComment } from './isWithinComment';
 import getDocumentSettings from './getDocumentSettings';
 
 /**
@@ -50,6 +51,14 @@ async function findUnmatchedBlazeBlocks(text: string, document: TextDocument, co
   blockPatterns.forEach(pattern => {
     let match;
     while ((match = pattern.regex.exec(text)) !== null) {
+      const matchOffset = match.index;
+      
+      // Check if this match is within a comment
+      const commentInfo = isWithinComment(text, matchOffset);
+      if (commentInfo.isWithin) {
+        continue; // Skip blocks that are inside comments
+      }
+
       const startPos = document.positionAt(match.index);
       const endPos = document.positionAt(match.index + match[0].length);
       const range = Range.create(startPos, endPos);

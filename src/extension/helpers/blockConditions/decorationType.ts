@@ -5,6 +5,7 @@ import { ExtensionConfig } from '/types';
 import { containsMeteorTemplates } from '../meteor';
 import { findEnclosingBlockForElseWithIndex } from './findEnclosingBlockForElse';
 import { findMatchingBlockConditionWithIndex } from './findMatchingBlockCondition';
+import { isWithinComment } from '../activate/isWithinComment';
 
 /**
  * Update block condition decorations in the active editor for the given document.
@@ -90,6 +91,11 @@ export const updateBlockConditionDecorations = (
     let match;
 
     while ((match = endBlockRegex.exec(text)) !== null) {
+      // Skip if the match is within a comment
+      if (isWithinComment(text, match.index)) {
+        continue;
+      }
+
       // Look backwards to find the matching {{#blockType}} condition
       const beforeEndBlock = text.substring(0, match.index);
       const matchResult = findMatchingBlockConditionWithIndex(beforeEndBlock, type);
@@ -125,6 +131,11 @@ export const updateBlockConditionDecorations = (
       let elseMatch;
 
       while ((elseMatch = elseRegex.exec(text)) !== null) {
+        // Skip if the match is within a comment
+        if (isWithinComment(text, elseMatch.index)) {
+          continue;
+        }
+
         // Use the new function to find the enclosing block with index
         const enclosingBlock = findEnclosingBlockForElseWithIndex(text, elseMatch.index);
 

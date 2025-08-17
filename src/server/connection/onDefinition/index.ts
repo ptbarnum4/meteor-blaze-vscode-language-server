@@ -8,6 +8,7 @@ import { containsMeteorTemplates } from '../../helpers/containsMeteorTemplates';
 import { findEnclosingEachInContext } from '../../helpers/findEnclosingEachInContext';
 import { getWordRangeAtPosition } from '../../helpers/getWordRangeAtPosition';
 import { isWithinHandlebarsExpression } from '../../helpers/isWithinHandlebarsExpression';
+import { isWithinComment } from '../../helpers/isWithinComment';
 import handleTemplateInclusionDefinition from './handleTemplateInclusionDefinition';
 
 const onDefinition = (config: CurrentConnectionConfig) => {
@@ -25,6 +26,13 @@ const onDefinition = (config: CurrentConnectionConfig) => {
 
     const text = document.getText();
     const offset = document.offsetAt(params.position);
+
+    // Check if we're inside any type of comment (HTML, Handlebars, JS/TS)
+    const commentInfo = isWithinComment(text, offset);
+    if (commentInfo.isWithin) {
+      return null; // Don't provide definitions inside comments
+    }
+
     const filePath = document.uri.replace('file://', '');
     const dir = path.dirname(filePath);
     const baseName = path.basename(filePath, path.extname(filePath));

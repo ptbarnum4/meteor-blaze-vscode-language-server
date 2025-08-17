@@ -1,5 +1,6 @@
 import vscode from 'vscode';
 import getBlockRanges from './getBlockRanges';
+import { isWithinComment } from './isWithinComment';
 import parseBlockConditions from './parseBlockConditions';
 import parseBlockExpressions from './parseBlockExpressions';
 
@@ -20,6 +21,13 @@ const createSemanticProvider = (
       while ((match = blazeRegex.exec(text)) !== null) {
         const start = match.index;
         const end = start + match[0].length;
+        
+        // Check if this match is within a comment
+        const commentInfo = isWithinComment(text, start);
+        if (commentInfo.isWithin) {
+          continue; // Skip semantic tokens for content inside comments
+        }
+        
         // Check if this {{...}} is inside a block helper range
         let insideBlock = false;
         for (const range of blockRanges) {
