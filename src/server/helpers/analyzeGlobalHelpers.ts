@@ -1,20 +1,7 @@
 import fsSync from 'fs'; // for existsSync and where sync is needed
 import path from 'path';
+import { AnalyzeGlobalHelpersResult, GlobalHelperInfo } from '/types';
 const fs = fsSync.promises; // where available, read files async
-
-type GlobalHelperInfo = {
-  name: string;
-  jsdoc?: string;
-  signature?: string;
-  returnType?: string;
-  parameters?: string;
-  filePath: string;
-};
-
-export type AnalyzeGlobalHelpersResult = {
-  helpers: string[];
-  helperDetails: GlobalHelperInfo[];
-};
 
 // Function to extract JSDoc comment from lines above a target line
 const extractJSDocComment = (lines: string[], targetLineIndex: number): string | undefined => {

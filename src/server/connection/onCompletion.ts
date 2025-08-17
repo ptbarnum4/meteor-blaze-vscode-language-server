@@ -206,7 +206,7 @@ const onCompletion = (config: CurrentConnectionConfig) => {
           timeoutPromise
         ]);
 
-        globalHelpersResult.helperDetails.forEach((helper: any) => {
+        globalHelpersResult.helperDetails.forEach(helper => {
           // Avoid duplicates with existing completions
           if (!completions.find(c => c.label === helper.name)) {
             const documentation =
@@ -214,7 +214,7 @@ const onCompletion = (config: CurrentConnectionConfig) => {
             completions.push({
               label: helper.name,
               kind: CompletionItemKind.Function,
-              detail: 'Global template helper',
+              detail: `Global template helper ${helper.name}`,
               documentation: helper.jsdoc
                 ? { kind: MarkupKind.Markdown, value: helper.jsdoc }
                 : documentation
@@ -982,8 +982,10 @@ function findImportedTemplateFile(
             let projectRoot = currentDir;
 
             while (currentDir !== path.dirname(currentDir)) {
-              if (fsSync.existsSync(path.join(currentDir, 'package.json')) ||
-                  fsSync.existsSync(path.join(currentDir, '.meteor'))) {
+              if (
+                fsSync.existsSync(path.join(currentDir, 'package.json')) ||
+                fsSync.existsSync(path.join(currentDir, '.meteor'))
+              ) {
                 projectRoot = currentDir;
                 break;
               }
@@ -1092,8 +1094,10 @@ function findTemplateTypeScriptFile(
             let projectRoot = currentDir;
 
             while (currentDir !== path.dirname(currentDir)) {
-              if (fsSync.existsSync(path.join(currentDir, 'package.json')) ||
-                  fsSync.existsSync(path.join(currentDir, '.meteor'))) {
+              if (
+                fsSync.existsSync(path.join(currentDir, 'package.json')) ||
+                fsSync.existsSync(path.join(currentDir, '.meteor'))
+              ) {
                 projectRoot = currentDir;
                 break;
               }

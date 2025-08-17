@@ -6,13 +6,14 @@ import { Hover, MarkupKind, TextDocumentPositionParams } from 'vscode-languagese
 import { CurrentConnectionConfig } from '../../types';
 import { analyzeGlobalHelpers } from '../helpers/analyzeGlobalHelpers';
 import { containsMeteorTemplates } from '../helpers/containsMeteorTemplates';
+import createGlobalTemplateHelperDocs from '../helpers/documents/createGlobalHelperDocs';
 import { findEnclosingEachInContext } from '../helpers/findEnclosingEachInContext';
 import { getWordRangeAtPosition } from '../helpers/getWordRangeAtPosition';
 import { isWithinComment } from '../helpers/isWithinComment';
 import { isWithinHandlebarsExpression } from '../helpers/isWithinHandlebarsExpression';
 import {
-    trimLanguageDocumentation,
-    trimUsageDocumentation
+  trimLanguageDocumentation,
+  trimUsageDocumentation
 } from '../helpers/trimUsageDocumentation';
 
 const onHover = (config: CurrentConnectionConfig) => {
@@ -282,43 +283,7 @@ const onHover = (config: CurrentConnectionConfig) => {
         (helper: any) => helper.name === word
       );
       if (globalHelper) {
-        const hoverContent = [`**\`${word}\`** - Global Template Helper`, ``];
-
-        // Add JSDoc description if available
-        if (globalHelper.jsdoc) {
-          hoverContent.push('```ts\n/**\n * ' + globalHelper.jsdoc.split('\n').join('\n * ') + '\n*/\n```');
-          hoverContent.push(``);
-        }
-
-        // Add signature information
-        if (globalHelper.signature) {
-          hoverContent.push(`**Signature:** \`${globalHelper.signature}\``);
-          hoverContent.push(``);
-        }
-
-        // Add return type if available
-        if (globalHelper.returnType) {
-          hoverContent.push(`**Returns:** \`${globalHelper.returnType}\``);
-          hoverContent.push(``);
-        }
-
-        // Add parameters if available
-        if (globalHelper.parameters) {
-          hoverContent.push(`**Parameters:** ${globalHelper.parameters}`);
-          hoverContent.push(``);
-        }
-
-        hoverContent.push(`**Source:** ${path.basename(globalHelper.filePath)}`);
-        hoverContent.push(``);
-        hoverContent.push(`**Usage:** \`{{${word}}}\``);
-
-        return {
-          contents: {
-            kind: MarkupKind.Markdown,
-            value: hoverContent.join('\n')
-          },
-          range: wordRange
-        };
+        return createGlobalTemplateHelperDocs(globalHelper, word, wordRange);
       }
     } catch (error) {
       // Handle errors in global helpers analysis
@@ -1011,7 +976,10 @@ function parseTemplateImportsForHover(filePath: string, fs: any, path: any): str
           if (fs.existsSync(templateHtmlPath)) {
             try {
               const templateHtml = fs.readFileSync(templateHtmlPath, 'utf8');
-              const templateDefPattern = new RegExp(`<template\\s+name=["']${templateName}["']`, 'i');
+              const templateDefPattern = new RegExp(
+                `<template\\s+name=["']${templateName}["']`,
+                'i'
+              );
               if (templateDefPattern.test(templateHtml)) {
                 templates.push(templateName);
               }
@@ -1128,7 +1096,12 @@ function safelyRemoveJsonComments(content: string): string {
 }
 
 // TypeScript path resolution function (for hover)
-function resolveTsPath(importPath: string, tsconfig: any, projectRoot: string, path: any): string | null {
+function resolveTsPath(
+  importPath: string,
+  tsconfig: any,
+  projectRoot: string,
+  path: any
+): string | null {
   if (!tsconfig?.compilerOptions?.paths) {
     return null;
   }
@@ -1140,8 +1113,8 @@ function resolveTsPath(importPath: string, tsconfig: any, projectRoot: string, p
   for (const [pattern, mappings] of Object.entries(paths) as [string, string[]][]) {
     // Convert glob pattern to regex
     const regexPattern = pattern
-      .replace(/\*/g, '([^/]*)')  // Replace * with capture group
-      .replace(/\//g, '\\/');     // Escape forward slashes
+      .replace(/\*/g, '([^/]*)') // Replace * with capture group
+      .replace(/\//g, '\\/'); // Escape forward slashes
 
     const regex = new RegExp(`^${regexPattern}$`);
     const match = importPath.match(regex);
@@ -1193,8 +1166,10 @@ function findImportedTemplateFile(
         let projectRoot = currentDir;
 
         while (currentDir !== path.dirname(currentDir)) {
-          if (fs.existsSync(path.join(currentDir, '.meteor')) ||
-              fs.existsSync(path.join(currentDir, 'package.json'))) {
+          if (
+            fs.existsSync(path.join(currentDir, '.meteor')) ||
+            fs.existsSync(path.join(currentDir, 'package.json'))
+          ) {
             projectRoot = currentDir;
             break;
           }
@@ -1329,7 +1304,12 @@ async function getTemplateParameterHover(
     }
 
     // Find the actual template's TypeScript file using import resolution
-    const templateTsFile = findTemplateTypeScriptFileForHover(associatedFile, templateName, fs, path);
+    const templateTsFile = findTemplateTypeScriptFileForHover(
+      associatedFile,
+      templateName,
+      fs,
+      path
+    );
 
     if (templateTsFile) {
       const content = fs.readFileSync(templateTsFile, 'utf8');
@@ -1409,10 +1389,7 @@ async function getTemplateParameterHover(
       ];
 
       for (const typeName of typeNames) {
-        const typePattern = new RegExp(
-          `type\\s+${typeName}\\s*=\\s*\\{([\\s\\S]*?)\\}\\s*;`,
-          'i'
-        );
+        const typePattern = new RegExp(`type\\s+${typeName}\\s*=\\s*\\{([\\s\\S]*?)\\}\\s*;`, 'i');
         const typeMatch = content.match(typePattern);
 
         if (typeMatch) {
@@ -1517,8 +1494,10 @@ function findTemplateTypeScriptFileForHover(
         let projectRoot = currentDir;
 
         while (currentDir !== path.dirname(currentDir)) {
-          if (fs.existsSync(path.join(currentDir, '.meteor')) ||
-              fs.existsSync(path.join(currentDir, 'package.json'))) {
+          if (
+            fs.existsSync(path.join(currentDir, '.meteor')) ||
+            fs.existsSync(path.join(currentDir, 'package.json'))
+          ) {
             projectRoot = currentDir;
             break;
           }
