@@ -54,16 +54,23 @@ const onCompletion = (config: CurrentConnectionConfig) => {
     // Look for the most recent {{> templateName that hasn't been closed yet
     const templateParameterMatch = textBeforeCursor.match(/\{\{\s*>\s*([a-zA-Z0-9_]+)(?:[^{}])*$/);
 
-    // Check if we're positioned after an equals sign (indicating we're providing a value, not a parameter name)
-    const afterEqualsMatch = textBeforeCursor.match(/=\s*[^}\s]*$/);
-    const isAfterEquals = afterEqualsMatch !== null;
+    // Check if we're positioned after an equals sign with only whitespace (indicating we want parameter suggestions, not values)
+    // This handles cases like: title=   |cursor  where user wants to see next parameter options
+    const afterEqualsWithWhitespaceMatch = textBeforeCursor.match(/=\s*$/);
+    const isAfterEqualsWithWhitespace = afterEqualsWithWhitespaceMatch !== null;
+
+    // Check if we're positioned after an equals sign with actual content (indicating we're providing a value)
+    const afterEqualsWithContentMatch = textBeforeCursor.match(/=\s*[^}\s]+$/);
+    const isAfterEqualsWithContent = afterEqualsWithContentMatch !== null;
 
     // We're in template parameter context if:
     // 1. We found a template parameter match
     // 2. We're not completing the template name itself (isTemplateInclusion is false)
-    // 3. We're not after an equals sign (completing parameter name, not value)
+    // 3. We're either not after an equals sign, or we're after equals with only whitespace
     const isTemplateParameter =
-      templateParameterMatch !== null && !isTemplateInclusion && !isAfterEquals;
+      templateParameterMatch !== null &&
+      !isTemplateInclusion &&
+      (!isAfterEqualsWithContent || isAfterEqualsWithWhitespace);
     const templateNameForParams = templateParameterMatch ? templateParameterMatch[1] : '';
 
     // If we're in a template inclusion context, provide template name completions
@@ -897,18 +904,61 @@ function findImportedTemplateFile(
         let fullImportPath: string;
 
         if (importPath.startsWith('./') || importPath.startsWith('../')) {
+          // Relative import
           fullImportPath = path.resolve(dir, importPath);
+        } else if (importPath.startsWith('/')) {
+          // Absolute import - handle with TypeScript path resolution
+          const tsconfig = findTsConfigForMeteorProject(dir);
+
+          if (tsconfig) {
+            // Find project root (directory containing .meteor)
+            let currentDir = dir;
+            let projectRoot = currentDir;
+
+            while (currentDir !== path.dirname(currentDir)) {
+              if (fsSync.existsSync(path.join(currentDir, '.meteor'))) {
+                projectRoot = currentDir;
+                break;
+              }
+              currentDir = path.dirname(currentDir);
+            }
+
+            // Try TypeScript path resolution
+            const tsResolvedPath = resolveTsPath(importPath, tsconfig, projectRoot);
+            if (tsResolvedPath) {
+              fullImportPath = tsResolvedPath;
+            } else {
+              // Fallback to simple resolution
+              fullImportPath = path.join(projectRoot, importPath.substring(1)); // Remove leading /
+            }
+          } else {
+            // No tsconfig, use simple resolution
+            // Find the project root by looking for package.json or .meteor
+            let currentDir = dir;
+            let projectRoot = currentDir;
+
+            while (currentDir !== path.dirname(currentDir)) {
+              if (fsSync.existsSync(path.join(currentDir, 'package.json')) ||
+                  fsSync.existsSync(path.join(currentDir, '.meteor'))) {
+                projectRoot = currentDir;
+                break;
+              }
+              currentDir = path.dirname(currentDir);
+            }
+
+            fullImportPath = path.join(projectRoot, importPath.substring(1)); // Remove leading /
+          }
         } else {
-          continue; // Skip non-relative imports
+          continue; // Skip other types of imports (like node_modules)
         }
 
-        // For imports like './nestedTemplate/nestedTemplate', we need to check the parent directory
+        // For imports like './nestedTemplate/nestedTemplate' or '/imports/ui/template2/nestedTemplate2/nestedTemplate2'
+        // we need to check the parent directory
         // Extract the directory part of the import path
-        const importDir = path.dirname(importPath);
-        const importDirResolved = path.resolve(dir, importDir);
+        const importDir = path.dirname(fullImportPath);
 
-        // Look for template.html in the import directory (not the full import path)
-        const templateHtmlPath = path.join(importDirResolved, 'template.html');
+        // Look for template.html in the import directory
+        const templateHtmlPath = path.join(importDir, 'template.html');
 
         if (fsSync.existsSync(templateHtmlPath)) {
           return templateHtmlPath;
@@ -964,12 +1014,56 @@ function findTemplateTypeScriptFile(
         let fullImportPath: string;
 
         if (importPath.startsWith('./') || importPath.startsWith('../')) {
+          // Relative import
           fullImportPath = path.resolve(dir, importPath);
+        } else if (importPath.startsWith('/')) {
+          // Absolute import - handle with TypeScript path resolution
+          const tsconfig = findTsConfigForMeteorProject(dir);
+
+          if (tsconfig) {
+            // Find project root (directory containing .meteor)
+            let currentDir = dir;
+            let projectRoot = currentDir;
+
+            while (currentDir !== path.dirname(currentDir)) {
+              if (fsSync.existsSync(path.join(currentDir, '.meteor'))) {
+                projectRoot = currentDir;
+                break;
+              }
+              currentDir = path.dirname(currentDir);
+            }
+
+            // Try TypeScript path resolution
+            const tsResolvedPath = resolveTsPath(importPath, tsconfig, projectRoot);
+            if (tsResolvedPath) {
+              fullImportPath = tsResolvedPath;
+            } else {
+              // Fallback to simple resolution
+              fullImportPath = path.join(projectRoot, importPath.substring(1)); // Remove leading /
+            }
+          } else {
+            // No tsconfig, use simple resolution
+            // Find the project root by looking for package.json or .meteor
+            let currentDir = dir;
+            let projectRoot = currentDir;
+
+            while (currentDir !== path.dirname(currentDir)) {
+              if (fsSync.existsSync(path.join(currentDir, 'package.json')) ||
+                  fsSync.existsSync(path.join(currentDir, '.meteor'))) {
+                projectRoot = currentDir;
+                break;
+              }
+              currentDir = path.dirname(currentDir);
+            }
+
+            fullImportPath = path.join(projectRoot, importPath.substring(1)); // Remove leading /
+          }
         } else {
-          continue;
+          continue; // Skip other types of imports (like node_modules)
         }
 
-        // For imports like './nestedTemplate/nestedTemplate', look for the .ts file
+        // For imports like './nestedTemplate/nestedTemplate' or '/imports/ui/template2/nestedTemplate2/nestedTemplate2'
+        // look for the .ts file
         const templateTsPath = `${fullImportPath}.ts`;
 
         if (fsSync.existsSync(templateTsPath)) {
@@ -977,9 +1071,8 @@ function findTemplateTypeScriptFile(
         }
 
         // Also try the directory approach - look in the import directory
-        const importDir = path.dirname(importPath);
-        const importDirResolved = path.resolve(dir, importDir);
-        const templateTsInDir = path.join(importDirResolved, `${templateName}.ts`);
+        const importDir = path.dirname(fullImportPath);
+        const templateTsInDir = path.join(importDir, `${templateName}.ts`);
 
         if (fsSync.existsSync(templateTsInDir)) {
           return templateTsInDir;

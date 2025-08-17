@@ -10,6 +10,8 @@
       {{data1}}
       {{data2}}
       {{data3}}
+      {{> nestedTemplate2
+        }}
 
       {{#if data1}}{{data1}}{{/if}}
       {{#if condition}}
@@ -25,18 +27,38 @@
         subtitle="Nested Template Subtitle"
         description="This is a description of the nested template."
 
+
       }}
-      {{> nestedTemplate
+      {{> nestedTemplate2
         title="Another Nested Template"
         subtitle="Another Subtitle"
         description=="This is another description of the nested template."
         thing1="Thing 1"
+
       }}
 
       {{> nestedTemplate2
-        title="Nested Template 2 Title"
-        subtitle="Nested Template 2 Subtitle"
-        description="This is a description of the second nested template."
+        title="Another Nested Template 2"
+        subtitle="Another Subtitle 2"
+        description="This is another description of the second nested template."
+        thing1="Thing 1"
+      }}
+
+      {{> nestedTemplate
+        title="Nested Template with Condition"
+        subtitle="Subtitle with Condition"
+        description="This template has a condition."
+      }}
+      {{#if condition}}
+        <p>Condition is true</p>
+      {{else}}
+        <p>Condition is false</p>
+      {{/if}}
+
+      {{> nestedTemplate2
+        title="Nested Template 2 with Condition"
+        subtitle="Subtitle 2 with Condition"
+        description="This template has a condition."
       }}
       {{> nestedTemplate
         title="Another Nested Template 2"
