@@ -199,14 +199,14 @@ function findDuplicateTemplateParameters(
         // We need to find where the parameters section starts within the full match
         const fullMatch = match[0];
         const templateNameInMatch = match[1];
-        
+
         // Find where the template name ends in the full match
         const templateNameStart = fullMatch.indexOf(templateNameInMatch);
         const templateNameEnd = templateNameStart + templateNameInMatch.length;
-        
+
         // Find where the parameters section starts (after template name)
         const parametersStartInMatch = templateNameEnd;
-        
+
         // The actual parameter start position in the document
         const paramStart = inclusionStart + parametersStartInMatch + paramMatch.index;
         const paramEnd = paramStart + paramName.length;
