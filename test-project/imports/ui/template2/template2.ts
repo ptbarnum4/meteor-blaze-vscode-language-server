@@ -1,16 +1,11 @@
 import { TemplateStaticTyped, Template as _Template } from 'meteor/templating';
 
 import '../utils/helpers';
-import './nestedTemplate/nestedTemplate';
-
-import '/imports/ui/template2/nestedTemplate2/nestedTemplate2';
-
-import '../template2/template2';
 
 import './style.less';
 import './template.html';
 
-type TestProps = {
+type Template2Props = {
   /**
    * Reactive variable to hold the count value.
    * This will be used to demonstrate reactivity in the template.
@@ -22,12 +17,12 @@ type TestProps = {
  * Test template for demonstrating static typing with Meteor templates.
  * This template includes reactive variables, helpers, and events.
  */
-type TestData = {
+type Template2Data = {
   /**
    * Data properties for the test template.
    * These properties can be used to pass data into the template.
    */
-  data1: 'abc' | '123' | 'xyz';
+  data1: string;
   /**
    * Additional data properties for the test template.
    * These properties can be used to pass more data into the template.
@@ -46,28 +41,28 @@ type TestData = {
 };
 
 // Create the static typed template
-type TestTemplate = TemplateStaticTyped<'test', TestData, { props: TestProps }>;
+type Template2Template = TemplateStaticTyped<'template2', Template2Data, { props: Template2Props }>;
 
 // Resign the template to the static typed template
-const Template = _Template as TestTemplate;
+const Template = _Template as Template2Template;
 
-Template.test.onCreated(function () {
+Template.template2.onCreated(function () {
   this.props = {
     count: new ReactiveVar(60)
   };
 });
 
-Template.test.onDestroyed(function () {
+Template.template2.onDestroyed(function () {
   // test onDestroyed
   console.info('Test template destroyed');
 });
 
-Template.test.onRendered(function () {
+Template.template2.onRendered(function () {
   // test onRendered
   console.info('Test template rendered');
 });
 
-Template.test.helpers({
+Template.template2.helpers({
   /**
    * Get the current count from the reactive variable.
    * @returns current count
@@ -96,7 +91,7 @@ Template.test.helpers({
   }
 });
 
-Template.test.events({
+Template.template2.events({
   'click .increment'(event, instance) {
     // test events
     event.preventDefault();

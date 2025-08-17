@@ -91,7 +91,7 @@ describe('analyzeJavaScriptFile', () => {
 
       const formatNameHelper = result.helperDetails.find(h => h.name === 'formatName');
       assert.strictEqual(formatNameHelper?.name, 'formatName');
-      
+
       // Check if jsdoc exists before checking its content
       if (formatNameHelper?.jsdoc) {
         assert.strictEqual(formatNameHelper.jsdoc.includes('formats a user\'s name'), true);
@@ -99,7 +99,7 @@ describe('analyzeJavaScriptFile', () => {
         // If JSDoc is not being extracted, we'll fix the test expectation
         console.log('No JSDoc found for formatName helper');
       }
-      
+
       if (formatNameHelper?.parameters) {
         assert.strictEqual(formatNameHelper.parameters.includes('firstName'), true);
       } else {

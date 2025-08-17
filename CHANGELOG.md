@@ -4,6 +4,53 @@ All notable changes to the "meteor-blaze-vscode-language-server" extension will 
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [0.0.6] - 2025-08-17
+
+### Fixed
+- **Global Helper Reference Resolution**: Fixed critical issues with global template helper lookup
+  - **Absolute Import Support**: Fixed resolution of absolute imports (e.g., `/imports/lib/globalHelpers`)
+  - **TypeScript Path Mapping**: Added support for TypeScript `paths` configuration in `tsconfig.json`
+  - **Template Parameter Hover**: Fixed template parameter hover information that was broken due to path resolution issues
+  - **Project Root Detection**: Improved algorithm for finding project root in complex directory structures
+- **Enhanced Template Import Resolution**: Better handling of various import patterns
+  - Updated regex patterns to support both relative and absolute import styles
+  - Added robust fallback mechanisms when primary resolution methods fail
+  - Support for multiple Meteor import patterns used in real-world projects
+
+### Enhanced
+- **Code Architecture Overhaul**: Refactored extension activation into focused, testable modules
+  - `createCompletionItemProvider()` - Isolated completion logic
+  - `createSemanticProvider()` - Dedicated semantic token management
+  - `promptIfNoConfigsSet()` - User configuration guidance
+  - Parsing modules for better code organization (`parseBlockConditions`, `parseBlockExpressions`)
+- **Global Helper Analysis Improvements**: Enhanced parsing and documentation extraction
+  - Better JSDoc extraction from various helper definition patterns
+  - Support for `Template.registerHelper('name', functionName)` pattern
+  - Multi-line pattern handling for complex helper registrations
+  - Improved parameter and return type extraction
+- **Comment-Aware Processing**: Added comprehensive comment detection and filtering
+  - New `isWithinComment()` function prevents processing Blaze code inside comments
+  - Support for HTML comments (`<!-- -->`), Handlebars comments (`{{!-- --}}`, `{{! }}`), and JavaScript comments
+  - Enhanced syntax highlighting accuracy by excluding commented code
+
+### Added
+- **Enhanced Validation and Diagnostics**:
+  - Nesting validation between HTML tags and Blaze blocks
+  - Duplicate parameter detection in template inclusions
+  - Cross-boundary violation detection with specific error messages
+  - Improved error positioning and more helpful diagnostic messages
+- **Comprehensive Testing Infrastructure**:
+  - Full test suite for global helper analysis functionality
+  - Complete test coverage for comment detection logic
+  - Tests for JSDoc extraction and TypeScript function references
+  - Cross-platform compatibility testing with proper cleanup
+
+### Technical Improvements
+- **Dependency Updates**: Updated to `glob@^11.0.3` for better file pattern matching
+- **Performance Optimizations**: Enhanced file type filtering and lazy loading
+- **Build Process**: Improved build configuration and error handling
+- **Code Quality**: Enhanced TypeScript strict mode and ESLint configuration
+
 ## [0.0.5] - 2025-08-13
 
 ### Added

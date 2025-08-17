@@ -1,0 +1,42 @@
+<template name="nestedTemplate2">
+  <div id="nestedTemplate2">
+    <h1>{{title}}</h1>
+    <h2>{{subtitle}}</h2>
+    <p>{{description}}</p>
+
+    <div class="nested-content">
+      <p>This is content inside the nested template.</p>
+      {{#if condition}}
+        <p>Condition in nested template is true</p>
+      {{else}}
+        <p>Condition in nested template is false</p>
+      {{/if}}
+      <p>Count: {{count}}</p>
+      <p>Data1: {{data1}}</p>
+      <p>Data2: {{data2}}</p>
+      <p>Data3: {{data3}}</p>
+      {{thing1}}
+      <div class="nested-boxes">
+        {{#each box in boxes}}
+          <div class="nested-box">
+            <span class="nested-box-text">Nested Box</span>
+            <span class="nested-box-number">{{pad}}</span>
+          </div>
+        {{/each}}
+        {{#each box in boxes}}
+          <div class="nested-box">
+            <span class="nested-box-text">Nested Box</span>
+            <span class="nested-box-number">{{pad}}</span>
+          </div>
+        {{/each}}
+        {{#each box in boxes}}
+          <div class="nested-box">
+            <span class="nested-box-text">Nested Box</span>
+            <span class="nested-box-number">{{pad}}</span>
+          </div>
+        {{/each}}
+
+        {{testText}}
+      </div>
+    </div>
+</template>

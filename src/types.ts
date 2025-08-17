@@ -94,3 +94,17 @@ export type ExtensionConfig = {
    * - created dynamically based on settings */
   blockConditionDecorationType: vscode.TextEditorDecorationType | null;
 };
+
+export type GlobalHelperInfo = {
+  name: string;
+  jsdoc?: string;
+  signature?: string;
+  returnType?: string;
+  parameters?: string;
+  filePath: string;
+};
+
+export type AnalyzeGlobalHelpersResult = {
+  helpers: string[];
+  helperDetails: GlobalHelperInfo[];
+};

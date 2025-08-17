@@ -86,7 +86,7 @@ export const analyzeJavaScriptFile = (filePath: string): AnalyzeJavaScriptFileRe
 
           // For helpers content, we don't need complex object literal validation
           // since we already extracted the content from inside Template.helpers({...})
-          
+
           const signature = `${methodName}(${parameters || ''})${returnType ? `: ${returnType.trim()}` : ''}`;
 
           methods.push({

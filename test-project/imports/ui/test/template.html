@@ -10,6 +10,9 @@
       {{data1}}
       {{data2}}
       {{data3}}
+      {{> nestedTemplate2
+        }}
+
       {{#if data1}}{{data1}}{{/if}}
       {{#if condition}}
         <p>Condition is true</p>
@@ -17,18 +20,93 @@
         <p>Condition is false</p>
       {{/if}}
 
+      {{}}
+
       {{> nestedTemplate
         title="Nested Template Title"
         subtitle="Nested Template Subtitle"
         description="This is a description of the nested template."
 
+
       }}
-      {{> nestedTemplate
+      {{> nestedTemplate2
         title="Another Nested Template"
         subtitle="Another Subtitle"
         description=="This is another description of the nested template."
         thing1="Thing 1"
+        thing2="Thing 2"
+
       }}
+
+      <div>
+        <div>
+          {{#if data1}}
+            <p>
+              Data 1 is available: {{data1}}
+            </p>
+          {{/if}}
+        </div>
+      </div>
+
+
+      {{!--
+        {{#if data2}}
+        Hello!
+        {{/if}}
+      --}}
+
+      {{!-- {{data4}} --}}
+
+      {{!-- {{ifTrue data3 data1 data4}} --}}
+      <!-- {{#if data2}}
+      Hello!
+      {{/if}} -->
+
+      <!-- {{data4}} -->
+
+      <!-- {{ifTrue data3 data1 data4}} -->
+
+
+      {{> nestedTemplate2
+        title="Another Nested Template 2"
+        subtitle="Another Subtitle 2"
+        description="This is another description of the second nested template."
+        thing1="Thing 1"
+        thing2="Thing 2"
+        thing3="Thing 3"
+        thing4="Thing 4"
+      }}
+
+      {{> nestedTemplate
+        title="Nested Template with Condition"
+        subtitle="Subtitle with Condition"
+        description="This template has a condition."
+      }}
+      {{#if condition}}
+        <p>Condition is true</p>
+      {{else}}
+        <p>Condition is false</p>
+      {{/if}}
+
+      {{> nestedTemplate2
+        title="Nested Template 2 with Condition"
+        subtitle="Subtitle 2 with Condition"
+        description="This template has a condition."
+      }}
+      {{> nestedTemplate
+        title="Another Nested Template 2"
+        subtitle="Another Subtitle 2"
+        description=="This is another description of the second nested template."
+        thing1="Thing 1"
+      }}
+
+      {{> nestedTemplate2}}
+      {{ifTrue}}
+      {{percentage}}
+      {{truncate}}
+
+      {{count}}
+      {{trim}}
 
       <!-- Should show error: wrong closing tag type -->
 

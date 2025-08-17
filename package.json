@@ -2,7 +2,7 @@
   "name": "meteor-blaze-vscode-language-server",
   "displayName": "Meteor/Blaze HTML Language Server",
   "description": "A language server for the Meteor framework providing syntax highlighting, diagnostics, and code completion",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "publisher": "ptbarnum4",
   "author": "ptbarnum4",
   "license": "MIT",
@@ -35,10 +35,7 @@
   ],
   "icon": "icon.png",
   "activationEvents": [
-    "workspaceContains:.meteor",
-    "onLanguage:html",
-    "onLanguage:meteor-html",
-    "onLanguage:meteor-handlebars"
+    "workspaceContains:.meteor"
   ],
   "main": "./dist/extension.js",
   "contributes": {
@@ -319,6 +316,7 @@
     "typescript": "^5.3.3"
   },
   "dependencies": {
+    "glob": "^11.0.3",
     "vscode-languageclient": "^8.1.0",
     "vscode-languageserver": "^8.1.0",
     "vscode-languageserver-textdocument": "^1.0.8"
