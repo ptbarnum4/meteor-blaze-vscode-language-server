@@ -37,6 +37,16 @@
 
       }}
 
+      <div>
+        <div>
+          {{#if data1}}
+            <p>
+              Data 1 is available: {{data1}}
+            </p>
+          {{/if}}
+        </div>
+      </div>
+
       {{> nestedTemplate2
         title="Another Nested Template 2"
         subtitle="Another Subtitle 2"
@@ -45,7 +55,6 @@
         thing2="Thing 2"
         thing3="Thing 3"
         thing4="Thing 4"
-        thing4="Thing 5"
       }}
 
       {{> nestedTemplate
