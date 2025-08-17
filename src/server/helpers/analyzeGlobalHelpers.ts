@@ -43,6 +43,146 @@ const extractJSDocComment = (lines: string[], targetLineIndex: number): string |
   return undefined;
 };
 
+// Function to extract JSDoc comment with more flexible search within a range
+const extractJSDocCommentInRange = (lines: string[], startIndex: number, endIndex: number): string | undefined => {
+  let jsdocLines: string[] = [];
+  let foundJSDocEnd = false;
+  let foundJSDocStart = false;
+
+  // Look for JSDoc blocks within the range
+  for (let i = endIndex - 1; i >= startIndex; i--) {
+    const line = lines[i].trim();
+
+    if (!foundJSDocEnd && line === '*/') {
+      foundJSDocEnd = true;
+      continue;
+    }
+
+    if (foundJSDocEnd && line.startsWith('/**')) {
+      foundJSDocStart = true;
+      // Found the start, reverse and join
+      return jsdocLines.reverse().join('\n').trim();
+    }
+
+    if (foundJSDocEnd && !foundJSDocStart) {
+      if (line.startsWith('*')) {
+        const content = line.substring(1).trim();
+        if (content) {
+          jsdocLines.push(content);
+        }
+      }
+    }
+  }
+
+  return undefined;
+};
+
+// Function to find a function declaration and extract its JSDoc and signature info
+const findFunctionDeclarationInfo = (lines: string[], functionName: string): {
+  jsdoc?: string;
+  signature?: string;
+  parameters?: string;
+  returnType?: string;
+} | undefined => {
+  // Look for function declarations: function functionName(...) or const functionName = (...) =>
+  const functionDeclarationPattern1 = new RegExp(`^\\s*function\\s+${functionName}\\s*\\(`);
+  const functionDeclarationPattern2 = new RegExp(`^\\s*const\\s+${functionName}\\s*=`);
+  const functionDeclarationPattern3 = new RegExp(`^\\s*let\\s+${functionName}\\s*=`);
+  const functionDeclarationPattern4 = new RegExp(`^\\s*var\\s+${functionName}\\s*=`);
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    if (
+      functionDeclarationPattern1.test(line) ||
+      functionDeclarationPattern2.test(line) ||
+      functionDeclarationPattern3.test(line) ||
+      functionDeclarationPattern4.test(line)
+    ) {
+      // Found the function declaration, extract JSDoc above it
+      const jsdoc = extractJSDocComment(lines, i);
+
+      // Extract function signature and parameters
+      let signature = '';
+      let parameters = '';
+      let returnType = '';
+
+      // Build the full function code by reading multiple lines if needed
+      let fullFunctionCode = line;
+      let j = i;
+      let openParens = 0;
+      let foundFunction = false;
+
+      // Continue reading lines until we find the complete function definition
+      while (j < lines.length) {
+        const currentLine = j === i ? line : lines[j];
+        if (j !== i) {
+          fullFunctionCode += '\n' + currentLine;
+        }
+
+        // Count parentheses to find the complete function
+        for (const char of currentLine) {
+          if (char === '(') {
+            openParens++;
+          }
+          if (char === ')') {
+            openParens--;
+          }
+        }
+
+        // Look for function patterns
+        const arrowFunctionMatch = fullFunctionCode.match(/\(([^)]*)\)\s*(?::\s*([^=]+?))?\s*=>/);
+        const regularFunctionMatch = fullFunctionCode.match(
+          /function\s+\w+\s*\(([^)]*)\)\s*(?::\s*([^{]+?))?/
+        );
+
+        if (arrowFunctionMatch || regularFunctionMatch) {
+          const match = arrowFunctionMatch || regularFunctionMatch;
+          if (match) {
+            parameters = match[1].trim();
+            returnType = match[2] ? match[2].trim() : '';
+            signature = `${functionName}(${parameters})${returnType ? `: ${returnType}` : ''}`;
+            foundFunction = true;
+            break;
+          }
+        }
+
+        // If we've closed all parentheses and found a potential end, break
+        if (openParens === 0 && (currentLine.includes(');') || currentLine.includes('})'))) {
+          break;
+        }
+
+        j++;
+
+        // Safety limit
+        if (j - i > 20) {
+          break;
+        }
+      }
+
+      // If we couldn't extract a proper signature, create a basic one
+      if (!foundFunction) {
+        signature = `${functionName}(...)`;
+      }
+
+      return {
+        jsdoc,
+        signature,
+        parameters,
+        returnType
+      };
+    }
+  }
+
+  return undefined;
+};
+
+// Function to find a function declaration and extract its JSDoc
+const findFunctionDeclarationJSDoc = (lines: string[], functionName: string): string | undefined => {
+  const info = findFunctionDeclarationInfo(lines, functionName);
+  return info?.jsdoc;
+};
+
 // Function to analyze a single file for global helpers
 export const analyzeFileForGlobalHelpers = (filePath: string): GlobalHelperInfo[] => {
   const globalHelpers: GlobalHelperInfo[] = [];
@@ -54,14 +194,42 @@ export const analyzeFileForGlobalHelpers = (filePath: string): GlobalHelperInfo[
     // Look for Template.registerHelper calls - handle both single-line and multi-line patterns
     const registerHelperPattern = /Template\.registerHelper\s*\(\s*['"`]([^'"`]+)['"`]\s*,\s*(.*)/;
     const registerHelperStartPattern = /Template\.registerHelper\s*\(\s*$/;
+    // Pattern for function reference: Template.registerHelper('name', functionName)
+    const functionReferencePattern = /Template\.registerHelper\s*\(\s*['"`]([^'"`]+)['"`]\s*,\s*([a-zA-Z_$][a-zA-Z0-9_$]*)\s*\)\s*;?$/;
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
-      let match = registerHelperPattern.exec(line);
+      let match = null;
       let helperName = '';
       let helperStart = '';
       let startLine = i;
+      let helperNameLine = -1;
 
+      // Check for function reference pattern first: Template.registerHelper('name', functionName)
+      const functionRefMatch = functionReferencePattern.exec(line);
+      if (functionRefMatch) {
+        helperName = functionRefMatch[1];
+        const functionName = functionRefMatch[2];
+
+        // Find the function declaration and extract its complete info
+        const functionInfo = findFunctionDeclarationInfo(lines, functionName);
+
+        if (functionInfo && functionInfo.jsdoc) {
+          globalHelpers.push({
+            name: helperName,
+            jsdoc: functionInfo.jsdoc,
+            signature: functionInfo.signature || `${helperName}(...)`,
+            returnType: functionInfo.returnType || '',
+            parameters: functionInfo.parameters || '',
+            filePath
+          });
+        }
+
+        continue; // Skip the rest of the processing for this line
+      }
+
+      // Regular patterns
+      match = registerHelperPattern.exec(line);
       if (match) {
         // Single-line pattern: Template.registerHelper('name', ...)
         helperName = match[1];
@@ -74,8 +242,9 @@ export const analyzeFileForGlobalHelpers = (filePath: string): GlobalHelperInfo[
           const nameMatch = nextLine.match(/^['"`]([^'"`]+)['"`]\s*,?\s*$/);
           if (nameMatch) {
             helperName = nameMatch[1];
+            helperNameLine = j;
             // Find the start of the function definition
-            for (let k = j + 1; k < Math.min(j + 3, lines.length); k++) {
+            for (let k = j + 1; k < Math.min(j + 10, lines.length); k++) {
               const funcLine = lines[k].trim();
               if (
                 funcLine.includes('(') ||
@@ -93,8 +262,20 @@ export const analyzeFileForGlobalHelpers = (filePath: string): GlobalHelperInfo[
       }
 
       if (helperName) {
-        // Extract JSDoc comment
-        const jsdoc = extractJSDocComment(lines, startLine);
+        // Extract JSDoc comment - try multiple locations:
+        // 1. Above the function definition (for JSDoc above the function argument)
+        // 2. Above the Template.registerHelper call (for JSDoc above the whole call)
+        let jsdoc = extractJSDocComment(lines, startLine);
+
+        // If no JSDoc found above the function definition, try above the Template.registerHelper call
+        if (!jsdoc && startLine !== i) {
+          jsdoc = extractJSDocComment(lines, i);
+        }
+
+        // For multi-line patterns, if still no JSDoc found, look in the range between helper name and function
+        if (!jsdoc && helperNameLine !== -1 && helperNameLine !== startLine) {
+          jsdoc = extractJSDocCommentInRange(lines, helperNameLine + 1, startLine);
+        }
 
         // Try to extract function signature and parameters
         let signature = '';

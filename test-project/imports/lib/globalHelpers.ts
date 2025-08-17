@@ -27,3 +27,18 @@ Template.registerHelper('truncate', function (text: string, maxLength: number = 
   }
   return text.substring(0, maxLength) + '...';
 });
+
+/**
+ * Truncates text to specified length with ellipsis
+ * @param text - Text to truncate
+ * @param maxLength - Maximum length before truncation
+ * @returns Truncated text with ellipsis if needed
+ */
+function trim(text: string): string {
+  if (!text) {
+    return '';
+  }
+  return text.trim();
+}
+
+Template.registerHelper('trim', trim);
