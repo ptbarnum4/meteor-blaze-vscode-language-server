@@ -11,8 +11,8 @@ import { getWordRangeAtPosition } from '../helpers/getWordRangeAtPosition';
 import { isWithinComment } from '../helpers/isWithinComment';
 import { isWithinHandlebarsExpression } from '../helpers/isWithinHandlebarsExpression';
 import {
-  trimLanguageDocumentation,
-  trimUsageDocumentation
+    trimLanguageDocumentation,
+    trimUsageDocumentation
 } from '../helpers/trimUsageDocumentation';
 
 const onHover = (config: CurrentConnectionConfig) => {
@@ -20,6 +20,13 @@ const onHover = (config: CurrentConnectionConfig) => {
   return async (textDocumentPosition: TextDocumentPositionParams): Promise<Hover | null> => {
     const document = documents.get(textDocumentPosition.textDocument.uri);
     if (!document) {
+      return null;
+    }
+
+    // Only provide Meteor/Blaze hover info for HTML template files
+    const uri = document.uri;
+    const isHtmlFile = /\.(html|htm|meteor|hbs)$/i.test(uri);
+    if (!isHtmlFile) {
       return null;
     }
 

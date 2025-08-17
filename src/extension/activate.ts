@@ -29,7 +29,7 @@ const ACTIVATE_CONFIGS = {
     'blazeBlockIn',
     'blazeExpression'
   ],
-  SELECTORS: ['html', 'handlebars', 'javascript', 'typescript'],
+  SELECTORS: ['html', 'handlebars'],
   FILE_EVENT_PATHS: [
     '**/.meteor/packages',
     '**/.meteor/versions',

@@ -19,6 +19,13 @@ const onDefinition = (config: CurrentConnectionConfig) => {
       return null;
     }
 
+    // Only provide Meteor/Blaze definitions for HTML template files
+    const uri = document.uri;
+    const isHtmlFile = /\.(html|htm|meteor|hbs)$/i.test(uri);
+    if (!isHtmlFile) {
+      return null;
+    }
+
     // Only provide definitions if this HTML/Handlebars file contains templates
     if (!containsMeteorTemplates(document)) {
       return null;

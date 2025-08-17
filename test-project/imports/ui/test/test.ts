@@ -27,7 +27,7 @@ type TestData = {
    * Data properties for the test template.
    * These properties can be used to pass data into the template.
    */
-  data1: string;
+  data1: 'abc' | '123' | 'xyz';
   /**
    * Additional data properties for the test template.
    * These properties can be used to pass more data into the template.

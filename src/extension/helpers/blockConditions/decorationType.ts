@@ -23,6 +23,15 @@ export const updateBlockConditionDecorations = (
     return;
   }
 
+  // Only provide decorations for HTML template files
+  const uri = document.uri.toString();
+  const isHtmlFile = /\.(html|htm|meteor|hbs)$/i.test(uri);
+  if (!isHtmlFile) {
+    const decorationType = extConfig.blockConditionDecorationType;
+    decorationType && editor.setDecorations(decorationType, []);
+    return;
+  }
+
   // Check if block condition hints are enabled
   const blockConfig = vscode.workspace.getConfiguration('meteorLanguageServer.blockConditions');
   const enabled = blockConfig.get<boolean>('enabled', true);

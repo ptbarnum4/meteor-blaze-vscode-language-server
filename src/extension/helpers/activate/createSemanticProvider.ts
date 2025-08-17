@@ -9,6 +9,13 @@ const createSemanticProvider = (
 ): vscode.DocumentSemanticTokensProvider => {
   return {
     provideDocumentSemanticTokens(document) {
+      // Only provide semantic tokens for HTML template files
+      const uri = document.uri.toString();
+      const isHtmlFile = /\.(html|htm|meteor|hbs)$/i.test(uri);
+      if (!isHtmlFile) {
+        return null;
+      }
+
       const tokensBuilder = new vscode.SemanticTokensBuilder(legend);
       const text = document.getText();
       // Find all block helper ranges (start/end positions)

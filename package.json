@@ -35,10 +35,7 @@
   ],
   "icon": "icon.png",
   "activationEvents": [
-    "workspaceContains:.meteor",
-    "onLanguage:html",
-    "onLanguage:meteor-html",
-    "onLanguage:meteor-handlebars"
+    "workspaceContains:.meteor"
   ],
   "main": "./dist/extension.js",
   "contributes": {

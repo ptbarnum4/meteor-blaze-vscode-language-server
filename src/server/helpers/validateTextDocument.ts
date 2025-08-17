@@ -443,6 +443,15 @@ export const validateTextDocument = async (
 
   const diagnostics: Diagnostic[] = [];
 
+  // Only validate Meteor/Blaze syntax for HTML template files
+  const uri = textDocument.uri;
+  const isHtmlFile = /\.(html|htm|meteor|hbs)$/i.test(uri);
+  if (!isHtmlFile) {
+    // Send empty diagnostics for non-HTML files to clear any existing ones
+    config.connection.sendDiagnostics({ uri: textDocument.uri, diagnostics: [] });
+    return;
+  }
+
   // Only validate documents that contain Meteor templates
   if (containsMeteorTemplates(textDocument)) {
     // Check for unmatched Blaze blocks
