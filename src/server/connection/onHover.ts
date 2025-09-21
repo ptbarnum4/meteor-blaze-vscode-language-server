@@ -78,8 +78,6 @@ const onHover = (config: CurrentConnectionConfig) => {
     }
 
     // Check if we're hovering over a template inclusion ({{> templateName)
-    const textBeforeOffset = text.substring(0, offset);
-    const afterCursor = text.substring(offset);
     const templateInclusionPattern = /\{\{\s*>\s*([a-zA-Z0-9_]+)/;
 
     // Check if the word is preceded by {{>
@@ -711,11 +709,9 @@ const onHover = (config: CurrentConnectionConfig) => {
 // Helper function to get hover information for template inclusions
 async function getTemplateInclusionHover(
   templateName: string,
-  config: CurrentConnectionConfig,
+  _config: CurrentConnectionConfig,
   currentDocument: TextDocument
 ): Promise<{ kind: MarkupKind; value: string } | null> {
-  const { connection } = config;
-
   try {
     const fs = await import('fs');
     const path = await import('path');

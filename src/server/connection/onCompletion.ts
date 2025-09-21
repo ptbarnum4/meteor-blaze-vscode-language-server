@@ -1188,9 +1188,7 @@ function extractDataPropertiesFromTemplate(
       // Skip common template helpers that aren't data properties
       if (!['if', 'each', 'unless', 'with', 'let'].includes(property)) {
         properties.add(property);
-      } else {
       }
-    } else {
     }
   });
 
@@ -1316,7 +1314,6 @@ function extractDataPropertiesFromTypes(
           }
         }
         break; // Found the type, no need to check others
-      } else {
       }
     }
 

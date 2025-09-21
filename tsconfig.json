@@ -1,6 +1,6 @@
 {
 	"compilerOptions": {
-		"module": "Node16",
+		"module": "node20",
 		"target": "ES2022",
 		"lib": [
 			"ES2022"
@@ -12,6 +12,7 @@
 		"paths": {
 			"/*": ["src/*"]
 		},
+		"skipLibCheck": true,
 		"strict": true,   /* enable all strict type-checking options */
 		/* Additional Checks */
 		// "noImplicitReturns": true, /* Report error when not all code paths in function return a value. */

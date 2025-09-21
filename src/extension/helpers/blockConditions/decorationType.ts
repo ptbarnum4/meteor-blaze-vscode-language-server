@@ -28,10 +28,11 @@ const lineHasExistingComment = (text: string, position: vscode.Position): boolea
   const hasHtmlComment = /<!--.*?-->/.test(afterPosition) || /<!--/.test(afterPosition);
 
   // Check for Handlebars comments: {{!-- anything --}} or {{! anything }}
-  const hasHandlebarsComment = /\{\{!--.*?--\}\}/.test(afterPosition) ||
-                               /\{\{!.*?\}\}/.test(afterPosition) ||
-                               /\{\{!--/.test(afterPosition) ||
-                               /\{\{!/.test(afterPosition);
+  const hasHandlebarsComment =
+    /\{\{!--.*?--\}\}/.test(afterPosition) ||
+    /\{\{!.*?\}\}/.test(afterPosition) ||
+    /\{\{!--/.test(afterPosition) ||
+    /\{\{!/.test(afterPosition);
 
   return hasHtmlComment || hasHandlebarsComment;
 };
@@ -79,14 +80,12 @@ export const updateBlockConditionDecorations = (
 
   // Get blazeHelpers config for colors
   const blazeConfig = vscode.workspace.getConfiguration('meteorLanguageServer.blazeHelpers');
-  // Use theme token colors if not provided
-  let hashColor = blazeConfig.get<string>('hashColor', '');
+
   let nameColor = blazeConfig.get<string>('nameColor', '');
   // Fallback to Blaze theme default if not provided
   if (!nameColor) {
     nameColor = '#f07dff'; // Blaze default for blazeBlockName
   }
-  let bracketColor = blazeConfig.get<string>('bracketColor', '');
 
   // Try to use theme color, but fallback to config color if theme color is not defined
   function getThemeOrConfigColor(scope: string, configColor: string) {
@@ -98,9 +97,7 @@ export const updateBlockConditionDecorations = (
     return new vscode.ThemeColor(scope) as any;
   }
 
-  hashColor = getThemeOrConfigColor('constant.character.hash.meteor', hashColor);
   nameColor = getThemeOrConfigColor('entity.name.tag.meteor keyword.control.meteor', nameColor);
-  bracketColor = getThemeOrConfigColor('punctuation.definition.bracket.meteor', bracketColor);
 
   const text = document.getText();
   const decorations: vscode.DecorationOptions[] = [];
