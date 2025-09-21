@@ -81,7 +81,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ## [0.0.4] - 2025-08-11
 
 ### Added
-- **Comprehensive Configuration Documentation**: New `CONFIGURATION.md` file with complete VS Code settings reference
+- **Comprehensive Configuration Documentation**: New consolidated setup documentation in `docs/SETUP.md`
   - Detailed examples for all extension configuration options
   - Theme customization guide with color token explanations
   - Block condition configuration with troubleshooting tips

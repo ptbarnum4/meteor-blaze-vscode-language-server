@@ -63,5 +63,5 @@ vsc-extension-quickstart.md
 !language-configuration.json
 !README.md
 !LICENSE
-!CHANGELOG.md
+!docs/**
 !icon.png
