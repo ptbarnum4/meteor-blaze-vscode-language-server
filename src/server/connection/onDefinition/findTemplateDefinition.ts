@@ -129,7 +129,7 @@ function findAssociatedJSFileForDefinition(currentDir: string, fs: any, path: an
           if (templateImportPattern.test(content)) {
             return fullPath;
           }
-        } catch  {
+        } catch {
           // Continue checking other files
         }
       }
@@ -223,7 +223,7 @@ function parseTemplateImportsForDefinition(filePath: string, fs: any, path: any)
             importedFileContent = fs.readFileSync(testPath, 'utf8');
             actualImportPath = testPath;
             break;
-          } catch  {
+          } catch {
             // Continue trying other extensions
           }
         }
@@ -259,7 +259,7 @@ function parseTemplateImportsForDefinition(filePath: string, fs: any, path: any)
               if (templateDefPattern.test(templateHtml)) {
                 templates.push(templateName);
               }
-            } catch  {
+            } catch {
               // Continue
             }
           }
