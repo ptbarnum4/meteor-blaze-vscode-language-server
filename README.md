@@ -20,11 +20,14 @@ A VS Code extension that provides intelligent language support for Meteor/Blaze 
 ## 🚀 Quick Start
 
 ### Installation
+
 1. **From VS Code Marketplace**: Search for "Meteor/Blaze HTML Language Server" in VS Code Extensions
 2. **Manual Installation**: Download the [latest .vsix file](https://github.com/ptbarnum4/meteor-blaze-vscode-language-server/releases) and install via "Extensions: Install from VSIX..."
 
 ### Usage
+
 1. **Open an HTML file** containing Meteor templates:
+
    ```html
    <template name="myTemplate">
      <div>{{helper}}</div>
@@ -32,9 +35,10 @@ A VS Code extension that provides intelligent language support for Meteor/Blaze 
    ```
 
 2. **Add template helpers** in the same directory:
+
    ```javascript
    Template.myTemplate.helpers({
-     helper: () => "Hello, Meteor!"
+     helper: () => 'Hello, Meteor!'
    });
    ```
 
@@ -42,14 +46,62 @@ A VS Code extension that provides intelligent language support for Meteor/Blaze 
 
 ## ⚙️ Configuration
 
+> [!NOTE]
+> Extensions cannot set the `editor.semanticTokenColorCustomizations` setting programmatically due to VS Code limitations. Users must manually add these configuration to their settings.json to enable preferred semantic token color customizations. We encourage you to include the following for the best experience:
+
 Basic configuration in VS Code settings:
+
 ```json
 {
+  // Basic language server settings
   "meteorLanguageServer.maxNumberOfProblems": 100,
-  "meteorLanguageServer.blockConditions.enabled": true,
-  "meteorLanguageServer.trace.server": "off"
+  "meteorLanguageServer.trace.server": "off",
+
+  // Block condition decoration overrides - distinctly different from defaults
+  "editor.semanticTokenColorCustomizations": {
+    "rules": {
+      "blazeBlockHash": { "foreground": "#808080", "fontStyle": "bold" },
+      "blazeBlockName": { "foreground": "#f177ff", "fontStyle": "italic bold" },
+      "blazeBlockArgs": { "foreground": "#fffec4", "fontStyle": "bold" },
+      "blazeBlockFirstArg": { "foreground": "#ffd16f", "fontStyle": "bold" },
+      "blazeBlockSingleArg": { "foreground": "#ffd16f", "fontStyle": "bold" },
+      "blazeExpression": { "foreground": "#ffd16f" },
+      "blazeBlockIn": { "foreground": "#00ffa2", "fontStyle": "italic bold" },
+      "delimiter": { "foreground": "#808080", "fontStyle": "bold" }
+    }
+  },
+  "meteorLanguageServer.blockConditions": {
+    "extend": [
+      {
+        "type": "mrkdwn",
+        "label": "Custom Markdown Block",
+        "propNames": ["text", "markdown", "content"],
+        "requiresEndTag": true,
+        "autoInsertEndTag": true
+      }
+    ],
+    "margin": "0 0 0 0.75em",
+    "fontStyle": "italic",
+    "color": "#727272"
+  },
+
+  "meteorLanguageServer.blazeHelpers": {
+    "extend": [
+      {
+        "name": "#mrkdwn",
+        "doc": "Custom markdown block"
+      }
+    ]
+  },
+
 }
 ```
+
+### Configuration Visuals
+
+![Blaze Block Example 1](./docs/img/semanticTokenColorCustomizations_1.png)
+
+
 
 📖 **For complete configuration options and advanced features, see [docs/SETUP.md](./docs/SETUP.md)**
 
