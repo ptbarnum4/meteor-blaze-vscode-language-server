@@ -1,7 +1,6 @@
 import fsSync from 'fs'; // for existsSync and where sync is needed
 import path from 'path';
 import { AnalyzeGlobalHelpersResult, GlobalHelperInfo } from '/types';
-const fs = fsSync.promises; // where available, read files async
 
 // Function to extract JSDoc comment from lines above a target line
 const extractJSDocComment = (lines: string[], targetLineIndex: number): string | undefined => {
@@ -44,7 +43,11 @@ const extractJSDocComment = (lines: string[], targetLineIndex: number): string |
 };
 
 // Function to extract JSDoc comment with more flexible search within a range
-const extractJSDocCommentInRange = (lines: string[], startIndex: number, endIndex: number): string | undefined => {
+const extractJSDocCommentInRange = (
+  lines: string[],
+  startIndex: number,
+  endIndex: number
+): string | undefined => {
   let jsdocLines: string[] = [];
   let foundJSDocEnd = false;
   let foundJSDocStart = false;
@@ -78,12 +81,17 @@ const extractJSDocCommentInRange = (lines: string[], startIndex: number, endInde
 };
 
 // Function to find a function declaration and extract its JSDoc and signature info
-const findFunctionDeclarationInfo = (lines: string[], functionName: string): {
-  jsdoc?: string;
-  signature?: string;
-  parameters?: string;
-  returnType?: string;
-} | undefined => {
+const findFunctionDeclarationInfo = (
+  lines: string[],
+  functionName: string
+):
+  | {
+      jsdoc?: string;
+      signature?: string;
+      parameters?: string;
+      returnType?: string;
+    }
+  | undefined => {
   // Look for function declarations: function functionName(...) or const functionName = (...) =>
   const functionDeclarationPattern1 = new RegExp(`^\\s*function\\s+${functionName}\\s*\\(`);
   const functionDeclarationPattern2 = new RegExp(`^\\s*const\\s+${functionName}\\s*=`);
@@ -177,12 +185,6 @@ const findFunctionDeclarationInfo = (lines: string[], functionName: string): {
   return undefined;
 };
 
-// Function to find a function declaration and extract its JSDoc
-const findFunctionDeclarationJSDoc = (lines: string[], functionName: string): string | undefined => {
-  const info = findFunctionDeclarationInfo(lines, functionName);
-  return info?.jsdoc;
-};
-
 // Function to analyze a single file for global helpers
 export const analyzeFileForGlobalHelpers = (filePath: string): GlobalHelperInfo[] => {
   const globalHelpers: GlobalHelperInfo[] = [];
@@ -195,7 +197,8 @@ export const analyzeFileForGlobalHelpers = (filePath: string): GlobalHelperInfo[
     const registerHelperPattern = /Template\.registerHelper\s*\(\s*['"`]([^'"`]+)['"`]\s*,\s*(.*)/;
     const registerHelperStartPattern = /Template\.registerHelper\s*\(\s*$/;
     // Pattern for function reference: Template.registerHelper('name', functionName)
-    const functionReferencePattern = /Template\.registerHelper\s*\(\s*['"`]([^'"`]+)['"`]\s*,\s*([a-zA-Z_$][a-zA-Z0-9_$]*)\s*\)\s*;?$/;
+    const functionReferencePattern =
+      /Template\.registerHelper\s*\(\s*['"`]([^'"`]+)['"`]\s*,\s*([a-zA-Z_$][a-zA-Z0-9_$]*)\s*\)\s*;?$/;
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
@@ -389,7 +392,7 @@ export const analyzeGlobalHelpers = async (
           }
         }
       }
-    } catch (error) {
+    } catch {
       // Skip directories we can't read
     }
   };

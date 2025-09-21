@@ -28,11 +28,49 @@ export const analyzeJavaScriptFile = (filePath: string): AnalyzeJavaScriptFileRe
 
       // Comprehensive list of JavaScript keywords and control flow statements to exclude
       const jsKeywords = [
-        'if', 'else', 'for', 'while', 'do', 'switch', 'case', 'default', 'break', 'continue',
-        'function', 'return', 'var', 'let', 'const', 'try', 'catch', 'finally', 'throw',
-        'new', 'delete', 'typeof', 'instanceof', 'in', 'of', 'class', 'extends', 'super',
-        'this', 'true', 'false', 'null', 'undefined', 'NaN', 'Infinity',
-        'async', 'await', 'yield', 'import', 'export', 'from', 'as', 'with'
+        'if',
+        'else',
+        'for',
+        'while',
+        'do',
+        'switch',
+        'case',
+        'default',
+        'break',
+        'continue',
+        'function',
+        'return',
+        'var',
+        'let',
+        'const',
+        'try',
+        'catch',
+        'finally',
+        'throw',
+        'new',
+        'delete',
+        'typeof',
+        'instanceof',
+        'in',
+        'of',
+        'class',
+        'extends',
+        'super',
+        'this',
+        'true',
+        'false',
+        'null',
+        'undefined',
+        'NaN',
+        'Infinity',
+        'async',
+        'await',
+        'yield',
+        'import',
+        'export',
+        'from',
+        'as',
+        'with'
       ];
 
       // Enhanced regex patterns for different method definitions (optimized for helpers content)
@@ -87,7 +125,9 @@ export const analyzeJavaScriptFile = (filePath: string): AnalyzeJavaScriptFileRe
           // For helpers content, we don't need complex object literal validation
           // since we already extracted the content from inside Template.helpers({...})
 
-          const signature = `${methodName}(${parameters || ''})${returnType ? `: ${returnType.trim()}` : ''}`;
+          const signature = `${methodName}(${parameters || ''})${
+            returnType ? `: ${returnType.trim()}` : ''
+          }`;
 
           methods.push({
             name: methodName,
@@ -135,7 +175,7 @@ export const analyzeJavaScriptFile = (filePath: string): AnalyzeJavaScriptFileRe
         const methodBlocks = parseMethodBlocks(helpersContent);
 
         methodBlocks.forEach((block: MethodBlock) => {
-          const { name, jsdoc, signature, returnType, parameters } = block;
+          const { name, jsdoc, returnType, parameters } = block;
 
           if (!helpers.includes(name)) {
             helpers.push(name);
@@ -200,11 +240,49 @@ export const analyzeJavaScriptFile = (filePath: string): AnalyzeJavaScriptFileRe
 
         // Same JavaScript keywords list for fallback patterns
         const jsKeywords = [
-          'if', 'else', 'for', 'while', 'do', 'switch', 'case', 'default', 'break', 'continue',
-          'function', 'return', 'var', 'let', 'const', 'try', 'catch', 'finally', 'throw',
-          'new', 'delete', 'typeof', 'instanceof', 'in', 'of', 'class', 'extends', 'super',
-          'this', 'true', 'false', 'null', 'undefined', 'NaN', 'Infinity',
-          'async', 'await', 'yield', 'import', 'export', 'from', 'as', 'with'
+          'if',
+          'else',
+          'for',
+          'while',
+          'do',
+          'switch',
+          'case',
+          'default',
+          'break',
+          'continue',
+          'function',
+          'return',
+          'var',
+          'let',
+          'const',
+          'try',
+          'catch',
+          'finally',
+          'throw',
+          'new',
+          'delete',
+          'typeof',
+          'instanceof',
+          'in',
+          'of',
+          'class',
+          'extends',
+          'super',
+          'this',
+          'true',
+          'false',
+          'null',
+          'undefined',
+          'NaN',
+          'Infinity',
+          'async',
+          'await',
+          'yield',
+          'import',
+          'export',
+          'from',
+          'as',
+          'with'
         ];
 
         simplePatterns.forEach(pattern => {

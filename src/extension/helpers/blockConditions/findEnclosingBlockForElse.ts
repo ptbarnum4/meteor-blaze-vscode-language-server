@@ -60,17 +60,18 @@ export const findEnclosingBlockForElse = (
 
   // Track the stack of open blocks
   const stack: Array<{ blockType: 'if' | 'unless'; condition: string; position: number }> = [];
-  let elseCount = 0;
 
   for (const block of allBlocks) {
     if (block.type === 'open') {
-      stack.push({ blockType: block.blockType, condition: block.condition, position: block.position });
+      stack.push({
+        blockType: block.blockType,
+        condition: block.condition,
+        position: block.position
+      });
     } else if (block.type === 'close') {
       if (stack.length > 0 && stack[stack.length - 1].blockType === block.blockType) {
         stack.pop();
       }
-    } else if (block.type === 'else') {
-      elseCount++;
     }
   }
 
@@ -152,17 +153,18 @@ export const findEnclosingBlockForElseWithIndex = (
 
   // Track the stack of open blocks
   const stack: Array<{ blockType: 'if' | 'unless'; condition: string; position: number }> = [];
-  let elseCount = 0;
 
   for (const block of allBlocks) {
     if (block.type === 'open') {
-      stack.push({ blockType: block.blockType, condition: block.condition, position: block.position });
+      stack.push({
+        blockType: block.blockType,
+        condition: block.condition,
+        position: block.position
+      });
     } else if (block.type === 'close') {
       if (stack.length > 0 && stack[stack.length - 1].blockType === block.blockType) {
         stack.pop();
       }
-    } else if (block.type === 'else') {
-      elseCount++;
     }
   }
 

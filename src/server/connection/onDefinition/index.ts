@@ -215,7 +215,6 @@ const onDefinition = (config: CurrentConnectionConfig) => {
           ];
 
           const typeName = config.fileAnalysis.dataTypeByKey?.get(key as string);
-          const typeMap = config.fileAnalysis.dataPropertyTypesByKey?.get(key as string) || {};
 
           // If we're on the alias in an each-in block, redirect to the element type of the source list
           let targetPropName = word;

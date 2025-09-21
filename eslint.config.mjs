@@ -44,8 +44,7 @@ export default [
       'no-throw-literal': 'warn',
       semi: 'warn',
       // Allow unused vars with underscore prefix
-      // 'no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
-      'no-unused-vars': 'off',
+      'no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
       // Allow empty blocks for catch statements and other intentional cases
       'no-empty': ['error', { allowEmptyCatch: true }]
     }

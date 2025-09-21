@@ -115,9 +115,6 @@ const onHover = (config: CurrentConnectionConfig) => {
     for (const key of dirLookupKeys) {
       const helpers = config.fileAnalysis.jsHelpers.get(key as string);
       const helperDetails = config.fileAnalysis.helperDetails.get(key as string);
-      const dataProps = config.fileAnalysis.dataProperties?.get(key as string) || [];
-      const typeName = config.fileAnalysis.dataTypeByKey?.get(key as string);
-      const typeMap = config.fileAnalysis.dataPropertyTypesByKey?.get(key as string) || {};
 
       if (helpers && helpers.includes(word)) {
         // Find the detailed information for this helper
@@ -180,7 +177,7 @@ const onHover = (config: CurrentConnectionConfig) => {
               break;
             }
           }
-        } catch (error) {
+        } catch {
           const keyParts = key.split('/');
           const keyBaseName = keyParts[keyParts.length - 1];
           actualSourceFile = `${keyBaseName}.js/ts`;
@@ -289,7 +286,6 @@ const onHover = (config: CurrentConnectionConfig) => {
     }
 
     for (const key of dirLookupKeys) {
-      const helpers = config.fileAnalysis.jsHelpers.get(key as string);
       const helperDetails = config.fileAnalysis.helperDetails.get(key as string);
       const dataProps = config.fileAnalysis.dataProperties?.get(key as string) || [];
       const typeName = config.fileAnalysis.dataTypeByKey?.get(key as string);
@@ -698,7 +694,7 @@ const onHover = (config: CurrentConnectionConfig) => {
           range: wordRange
         };
       }
-    } catch (e) {
+    } catch {
       // Ignore config errors
     }
 
@@ -784,7 +780,7 @@ async function getTemplateInclusionHover(
     } else {
       return createTemplateNotFoundHover(templateName);
     }
-  } catch (error) {
+  } catch {
     return null;
   }
 }
@@ -826,7 +822,7 @@ function findAssociatedJSFileForHover(
       if (fs.existsSync(filePath)) {
         return filePath;
       }
-    } catch (e) {
+    } catch {
       // Continue trying other extensions
     }
   }
@@ -849,7 +845,7 @@ function findAssociatedJSFileForHover(
           if (templateImportPattern.test(content)) {
             return fullPath;
           }
-        } catch (e) {
+        } catch {
           // Continue checking other files
         }
       }
@@ -862,7 +858,7 @@ function findAssociatedJSFileForHover(
         return path.join(currentDir, file);
       }
     }
-  } catch (e) {
+  } catch {
     // Directory read failed, continue with null
   }
 
@@ -943,7 +939,7 @@ function parseTemplateImportsForHover(filePath: string, fs: any, path: any): str
             importedFileContent = fs.readFileSync(testPath, 'utf8');
             actualImportPath = testPath;
             break;
-          } catch (e) {
+          } catch {
             // Continue trying other extensions
           }
         }
@@ -979,7 +975,7 @@ function parseTemplateImportsForHover(filePath: string, fs: any, path: any): str
               if (templateDefPattern.test(templateHtml)) {
                 templates.push(templateName);
               }
-            } catch (e) {
+            } catch {
               // Continue
             }
           }
@@ -1011,7 +1007,7 @@ function findTsConfigForMeteorProject(startPath: string, fs: any, path: any): an
           // Try parsing as-is first (in case it's valid JSON without comments)
           try {
             return JSON.parse(tsconfigContent);
-          } catch (e) {
+          } catch {
             // If that fails, try safer comment removal
             const cleanContent = safelyRemoveJsonComments(tsconfigContent);
             return JSON.parse(cleanContent);
@@ -1198,7 +1194,7 @@ function findImportedTemplateFile(
             return { file: templateHtmlPath, content: templateMatch[1].trim() };
           }
         }
-      } catch (e) {
+      } catch {
         // Continue trying other import paths
       }
     }
