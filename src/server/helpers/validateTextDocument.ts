@@ -3,6 +3,7 @@ import { Diagnostic, DiagnosticSeverity, Range } from 'vscode-languageserver/nod
 
 import { CurrentConnectionConfig } from '../../types';
 import { containsMeteorTemplates } from './containsMeteorTemplates';
+import getDocumentSettings from './getDocumentSettings';
 import { isWithinComment } from './isWithinComment';
 
 /**
@@ -464,6 +465,9 @@ export const validateTextDocument = async (
   textDocument: TextDocument
 ): Promise<void> => {
   const text = textDocument.getText();
+
+  // Get document settings to ensure documentSettings map is populated when capability is enabled
+  await getDocumentSettings(config, textDocument.uri);
 
   const diagnostics: Diagnostic[] = [];
 
