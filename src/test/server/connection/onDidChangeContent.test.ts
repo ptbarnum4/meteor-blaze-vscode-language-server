@@ -22,7 +22,9 @@ describe('connection/onDidChangeContent', () => {
     }
   });
 
-  const createMockConfig = (overrides?: Partial<CurrentConnectionConfig>): CurrentConnectionConfig => ({
+  const createMockConfig = (
+    overrides?: Partial<CurrentConnectionConfig>
+  ): CurrentConnectionConfig => ({
     globalSettings: mockSettings,
     documentSettings: new Map(),
     fileAnalysis: {
@@ -238,8 +240,6 @@ describe('connection/onDidChangeContent', () => {
 
   it('should call validation and analysis functions', () => {
     const config = createMockConfig();
-    let validateCalled = false;
-    let analyzeCalled = false;
 
     // We can't easily mock the imported functions, but we can verify the handler runs
     // In a real implementation, we might use dependency injection for better testability

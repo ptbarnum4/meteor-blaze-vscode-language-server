@@ -1,5 +1,4 @@
 import vscode from 'vscode';
-import getBlockRanges from './getBlockRanges';
 import { isWithinComment } from './isWithinComment';
 import parseBlockConditions from './parseBlockConditions';
 import parseBlockExpressions from './parseBlockExpressions';
@@ -18,8 +17,7 @@ const createSemanticProvider = (
 
       const tokensBuilder = new vscode.SemanticTokensBuilder(legend);
       const text = document.getText();
-      // Find all block helper ranges (start/end positions)
-      const blockRanges = getBlockRanges(text);
+
 
       // Only highlight Blaze expressions and block helper syntax
       const blazeRegex = /\{\{[#/]?\w+.*?\}\}/g;
@@ -35,14 +33,7 @@ const createSemanticProvider = (
           continue; // Skip semantic tokens for content inside comments
         }
 
-        // Check if this {{...}} is inside a block helper range
-        let insideBlock = false;
-        for (const range of blockRanges) {
-          if (start > range.start && end < range.end) {
-            insideBlock = true;
-            break;
-          }
-        }
+
         // Only highlight Blaze expressions and block helper syntax
         const startPos = document.positionAt(start);
         const length = end - start;

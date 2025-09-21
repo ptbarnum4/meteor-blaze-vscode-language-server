@@ -14,10 +14,10 @@ describe('getWordRangeAtPosition', () => {
     const document = TextDocument.create('file:///test.html', 'html', 1, content);
     const position = Position.create(0, 5); // Space between hello and world
 
-    const result = getWordRangeAtPosition(document, position);
+    getWordRangeAtPosition(document, position);
     // The function actually returns the word range if cursor is positioned at the end of a word
     // Let's test with a position that's clearly in whitespace
-    const positionInWhitespace = Position.create(0, 5); // This is still at the end of 'hello'
+    Position.create(0, 5); // This is still at the end of 'hello'
     // Try a position that's more clearly in whitespace
     const document2 = TextDocument.create('file:///test.html', 'html', 1, 'hello  world');
     const positionInSpace = Position.create(0, 6); // In the double space
@@ -104,8 +104,8 @@ describe('getWordRangeAtPosition', () => {
 
   it('should return null for punctuation', () => {
     const content = 'hello, world!';
-    const document = TextDocument.create('file:///test.html', 'html', 1, content);
-    const position = Position.create(0, 5); // On the comma
+    TextDocument.create('file:///test.html', 'html', 1, content);
+    Position.create(0, 5); // On the comma
 
     // The comma position (5) is still at the end of 'hello', so let's test with a different position
     const document2 = TextDocument.create('file:///test.html', 'html', 1, 'hello , world');

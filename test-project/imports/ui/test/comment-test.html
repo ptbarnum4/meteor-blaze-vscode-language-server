@@ -1,0 +1,53 @@
+<template name="commentTest">
+  <!-- Test cases for comment detection -->
+
+  <!-- Case 1: {{/if}} with HTML comment - should NOT show hint -->
+  {{#if condition}}
+    <p>Content</p>
+  {{/if}} <!-- custom comment should not show hint -->
+
+  <!-- Case 2: {{/if}} without comment - should show hint -->
+  {{#if anotherCondition}}
+    <p>More content</p>
+  {{/if}}
+
+  <!-- Case 3: {{/each}} with HTML comment - should NOT show hint -->
+  {{#each item in items}}
+    <div>{{item}}</div>
+  {{/each}} <!-- loop comment -->
+
+  <!-- Case 4: {{/each}} without comment - should show hint -->
+  {{#each box in boxes}}
+    <div>{{box}}</div>
+  {{/each}}
+
+  <!-- Case 5: {{else}} with HTML comment - should NOT show hint -->
+  {{#if testCondition}}
+    <p>True case</p>
+  {{else}} <!-- false case comment -->
+    <p>False case</p>
+  {{/if}}
+
+  <!-- Case 6: {{else}} without comment - should show hint -->
+  {{#if anotherTest}}
+    <p>True case</p>
+  {{else}}
+    <p>False case</p>
+  {{/if}}
+
+  <!-- Case 7: Handlebars comment variations -->
+  {{#if withHandlebarsComment}}
+    <p>Content</p>
+  {{/if}} {{!-- handlebars comment --}}
+
+  {{#if withSimpleHandlebarsComment}}
+    <p>Content</p>
+  {{/if}} {{! simple comment }}
+
+  <!-- Case 8: Mixed comments -->
+  {{#unless condition}}
+    <p>Unless content</p>
+  {{else}} <!-- HTML comment -->
+    <p>Else content</p>
+  {{/unless}} {{!-- Handlebars comment --}}
+</template>

@@ -4,6 +4,87 @@ All notable changes to the "meteor-blaze-vscode-language-server" extension will 
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [0.0.7] - 2025-09-21
+
+### 🔄 Major Infrastructure & Dependency Updates
+- **GitHub Actions Modernization**: Updated to latest action versions and Node.js 22.x
+  - Updated `actions/checkout` from v4 → v5
+  - Updated `actions/setup-node` from v4 → v5
+  - Updated `softprops/action-gh-release` from v1 → v2
+  - Migrated CI/CD pipeline to Node.js 22.x (latest LTS)
+- **Dependency Modernization**: Major updates to all core dependencies
+  - TypeScript ESLint: v6.21.0 → v8.0.0
+  - Node.js types: v16.x → v24.5.2
+  - VS Code types: v1.74.0 → v1.104.0
+  - ESBuild: v0.19.12 → v0.25.10
+  - ESLint: v8.56.0 → v9.0.0 with new flat config format
+  - Mocha testing: v10.2.0 → v11.7.2
+  - Language Server Protocol: v8.1.0 → v9.0.1 (client & server)
+  - VS Code Engine: v1.74.0 → v1.104.0 minimum requirement
+- **Automated Dependency Management**: Added comprehensive Dependabot configuration
+  - Weekly dependency updates with intelligent grouping
+  - Separate tracking for development, testing, and VS Code dependencies
+  - GitHub Actions updates monitoring
+
+### 🎨 Enhanced Visual & Theme Integration
+- **Improved Block Condition Hints**: Enhanced visual integration and smart behavior
+  - Updated default color from `editorCodeLens.foreground` → `#727272` for better theme compatibility
+  - Refined default margin from `0 0 0 1em` → `0 0 0 0.75em` for optimal spacing
+  - **Smart Comment Detection**: Hints automatically hide when existing comments are present
+  - Support for HTML (`<!-- -->`) and Handlebars (`{{!-- --}}`, `{{! }}`) comment detection
+- **New Custom Theme Colors**: Added 8 semantic token colors for enhanced syntax highlighting
+  - `blazeBlockHash.defaultColor` (#808080) - Hash symbols
+  - `blazeBlockName.defaultColor` (#f177ff) - Block names (if, each, etc.)
+  - `blazeBlockArgs.defaultColor` (#fffec4) - Block arguments
+  - `blazeBlockFirstArg.defaultColor` (#ffd16f) - First argument highlighting
+  - `blazeBlockSingleArg.defaultColor` (#ffd16f) - Single argument highlighting
+  - `blazeExpression.defaultColor` (#ffd16f) - Blaze expressions
+  - `blazeBlockIn.defaultColor` (#00ffa2) - 'in' keyword highlighting
+  - `delimiter.defaultColor` (#808080) - Delimiter symbols
+
+### 📋 Documentation & Configuration Overhaul
+- **Reorganized Documentation Structure**: Consolidated and organized all documentation under `docs/`
+  - New `docs/README.md` - Central documentation hub
+  - New `docs/SETUP.md` - Complete setup and configuration guide
+  - New `docs/FEATURES.md` - Comprehensive feature documentation
+  - Enhanced `docs/development/` - Development guides and references
+- **Streamlined Main README**: Simplified and reorganized with visual examples and better navigation
+- **Removed Legacy Documentation**: Consolidated multiple standalone docs into organized structure
+  - Removed: `CONFIGURATION.md`, `AUTO_INSERT.md`, `TEMPLATE_INCLUSION.md`, `DETECTION_TEST.md`
+  - Content preserved and enhanced in new documentation structure
+
+### 🛠️ Code Quality & Performance Improvements
+- **ESLint Configuration Modernization**: Updated to ESLint v9 flat config format
+  - Enhanced TypeScript integration and rule optimization
+  - Better handling of unused variables and error patterns
+  - Improved development workflow with modern linting standards
+- **Enhanced Error Handling**: Improved error handling patterns throughout codebase
+  - Anonymous catch blocks where error details aren't needed
+  - Better type safety and error boundary handling
+- **Code Formatting & Cleanup**: Consistent code formatting and removal of unused imports
+- **TypeScript Configuration Updates**: Updated to Node.js 20 module resolution with `skipLibCheck`
+
+### 🧪 Testing & Development Enhancements
+- **Test Infrastructure Updates**: Enhanced test coverage and examples
+  - New comment detection test cases in `test-project/imports/ui/test/commentTest.html`
+  - Updated test project configurations for Node.js 22.x
+  - Improved CI/CD pipeline reliability
+- **Development Environment**: Better development experience with updated tooling
+  - Modernized build system with latest ESBuild
+  - Enhanced debugging capabilities
+  - Improved documentation for contributors
+
+### 🔧 Compatibility & Migration
+- **Backward Compatibility**: All changes maintain backward compatibility
+- **Migration Benefits**: Users upgrading will experience:
+  - Better visual integration with updated default colors
+  - Enhanced documentation and setup guides
+  - Improved performance from dependency updates
+  - More robust block condition hint behavior
+- **System Requirements**:
+  - VS Code v1.104.0 or newer required
+  - Optimized for Node.js 22.x (latest LTS)
+
 ## [0.0.6] - 2025-08-17
 
 ### Fixed
@@ -81,7 +162,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ## [0.0.4] - 2025-08-11
 
 ### Added
-- **Comprehensive Configuration Documentation**: New `CONFIGURATION.md` file with complete VS Code settings reference
+- **Comprehensive Configuration Documentation**: New consolidated setup documentation in `docs/SETUP.md`
   - Detailed examples for all extension configuration options
   - Theme customization guide with color token explanations
   - Block condition configuration with troubleshooting tips

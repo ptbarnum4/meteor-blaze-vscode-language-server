@@ -1,0 +1,70 @@
+# Dependabot configuration file
+# See: https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+
+version: 2
+updates:
+  # Check for npm dependency updates
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "ptbarnum4"
+    assignees:
+      - "ptbarnum4"
+    commit-message:
+      prefix: "npm"
+      include: "scope"
+    groups:
+      development-dependencies:
+        dependency-type: "development"
+        patterns:
+          - "@types/*"
+          - "eslint*"
+          - "typescript"
+          - "*-dev"
+      testing-dependencies:
+        patterns:
+          - "@types/node"
+          - "mocha"
+          - "chai"
+          - "*test*"
+      vscode-dependencies:
+        patterns:
+          - "vscode-*"
+          - "@vscode/*"
+
+  # Check for GitHub Actions updates
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "ptbarnum4"
+    assignees:
+      - "ptbarnum4"
+    commit-message:
+      prefix: "ci"
+      include: "scope"
+
+  # Check for test-project dependencies separately if needed
+  - package-ecosystem: "npm"
+    directory: "/test-project"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "ptbarnum4"
+    assignees:
+      - "ptbarnum4"
+    commit-message:
+      prefix: "test-deps"
+      include: "scope"

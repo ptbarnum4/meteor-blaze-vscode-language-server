@@ -12,7 +12,7 @@ const findParameterDefinition = async (
   parameterName: string,
   templateName: string,
   currentDir: string,
-  connection: VSCodeServerConnection
+  _connection: VSCodeServerConnection
 ): Promise<Location[] | null> => {
   try {
     // First, try to find the parameter usage in the HTML template file
@@ -134,6 +134,5 @@ const findParameterDefinition = async (
 
   return null;
 };
-
 
 export default findParameterDefinition;

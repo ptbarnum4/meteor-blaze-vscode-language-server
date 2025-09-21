@@ -9,11 +9,17 @@ import { isWithinComment } from './isWithinComment';
 /**
  * Finds unmatched Blaze block opening tags that don't have corresponding closing tags
  */
-async function findUnmatchedBlazeBlocks(text: string, document: TextDocument, config: CurrentConnectionConfig): Promise<Diagnostic[]> {
+async function findUnmatchedBlazeBlocks(
+  text: string,
+  document: TextDocument,
+  config: CurrentConnectionConfig
+): Promise<Diagnostic[]> {
   const diagnostics: Diagnostic[] = [];
 
   // Get block configuration to determine which blocks require end tags
-  const blockConfig = await config.connection.workspace.getConfiguration('meteorLanguageServer.blockConditions');
+  const blockConfig = await config.connection.workspace.getConfiguration(
+    'meteorLanguageServer.blockConditions'
+  );
 
   // Define default blocks that require end tags (excluding 'let')
   const defaultBlocksRequiringEndTags = new Set(['if', 'unless', 'with', 'each']);
@@ -27,9 +33,10 @@ async function findUnmatchedBlazeBlocks(text: string, document: TextDocument, co
   );
 
   // Combine default and custom blocks
-  const blocksRequiringEndTags = new Set([...defaultBlocksRequiringEndTags, ...customBlocksRequiringEndTags]);
-
-  const stack: Array<{ type: string; match: RegExpExecArray; position: Range }> = [];
+  const blocksRequiringEndTags = new Set([
+    ...defaultBlocksRequiringEndTags,
+    ...customBlocksRequiringEndTags
+  ]);
 
   // Find all Blaze block patterns
   const blockPatterns = [
@@ -146,7 +153,9 @@ async function findUnmatchedBlazeBlocks(text: string, document: TextDocument, co
   }
 
   // All remaining open blocks are unmatched - but only report errors for blocks that require end tags
-  const openBlocksRequiringEndTags = openBlocks.filter(block => blocksRequiringEndTags.has(block.blockType));
+  const openBlocksRequiringEndTags = openBlocks.filter(block =>
+    blocksRequiringEndTags.has(block.blockType)
+  );
 
   for (let i = 0; i < openBlocksRequiringEndTags.length; i++) {
     const openBlock = openBlocksRequiringEndTags[i];
@@ -195,8 +204,20 @@ function validateHtmlBlazeNesting(text: string, document: TextDocument): Diagnos
 
   // HTML void elements that don't need closing tags
   const voidElements = new Set([
-    'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input',
-    'link', 'meta', 'param', 'source', 'track', 'wbr'
+    'area',
+    'base',
+    'br',
+    'col',
+    'embed',
+    'hr',
+    'img',
+    'input',
+    'link',
+    'meta',
+    'param',
+    'source',
+    'track',
+    'wbr'
   ]);
 
   // Find HTML opening tags
@@ -283,8 +304,12 @@ function validateHtmlBlazeNesting(text: string, document: TextDocument): Diagnos
       for (let i = stack.length - 1; i >= 0; i--) {
         const openTag = stack[i];
         const isMatchingPair =
-          (tag.type === 'html-close' && openTag.type === 'html-open' && openTag.name === tag.name) ||
-          (tag.type === 'blaze-close' && openTag.type === 'blaze-open' && openTag.name === tag.name);
+          (tag.type === 'html-close' &&
+            openTag.type === 'html-open' &&
+            openTag.name === tag.name) ||
+          (tag.type === 'blaze-close' &&
+            openTag.type === 'blaze-open' &&
+            openTag.name === tag.name);
 
         if (isMatchingPair) {
           matchedIndex = i;
@@ -304,9 +329,14 @@ function validateHtmlBlazeNesting(text: string, document: TextDocument): Diagnos
 
           if (isCrossBoundary) {
             const tagTypeDisplay = tag.type === 'blaze-close' ? 'Blaze block' : 'HTML tag';
-            const unmatchedTypeDisplay = unmatchedTag.type === 'html-open' ? 'HTML tag' : 'Blaze block';
-            const closingDisplay = tag.type === 'blaze-close' ? `{{/${tag.name}}}` : `</${tag.name}>`;
-            const openingDisplay = unmatchedTag.type === 'html-open' ? `<${unmatchedTag.name}>` : `{{#${unmatchedTag.name}}}`;
+            const unmatchedTypeDisplay =
+              unmatchedTag.type === 'html-open' ? 'HTML tag' : 'Blaze block';
+            const closingDisplay =
+              tag.type === 'blaze-close' ? `{{/${tag.name}}}` : `</${tag.name}>`;
+            const openingDisplay =
+              unmatchedTag.type === 'html-open'
+                ? `<${unmatchedTag.name}>`
+                : `{{#${unmatchedTag.name}}}`;
 
             diagnostics.push({
               severity: DiagnosticSeverity.Error,
@@ -335,10 +365,7 @@ function validateHtmlBlazeNesting(text: string, document: TextDocument): Diagnos
 }
 
 // Helper function to find duplicate template parameters
-function findDuplicateTemplateParameters(
-  text: string,
-  textDocument: TextDocument
-): Diagnostic[] {
+function findDuplicateTemplateParameters(text: string, textDocument: TextDocument): Diagnostic[] {
   const diagnostics: Diagnostic[] = [];
 
   try {
@@ -350,7 +377,6 @@ function findDuplicateTemplateParameters(
       const templateName = match[1];
       const parametersSection = match[2];
       const inclusionStart = match.index;
-      const inclusionEnd = match.index + match[0].length;
 
       // Extract all parameter names from this template inclusion
       const parameterPattern = /\b([a-zA-Z_$][a-zA-Z0-9_$]*)\s*=/g;
@@ -427,7 +453,7 @@ function findDuplicateTemplateParameters(
         }
       }
     }
-  } catch (error) {
+  } catch {
     // If parsing fails, don't add diagnostics to avoid false positives
   }
 
@@ -438,8 +464,10 @@ export const validateTextDocument = async (
   config: CurrentConnectionConfig,
   textDocument: TextDocument
 ): Promise<void> => {
-  const settings = await getDocumentSettings(config, textDocument.uri);
   const text = textDocument.getText();
+
+  // Get document settings to ensure documentSettings map is populated when capability is enabled
+  await getDocumentSettings(config, textDocument.uri);
 
   const diagnostics: Diagnostic[] = [];
 

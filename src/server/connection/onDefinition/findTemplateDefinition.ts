@@ -7,7 +7,7 @@ import { VSCodeServerConnection } from '/types';
 const findTemplateDefinition = (
   templateName: string,
   currentDir: string,
-  connection: VSCodeServerConnection
+  _connection: VSCodeServerConnection
 ): Location[] | null => {
   try {
     // First, try to find the template through import analysis (same approach as hover)
@@ -19,7 +19,12 @@ const findTemplateDefinition = (
 
       if (importedTemplates.includes(templateName)) {
         // Find the actual template file using import resolution
-        const templateInfo = findImportedTemplateFileForDefinition(templateName, associatedFile, fs, path);
+        const templateInfo = findImportedTemplateFileForDefinition(
+          templateName,
+          associatedFile,
+          fs,
+          path
+        );
 
         if (templateInfo) {
           const content = fs.readFileSync(templateInfo.file, 'utf8');
@@ -90,11 +95,7 @@ const findTemplateDefinition = (
 };
 
 // Helper function to find the associated JS/TS file for definition
-function findAssociatedJSFileForDefinition(
-  currentDir: string,
-  fs: any,
-  path: any
-): string | null {
+function findAssociatedJSFileForDefinition(currentDir: string, fs: any, path: any): string | null {
   const baseName = path.basename(currentDir);
   const possibleExtensions = ['.ts', '.js'];
 
@@ -105,7 +106,7 @@ function findAssociatedJSFileForDefinition(
       if (fs.existsSync(filePath)) {
         return filePath;
       }
-    } catch (e) {
+    } catch {
       // Continue trying other extensions
     }
   }
@@ -128,7 +129,7 @@ function findAssociatedJSFileForDefinition(
           if (templateImportPattern.test(content)) {
             return fullPath;
           }
-        } catch (e) {
+        } catch {
           // Continue checking other files
         }
       }
@@ -141,7 +142,7 @@ function findAssociatedJSFileForDefinition(
         return path.join(currentDir, file);
       }
     }
-  } catch (e) {
+  } catch {
     // Directory read failed, continue with null
   }
 
@@ -222,7 +223,7 @@ function parseTemplateImportsForDefinition(filePath: string, fs: any, path: any)
             importedFileContent = fs.readFileSync(testPath, 'utf8');
             actualImportPath = testPath;
             break;
-          } catch (e) {
+          } catch {
             // Continue trying other extensions
           }
         }
@@ -251,11 +252,14 @@ function parseTemplateImportsForDefinition(filePath: string, fs: any, path: any)
           if (fs.existsSync(templateHtmlPath)) {
             try {
               const templateHtml = fs.readFileSync(templateHtmlPath, 'utf8');
-              const templateDefPattern = new RegExp(`<template\\s+name=["']${templateName}["']`, 'i');
+              const templateDefPattern = new RegExp(
+                `<template\\s+name=["']${templateName}["']`,
+                'i'
+              );
               if (templateDefPattern.test(templateHtml)) {
                 templates.push(templateName);
               }
-            } catch (e) {
+            } catch {
               // Continue
             }
           }
@@ -300,8 +304,10 @@ function findImportedTemplateFileForDefinition(
         let projectRoot = currentDir;
 
         while (currentDir !== path.dirname(currentDir)) {
-          if (fs.existsSync(path.join(currentDir, '.meteor')) ||
-              fs.existsSync(path.join(currentDir, 'package.json'))) {
+          if (
+            fs.existsSync(path.join(currentDir, '.meteor')) ||
+            fs.existsSync(path.join(currentDir, 'package.json'))
+          ) {
             projectRoot = currentDir;
             break;
           }
@@ -334,14 +340,17 @@ function findImportedTemplateFileForDefinition(
             return { file: templateHtmlPath, content: templateMatch[1].trim() };
           }
         }
-      } catch (e) {
+      } catch {
         // Continue trying other import paths
       }
     }
 
     return null;
   } catch (error) {
-    console.error(`Error finding imported template file for definition for ${templateName}:`, error);
+    console.error(
+      `Error finding imported template file for definition for ${templateName}:`,
+      error
+    );
     return null;
   }
 }
@@ -363,7 +372,7 @@ function findTsConfigForMeteorProject(startPath: string, fs: any, path: any): an
           // Try parsing as-is first (in case it's valid JSON without comments)
           try {
             return JSON.parse(tsconfigContent);
-          } catch (e) {
+          } catch {
             // If that fails, try safer comment removal
             const cleanContent = safelyRemoveJsonComments(tsconfigContent);
             return JSON.parse(cleanContent);
@@ -444,7 +453,12 @@ function safelyRemoveJsonComments(content: string): string {
 }
 
 // TypeScript path resolution function (for definition)
-function resolveTsPath(importPath: string, tsconfig: any, projectRoot: string, path: any): string | null {
+function resolveTsPath(
+  importPath: string,
+  tsconfig: any,
+  projectRoot: string,
+  path: any
+): string | null {
   if (!tsconfig?.compilerOptions?.paths) {
     return null;
   }
@@ -456,8 +470,8 @@ function resolveTsPath(importPath: string, tsconfig: any, projectRoot: string, p
   for (const [pattern, mappings] of Object.entries(paths) as [string, string[]][]) {
     // Convert glob pattern to regex
     const regexPattern = pattern
-      .replace(/\*/g, '([^/]*)')  // Replace * with capture group
-      .replace(/\//g, '\\/');     // Escape forward slashes
+      .replace(/\*/g, '([^/]*)') // Replace * with capture group
+      .replace(/\//g, '\\/'); // Escape forward slashes
 
     const regex = new RegExp(`^${regexPattern}$`);
     const match = importPath.match(regex);

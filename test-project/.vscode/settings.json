@@ -28,17 +28,19 @@
         "requiresEndTag": true,
         "autoInsertEndTag": true
       }
-    ]
-    // "margin": "0 0 0 1.5em",
-    // "fontStyle": "italic",
-    // "color": "#00FF00" // Bright green for visibility
+    ],
+    "margin": "0 0 0 0.75em",
+    "fontStyle": "italic",
+    "color": "#727272"
   },
 
   "meteorLanguageServer.blazeHelpers": {
-    "extend": [{ "name": "#mrkdwn", "doc": "Custom markdown block" }]
-    // "hashColor": "#FF6B35"
-    // "nameColor": "#007ACC"
-    // "bracketColor": "#FF4500"
+    "extend": [
+      {
+        "name": "#mrkdwn",
+        "doc": "Custom markdown block"
+      }
+    ]
   },
 
   // Additional VS Code settings for better development experience

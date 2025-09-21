@@ -16,9 +16,7 @@ import {
   TextDocumentSyncKind
 } from 'vscode-languageserver/node';
 
-import {
-  TextDocument
-} from 'vscode-languageserver-textdocument';
+import { TextDocument } from 'vscode-languageserver-textdocument';
 
 import fs from 'fs';
 import path from 'path';
@@ -51,21 +49,13 @@ let fileAnalysis: FileAnalysis = {
 
 let hasConfigurationCapability = false;
 let hasWorkspaceFolderCapability = false;
-let hasDiagnosticRelatedInformationCapability = false;
 
 connection.onInitialize((params: InitializeParams) => {
   const capabilities = params.capabilities;
 
-  hasConfigurationCapability = !!(
-    capabilities.workspace && !!capabilities.workspace.configuration
-  );
+  hasConfigurationCapability = !!(capabilities.workspace && !!capabilities.workspace.configuration);
   hasWorkspaceFolderCapability = !!(
     capabilities.workspace && !!capabilities.workspace.workspaceFolders
-  );
-  hasDiagnosticRelatedInformationCapability = !!(
-    capabilities.textDocument &&
-    capabilities.textDocument.publishDiagnostics &&
-    capabilities.textDocument.publishDiagnostics.relatedInformation
   );
 
   const result: InitializeResult = {
@@ -182,9 +172,10 @@ function analyzeNeighboringFiles(document: TextDocument) {
       const fullPath = path.join(dir, file);
 
       // Analyze files with same base name OR files that match template names
-      const shouldAnalyze = fileBaseName === baseName ||
-                           templateNames.includes(fileBaseName) ||
-                           file.startsWith(baseName);
+      const shouldAnalyze =
+        fileBaseName === baseName ||
+        templateNames.includes(fileBaseName) ||
+        file.startsWith(baseName);
 
       if (shouldAnalyze) {
         if (['.js', '.ts'].includes(ext)) {
@@ -224,7 +215,8 @@ function analyzeJavaScriptFile(filePath: string): string[] {
     while ((match = helperPattern.exec(content)) !== null) {
       const helpersContent = match[2];
       // Extract helper function names (both function() and arrow function syntax)
-      const helperNamePattern = /(\w+)\s*[:=]\s*(?:function\s*\(|[\(\w\s,]*\)\s*=>|\([^)]*\)\s*\{)/g;
+      const helperNamePattern =
+        /(\w+)\s*[:=]\s*(?:function\s*\(|[\(\w\s,]*\)\s*=>|\([^)]*\)\s*\{)/g;
       let helperMatch;
 
       while ((helperMatch = helperNamePattern.exec(helpersContent)) !== null) {
@@ -290,9 +282,7 @@ function analyzeCSSFile(filePath: string): string[] {
 
 async function validateTextDocument(textDocument: TextDocument): Promise<void> {
   const settings = await getDocumentSettings(textDocument.uri);
-  const text = textDocument.getText();
   const problems = 0;
-  let m: RegExpExecArray | null;
 
   const diagnostics: Diagnostic[] = [];
 
@@ -303,63 +293,48 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
   connection.sendDiagnostics({ uri: textDocument.uri, diagnostics });
 }
 
-connection.onCompletion(
-  (textDocumentPosition: TextDocumentPositionParams): CompletionItem[] => {
-    const document = documents.get(textDocumentPosition.textDocument.uri);
-    if (!document) {
-      return [];
-    }
+connection.onCompletion((textDocumentPosition: TextDocumentPositionParams): CompletionItem[] => {
+  const document = documents.get(textDocumentPosition.textDocument.uri);
+  if (!document) {
+    return [];
+  }
 
-    const text = document.getText();
-    const offset = document.offsetAt(textDocumentPosition.position);
+  const text = document.getText();
+  const offset = document.offsetAt(textDocumentPosition.position);
 
-    // Only provide Meteor completions if this HTML file contains templates
-    if (!containsMeteorTemplates(document)) {
-      return [];
-    }
+  // Only provide Meteor completions if this HTML file contains templates
+  if (!containsMeteorTemplates(document)) {
+    return [];
+  }
 
-    const lineStart = text.lastIndexOf('\n', offset - 1) + 1;
-    const currentLine = text.substring(lineStart, offset);
-    const completions: CompletionItem[] = [];
+  const lineStart = text.lastIndexOf('\n', offset - 1) + 1;
+  const currentLine = text.substring(lineStart, offset);
+  const completions: CompletionItem[] = [];
 
-    // Get base file name for cross-file analysis
-    const filePath = document.uri.replace('file://', '');
-    const baseName = path.basename(filePath, path.extname(filePath));
+  // Get base file name for cross-file analysis
+  const filePath = document.uri.replace('file://', '');
+  const baseName = path.basename(filePath, path.extname(filePath));
 
-    // Check if we're in a template block and get template name
-    const beforeCursor = text.substring(0, offset);
-    const templateMatch = beforeCursor.match(/<template\s+name=["']([^"']+)["'][^>]*>(?:(?!<\/template>)[\s\S])*$/);
-    const currentTemplateName = templateMatch ? templateMatch[1] : null;
+  // Check if we're in a template block and get template name
+  const beforeCursor = text.substring(0, offset);
+  const templateMatch = beforeCursor.match(
+    /<template\s+name=["']([^"']+)["'][^>]*>(?:(?!<\/template>)[\s\S])*$/
+  );
+  const currentTemplateName = templateMatch ? templateMatch[1] : null;
 
-    const inTemplate = !!currentTemplateName;
+  const inTemplate = !!currentTemplateName;
 
-    if (inTemplate) {
-      // Inside template - provide Blaze helpers and CSS classes
+  if (inTemplate) {
+    // Inside template - provide Blaze helpers and CSS classes
 
-      // Check if we're typing a helper in {{}}
-      if (currentLine.includes('{{') && !currentLine.includes('}}')) {
-        // Add helpers from analyzed files using multiple lookup strategies
-        const lookupKeys = [baseName, currentTemplateName].filter(Boolean);
+    // Check if we're typing a helper in {{}}
+    if (currentLine.includes('{{') && !currentLine.includes('}}')) {
+      // Add helpers from analyzed files using multiple lookup strategies
+      const lookupKeys = [baseName, currentTemplateName].filter(Boolean);
 
-        lookupKeys.forEach(key => {
-          const helpers = fileAnalysis.jsHelpers.get(key as string);
-          if (helpers) {
-            helpers.forEach(helper => {
-              // Avoid duplicates
-              if (!completions.find(c => c.label === helper)) {
-                completions.push({
-                  label: helper,
-                  kind: CompletionItemKind.Function,
-                  detail: `Template helper from ${key}`,
-                  documentation: `Helper function: ${helper}`
-                });
-              }
-            });
-          }
-        });
-
-        // Also check all stored helpers for any that might match
-        fileAnalysis.jsHelpers.forEach((helpers, key) => {
+      lookupKeys.forEach(key => {
+        const helpers = fileAnalysis.jsHelpers.get(key as string);
+        if (helpers) {
           helpers.forEach(helper => {
             // Avoid duplicates
             if (!completions.find(c => c.label === helper)) {
@@ -371,113 +346,125 @@ connection.onCompletion(
               });
             }
           });
-        });
+        }
+      });
 
-        // Add built-in Blaze helpers
-        const blazeHelpers = [
-          { name: 'each', doc: 'Iterate over a list' },
-          { name: 'if', doc: 'Conditional rendering' },
-          { name: 'unless', doc: 'Inverse conditional rendering' },
-          { name: 'with', doc: 'Change data context' },
-          { name: 'let', doc: 'Define local variables' },
-          { name: '@index', doc: 'Current index in #each loop' },
-          { name: '@key', doc: 'Current key in #each loop' },
-          { name: '@first', doc: 'True if first item in #each loop' },
-          { name: '@last', doc: 'True if last item in #each loop' },
-          { name: 'this', doc: 'Current data context' }
-        ];
-
-        blazeHelpers.forEach(helper => {
-          completions.push({
-            label: helper.name,
-            kind: CompletionItemKind.Keyword,
-            detail: 'Blaze helper',
-            documentation: helper.doc
-          });
-        });
-      }
-
-      // Check if we're typing a CSS class
-      if (currentLine.includes('class=') || currentLine.includes("class='") || currentLine.includes('class="')) {
-        // Add CSS classes from all analyzed files
-        fileAnalysis.cssClasses.forEach((classes, key) => {
-          if (key.includes(baseName)) {
-            classes.forEach(className => {
-              completions.push({
-                label: className,
-                kind: CompletionItemKind.Value,
-                detail: `CSS class from ${key}`,
-                documentation: `CSS class: .${className}`
-              });
+      // Also check all stored helpers for any that might match
+      fileAnalysis.jsHelpers.forEach((helpers, key) => {
+        helpers.forEach(helper => {
+          // Avoid duplicates
+          if (!completions.find(c => c.label === helper)) {
+            completions.push({
+              label: helper,
+              kind: CompletionItemKind.Function,
+              detail: `Template helper from ${key}`,
+              documentation: `Helper function: ${helper}`
             });
           }
         });
-      }
+      });
 
-      // Add HTML attributes common in Meteor templates
-      const meteorAttributes = [
-        { name: 'data-id', doc: 'Data attribute for element identification' },
-        { name: 'data-action', doc: 'Data attribute for event handling' },
-        { name: 'checked', doc: 'Checkbox checked state (use with {{}}})' }
+      // Add built-in Blaze helpers
+      const blazeHelpers = [
+        { name: 'each', doc: 'Iterate over a list' },
+        { name: 'if', doc: 'Conditional rendering' },
+        { name: 'unless', doc: 'Inverse conditional rendering' },
+        { name: 'with', doc: 'Change data context' },
+        { name: 'let', doc: 'Define local variables' },
+        { name: '@index', doc: 'Current index in #each loop' },
+        { name: '@key', doc: 'Current key in #each loop' },
+        { name: '@first', doc: 'True if first item in #each loop' },
+        { name: '@last', doc: 'True if last item in #each loop' },
+        { name: 'this', doc: 'Current data context' }
       ];
 
-      if (currentLine.match(/<\w+[^>]*$/)) { // Inside an HTML tag
-        meteorAttributes.forEach(attr => {
-          completions.push({
-            label: attr.name,
-            kind: CompletionItemKind.Property,
-            detail: 'Meteor template attribute',
-            documentation: attr.doc
-          });
+      blazeHelpers.forEach(helper => {
+        completions.push({
+          label: helper.name,
+          kind: CompletionItemKind.Keyword,
+          detail: 'Blaze helper',
+          documentation: helper.doc
         });
-      }
+      });
     }
 
-    return completions;
+    // Check if we're typing a CSS class
+    if (
+      currentLine.includes('class=') ||
+      currentLine.includes("class='") ||
+      currentLine.includes('class="')
+    ) {
+      // Add CSS classes from all analyzed files
+      fileAnalysis.cssClasses.forEach((classes, key) => {
+        if (key.includes(baseName)) {
+          classes.forEach(className => {
+            completions.push({
+              label: className,
+              kind: CompletionItemKind.Value,
+              detail: `CSS class from ${key}`,
+              documentation: `CSS class: .${className}`
+            });
+          });
+        }
+      });
+    }
+
+    // Add HTML attributes common in Meteor templates
+    const meteorAttributes = [
+      { name: 'data-id', doc: 'Data attribute for element identification' },
+      { name: 'data-action', doc: 'Data attribute for event handling' },
+      { name: 'checked', doc: 'Checkbox checked state (use with {{}}})' }
+    ];
+
+    if (currentLine.match(/<\w+[^>]*$/)) {
+      // Inside an HTML tag
+      meteorAttributes.forEach(attr => {
+        completions.push({
+          label: attr.name,
+          kind: CompletionItemKind.Property,
+          detail: 'Meteor template attribute',
+          documentation: attr.doc
+        });
+      });
+    }
   }
-);
 
-connection.onCompletionResolve(
-  (item: CompletionItem): CompletionItem => {
-    return item;
+  return completions;
+});
+
+connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
+  return item;
+});
+
+connection.onHover((textDocumentPosition: TextDocumentPositionParams): Hover | null => {
+  const document = documents.get(textDocumentPosition.textDocument.uri);
+  if (!document) {
+    return null;
   }
-);
 
-connection.onHover(
-  (textDocumentPosition: TextDocumentPositionParams): Hover | null => {
-    const document = documents.get(textDocumentPosition.textDocument.uri);
-    if (!document) {
-      return null;
-    }
-
-    // Only provide hover info if this HTML file contains templates
-    if (!containsMeteorTemplates(document)) {
-      return null;
-    }
-
-    const text = document.getText();
-    const offset = document.offsetAt(textDocumentPosition.position);
-
-    // Simple hover implementation - can be enhanced
-    const wordRange = getWordRangeAtPosition(document, textDocumentPosition.position);
-    if (!wordRange) {
-      return null;
-    }
-
-    const word = text.substring(
-      document.offsetAt(wordRange.start),
-      document.offsetAt(wordRange.end)
-    );
-
-    return {
-      contents: {
-        kind: MarkupKind.Markdown,
-        value: `**${word}** - Meteor template element`
-      },
-      range: wordRange
-    };
+  // Only provide hover info if this HTML file contains templates
+  if (!containsMeteorTemplates(document)) {
+    return null;
   }
-);
+
+  const text = document.getText();
+
+  // Simple hover implementation - can be enhanced
+  const wordRange = getWordRangeAtPosition(document, textDocumentPosition.position);
+  if (!wordRange) {
+    return null;
+  }
+
+  const word = text.substring(document.offsetAt(wordRange.start), document.offsetAt(wordRange.end));
+
+  return {
+    contents: {
+      kind: MarkupKind.Markdown,
+      value: `**${word}** - Meteor template element`
+    },
+    range: wordRange
+  };
+});
 
 function getWordRangeAtPosition(document: TextDocument, position: Position): Range | null {
   const text = document.getText();

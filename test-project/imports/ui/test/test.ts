@@ -93,7 +93,8 @@ Template.test.helpers({
       return '000';
     }
     return num.toString().padStart(3, '0');
-  }
+  },
+  externalFunction
 });
 
 Template.test.events({
@@ -105,3 +106,7 @@ Template.test.events({
     console.info('Count incremented to:', instance.props.count.get());
   }
 });
+
+function externalFunction(arg1: string) {
+  console.log('This is an external function', arg1);
+}

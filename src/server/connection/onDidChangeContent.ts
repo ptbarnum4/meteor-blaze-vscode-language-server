@@ -7,16 +7,11 @@ import { containsMeteorTemplates } from '../helpers/containsMeteorTemplates';
 import { validateTextDocument } from '../helpers/validateTextDocument';
 
 export const createOnDidChangeContent = (config: CurrentConnectionConfig) => {
-  const { connection, documents } = config;
-
   return (change: TextDocumentChangeEvent<TextDocument>) => {
     const document = change.document;
     if (!document) {
       return;
     }
-
-    // Support both 'html' and 'handlebars' language IDs
-    const isHtmlOrHandlebars = ['html', 'handlebars'].includes(document.languageId);
 
     const hasTemplates = containsMeteorTemplates(document);
 

@@ -1,6 +1,5 @@
 import fsSync from 'fs'; // for existsSync and where sync is needed
 import path from 'path';
-const fs = fsSync.promises; // where available, read files async
 
 import { TextDocument } from 'vscode-languageserver-textdocument';
 import {
@@ -356,7 +355,7 @@ const onCompletion = (config: CurrentConnectionConfig) => {
             }
           }
         }
-      } catch (e) {
+      } catch {
         // Ignore config errors
       }
     }
@@ -396,7 +395,6 @@ async function getTemplateNameCompletions(
   partialTemplateName: string,
   currentDocument: TextDocument
 ): Promise<CompletionItem[]> {
-  const { connection } = config;
   const completions: CompletionItem[] = [];
 
   try {
@@ -431,7 +429,7 @@ async function getTemplateNameCompletions(
           filterText: templateName
         });
       });
-  } catch (error) {
+  } catch {
     // Silently handle errors
   }
 
@@ -449,7 +447,7 @@ function findAssociatedJSFile(currentDir: string, baseName: string): string | nu
       if (fsSync.existsSync(filePath)) {
         return filePath;
       }
-    } catch (e) {
+    } catch {
       // Continue trying other extensions
     }
   }
@@ -472,7 +470,7 @@ function findAssociatedJSFile(currentDir: string, baseName: string): string | nu
           if (templateImportPattern.test(content)) {
             return fullPath;
           }
-        } catch (e) {
+        } catch {
           // Continue checking other files
         }
       }
@@ -485,7 +483,7 @@ function findAssociatedJSFile(currentDir: string, baseName: string): string | nu
         return path.join(currentDir, file);
       }
     }
-  } catch (e) {
+  } catch {
     // Directory read failed, continue with null
   }
 
@@ -509,7 +507,7 @@ function findTsConfigForMeteorProject(startPath: string): any {
           // Try parsing as-is first (in case it's valid JSON without comments)
           try {
             return JSON.parse(tsconfigContent);
-          } catch (e) {
+          } catch {
             // If that fails, try safer comment removal
             const cleanContent = safelyRemoveJsonComments(tsconfigContent);
             return JSON.parse(cleanContent);
@@ -697,7 +695,7 @@ function parseTemplateImports(filePath: string): string[] {
             importedFileContent = fsSync.readFileSync(testPath, 'utf8');
             actualImportPath = testPath;
             break;
-          } catch (e) {
+          } catch {
             // Continue trying other extensions
           }
         }
@@ -733,7 +731,7 @@ function parseTemplateImports(filePath: string): string[] {
                 templates.push(templateName);
               }
             }
-          } catch (e) {
+          } catch {
             // Continue if we can't read the template.html file
           }
         }
@@ -754,7 +752,7 @@ function parseTemplateImports(filePath: string): string[] {
                 templates.push(templateName);
               }
             }
-          } catch (e) {
+          } catch {
             // Continue if we can't read the HTML file
           }
         }
@@ -774,7 +772,7 @@ function parseTemplateImports(filePath: string): string[] {
             if (templateDefPattern.test(templateHtml)) {
               templates.push(templateName);
             }
-          } catch (e) {
+          } catch {
             // Continue
           }
         }
@@ -885,7 +883,9 @@ async function getTemplateParameterCompletions(
       };
       completions.push(completion);
     });
-  } catch (error) {}
+  } catch {
+    // Silently handle errors
+  }
 
   return completions;
 }
@@ -913,7 +913,7 @@ function parseUsedParameters(textBeforeCursor: string, templateName: string): st
         }
       }
     }
-  } catch (error) {
+  } catch {
     // If parsing fails, return empty array to not block completions
   }
 
@@ -924,7 +924,7 @@ function parseUsedParameters(textBeforeCursor: string, templateName: string): st
 function findImportedTemplateFile(
   jsFilePath: string,
   templateName: string,
-  connection: any
+  _connection: any
 ): string | null {
   try {
     const jsFileContent = fsSync.readFileSync(jsFilePath, 'utf8');
@@ -1037,7 +1037,7 @@ function findImportedTemplateFile(
 function findTemplateTypeScriptFile(
   jsFilePath: string,
   templateName: string,
-  connection: any
+  _connection: any
 ): string | null {
   try {
     const jsFileContent = fsSync.readFileSync(jsFilePath, 'utf8');
@@ -1188,9 +1188,7 @@ function extractDataPropertiesFromTemplate(
       // Skip common template helpers that aren't data properties
       if (!['if', 'each', 'unless', 'with', 'let'].includes(property)) {
         properties.add(property);
-      } else {
       }
-    } else {
     }
   });
 
@@ -1316,7 +1314,6 @@ function extractDataPropertiesFromTypes(
           }
         }
         break; // Found the type, no need to check others
-      } else {
       }
     }
 

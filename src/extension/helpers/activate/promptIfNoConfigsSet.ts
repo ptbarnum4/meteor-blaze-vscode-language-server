@@ -42,7 +42,7 @@ export const checkHasAnyConfigsSet = (): boolean => {
 const LINKS = {
   CONFIGURATION: {
     text: 'Open Configuration Guide',
-    url: 'https://github.com/ptbarnum4/meteor-blaze-vscode-language-server/blob/main/CONFIGURATION.md'
+    url: 'https://github.com/ptbarnum4/meteor-blaze-vscode-language-server/blob/main/docs/SETUP.md'
   }
 };
 
@@ -77,7 +77,7 @@ const promptIfNoConfigsSet = async (): Promise<void> => {
 
   try {
     const selection = await vscode.window.showInformationMessage(
-      'For full Blaze token coloring, add editor.tokenColorCustomizations to your settings. See CONFIGURATION.md for details.',
+      'For full Blaze token coloring, add editor.tokenColorCustomizations to your settings. See docs/SETUP.md for details.',
       'Open Configuration Guide'
     );
 
