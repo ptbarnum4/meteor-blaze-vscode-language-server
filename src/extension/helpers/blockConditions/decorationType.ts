@@ -8,6 +8,35 @@ import { findEnclosingBlockForElseWithIndex } from './findEnclosingBlockForElse'
 import { findMatchingBlockConditionWithIndex } from './findMatchingBlockCondition';
 
 /**
+ * Check if a line already contains a comment (HTML or Handlebars comment).
+ * This helps avoid adding block condition hints when there's already a comment on the line.
+ *
+ * @param text The full document text
+ * @param position The position to check from
+ * @returns true if the line contains a comment after the position
+ */
+const lineHasExistingComment = (text: string, position: vscode.Position): boolean => {
+  const lines = text.split('\n');
+  if (position.line >= lines.length) {
+    return false;
+  }
+
+  const lineText = lines[position.line];
+  const afterPosition = lineText.substring(position.character);
+
+  // Check for HTML comments: <!-- anything -->
+  const hasHtmlComment = /<!--.*?-->/.test(afterPosition) || /<!--/.test(afterPosition);
+
+  // Check for Handlebars comments: {{!-- anything --}} or {{! anything }}
+  const hasHandlebarsComment = /\{\{!--.*?--\}\}/.test(afterPosition) ||
+                               /\{\{!.*?\}\}/.test(afterPosition) ||
+                               /\{\{!--/.test(afterPosition) ||
+                               /\{\{!/.test(afterPosition);
+
+  return hasHtmlComment || hasHandlebarsComment;
+};
+
+/**
  * Update block condition decorations in the active editor for the given document.
  * This will add hints for block conditions like {{#if}}, {{#each}}, etc.
  *
@@ -101,7 +130,7 @@ export const updateBlockConditionDecorations = (
 
     while ((match = endBlockRegex.exec(text)) !== null) {
       // Skip if the match is within a comment
-      if (isWithinComment(text, match.index)) {
+      if (isWithinComment(text, match.index).isWithin) {
         continue;
       }
 
@@ -123,6 +152,11 @@ export const updateBlockConditionDecorations = (
           continue;
         }
 
+        // Skip decoration if the line already has a comment
+        if (lineHasExistingComment(text, endPos)) {
+          continue;
+        }
+
         decorations.push({
           range: new vscode.Range(endPos, endPos),
           renderOptions: {
@@ -141,7 +175,7 @@ export const updateBlockConditionDecorations = (
 
       while ((elseMatch = elseRegex.exec(text)) !== null) {
         // Skip if the match is within a comment
-        if (isWithinComment(text, elseMatch.index)) {
+        if (isWithinComment(text, elseMatch.index).isWithin) {
           continue;
         }
 
@@ -154,6 +188,11 @@ export const updateBlockConditionDecorations = (
 
           // Skip decoration if start and else are on the same line
           if (startPos.line === elsePos.line) {
+            continue;
+          }
+
+          // Skip decoration if the line already has a comment
+          if (lineHasExistingComment(text, elsePos)) {
             continue;
           }
 
@@ -187,9 +226,9 @@ export const createBlockConditionDecorationType = (): vscode.TextEditorDecoratio
   const config = vscode.workspace.getConfiguration('meteorLanguageServer.blockConditions');
 
   // Get settings with fallbacks
-  const colorSetting = config.get<string>('color', 'editorCodeLens.foreground');
+  const colorSetting = config.get<string>('color', '#727272');
   const fontStyle = config.get<string>('fontStyle', 'italic');
-  const margin = config.get<string>('margin', '0 0 0 1em');
+  const margin = config.get<string>('margin', '0 0 0 0.75em');
 
   // Handle color setting - can be theme color name or hex color
   let color: string | vscode.ThemeColor;

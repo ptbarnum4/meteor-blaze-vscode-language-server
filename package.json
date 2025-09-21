@@ -135,6 +135,80 @@
         "title": "Restart Meteor/Blaze HTML Language Server"
       }
     ],
+    "colors": [
+      {
+        "id": "blazeBlockHash.defaultColor",
+        "description": "Default color for Blaze block hash (#) symbols",
+        "defaults": {
+          "dark": "#808080",
+          "light": "#808080",
+          "highContrast": "#808080"
+        }
+      },
+      {
+        "id": "blazeBlockName.defaultColor",
+        "description": "Default color for Blaze block names (if, each, etc.)",
+        "defaults": {
+          "dark": "#f177ff",
+          "light": "#f177ff",
+          "highContrast": "#f177ff"
+        }
+      },
+      {
+        "id": "blazeBlockArgs.defaultColor",
+        "description": "Default color for Blaze block arguments",
+        "defaults": {
+          "dark": "#fffec4",
+          "light": "#fffec4",
+          "highContrast": "#fffec4"
+        }
+      },
+      {
+        "id": "blazeBlockFirstArg.defaultColor",
+        "description": "Default color for first Blaze block argument",
+        "defaults": {
+          "dark": "#ffd16f",
+          "light": "#ffd16f",
+          "highContrast": "#ffd16f"
+        }
+      },
+      {
+        "id": "blazeBlockSingleArg.defaultColor",
+        "description": "Default color for single Blaze block argument",
+        "defaults": {
+          "dark": "#ffd16f",
+          "light": "#ffd16f",
+          "highContrast": "#ffd16f"
+        }
+      },
+      {
+        "id": "blazeExpression.defaultColor",
+        "description": "Default color for Blaze expressions",
+        "defaults": {
+          "dark": "#ffd16f",
+          "light": "#ffd16f",
+          "highContrast": "#ffd16f"
+        }
+      },
+      {
+        "id": "blazeBlockIn.defaultColor",
+        "description": "Default color for Blaze 'in' keyword",
+        "defaults": {
+          "dark": "#00ffa2",
+          "light": "#00ffa2",
+          "highContrast": "#00ffa2"
+        }
+      },
+      {
+        "id": "delimiter.defaultColor",
+        "description": "Default color for Blaze delimiters",
+        "defaults": {
+          "dark": "#808080",
+          "light": "#808080",
+          "highContrast": "#808080"
+        }
+      }
+    ],
     "configuration": {
       "type": "object",
       "title": "Meteor/Blaze HTML Language Server",
@@ -173,7 +247,7 @@
             },
             "color": {
               "type": "string",
-              "default": "editorCodeLens.foreground",
+              "default": "#727272",
               "description": "Color for inline condition hints. Can be a theme color name or hex color (e.g., '#888888')"
             },
             "fontStyle": {
@@ -188,7 +262,7 @@
             },
             "margin": {
               "type": "string",
-              "default": "0 0 0 1em",
+              "default": "0 0 0 0.75em",
               "description": "CSS margin for inline condition hints"
             },
             "extend": {

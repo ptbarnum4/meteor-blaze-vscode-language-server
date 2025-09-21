@@ -18,9 +18,14 @@
         <p>Condition is true</p>
       {{else}}
         <p>Condition is false</p>
-      {{/if}}
+      {{/if}} <!-- should not show hint -->
 
-      {{}}
+      {{#unless condition}}
+        <p>Condition is true</p>
+      {{else}}
+        <p>Condition is false</p>
+      {{/unless}}
+
 
       {{> nestedTemplate
         title="Nested Template Title"
@@ -107,6 +112,8 @@
 
       {{count}}
       {{trim}}
+
+      {{externalFunction 'test argument'}}
 
       <!-- Should show error: wrong closing tag type -->
 
