@@ -377,7 +377,7 @@
     "test-manual": "node out/test/runTest.js"
   },
   "devDependencies": {
-    "@eslint/js": "^9.0.0",
+    "@eslint/js": "^9.38.0",
     "@types/mocha": "^10.0.1",
     "@types/node": "^24.5.2",
     "@types/vscode": "^1.104.0",
