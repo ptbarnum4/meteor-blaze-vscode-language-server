@@ -11,7 +11,7 @@
   },
   "devDependencies": {
     "@types/lodash": "^4.17.20",
-    "@types/meteor": "^2.9.9"
+    "@types/meteor": "^2.9.10"
   },
   "engines": {
     "node": ">=14.0.0"
