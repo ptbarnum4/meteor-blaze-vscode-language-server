@@ -48,7 +48,7 @@ jobs:
 
       - name: Upload VSIX as Artifact
         if: github.event_name == 'workflow_dispatch'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: meteor-blaze-vscode-language-server-${{ steps.package-version.outputs.version }}
           path: meteor-blaze-vscode-language-server-${{ steps.package-version.outputs.version }}.vsix
