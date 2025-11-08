@@ -240,7 +240,11 @@ describe('validateTextDocument', () => {
       d.message.includes('blocks cannot be used within HTML element tags')
     );
 
-    assert.strictEqual(invalidBlockDiagnostics.length, 2, 'Should have two diagnostics for two invalid blocks');
+    assert.strictEqual(
+      invalidBlockDiagnostics.length,
+      2,
+      'Should have two diagnostics for two invalid blocks'
+    );
   });
 
   it('should allow #if blocks outside of HTML element tags', async () => {
@@ -277,7 +281,11 @@ describe('validateTextDocument', () => {
       d.message.includes('blocks cannot be used within HTML element tags')
     );
 
-    assert.strictEqual(invalidBlockDiagnostics.length, 0, 'Should have no diagnostics for blocks outside tags');
+    assert.strictEqual(
+      invalidBlockDiagnostics.length,
+      0,
+      'Should have no diagnostics for blocks outside tags'
+    );
   });
 
   it('should highlight entire block from {{#if}} to {{/if}}', async () => {
@@ -350,7 +358,11 @@ describe('validateTextDocument', () => {
       d.message.includes('blocks cannot be used within HTML element tags')
     );
 
-    assert.strictEqual(invalidBlockDiagnostics.length, 0, 'Should have no diagnostics for blocks within attribute string values');
+    assert.strictEqual(
+      invalidBlockDiagnostics.length,
+      0,
+      'Should have no diagnostics for blocks within attribute string values'
+    );
   });
 
   it('should allow #if blocks within single-quoted attribute values', async () => {
@@ -381,7 +393,11 @@ describe('validateTextDocument', () => {
       d.message.includes('blocks cannot be used within HTML element tags')
     );
 
-    assert.strictEqual(invalidBlockDiagnostics.length, 0, 'Should have no diagnostics for blocks within single-quoted attribute values');
+    assert.strictEqual(
+      invalidBlockDiagnostics.length,
+      0,
+      'Should have no diagnostics for blocks within single-quoted attribute values'
+    );
   });
 
   it('should detect invalid blocks outside quotes but not inside quotes in same tag', async () => {
@@ -412,7 +428,11 @@ describe('validateTextDocument', () => {
       d.message.includes('blocks cannot be used within HTML element tags')
     );
 
-    assert.strictEqual(invalidBlockDiagnostics.length, 1, 'Should have one diagnostic for block outside quotes');
+    assert.strictEqual(
+      invalidBlockDiagnostics.length,
+      1,
+      'Should have one diagnostic for block outside quotes'
+    );
 
     // The diagnostic should be for the 'disabled' block, not the one inside class
     const text = document.getText();
@@ -453,7 +473,11 @@ describe('validateTextDocument', () => {
       d.message.includes('blocks cannot be used within HTML element tags')
     );
 
-    assert.strictEqual(invalidBlockDiagnostics.length, 0, 'Should have no diagnostics for blocks within HTML comments');
+    assert.strictEqual(
+      invalidBlockDiagnostics.length,
+      0,
+      'Should have no diagnostics for blocks within HTML comments'
+    );
   });
 
   it('should not validate blocks within Handlebars block comments', async () => {
@@ -485,7 +509,11 @@ describe('validateTextDocument', () => {
       d.message.includes('blocks cannot be used within HTML element tags')
     );
 
-    assert.strictEqual(invalidBlockDiagnostics.length, 0, 'Should have no diagnostics for blocks within Handlebars comments');
+    assert.strictEqual(
+      invalidBlockDiagnostics.length,
+      0,
+      'Should have no diagnostics for blocks within Handlebars comments'
+    );
   });
 
   it('should not validate blocks within Handlebars inline comments with nested expressions', async () => {
@@ -517,14 +545,23 @@ describe('validateTextDocument', () => {
       d.message.includes('blocks cannot be used within HTML element tags')
     );
 
-    assert.strictEqual(invalidBlockDiagnostics.length, 0, 'Should have no diagnostics for blocks within Handlebars inline comments');
-
-    // Also check that there are no unmatched block errors
-    const unmatchedBlockDiagnostics = diagnostics.filter(d =>
-      d.message.includes('Missing closing tag') || d.message.includes('without matching opening')
+    assert.strictEqual(
+      invalidBlockDiagnostics.length,
+      0,
+      'Should have no diagnostics for blocks within Handlebars inline comments'
     );
 
-    assert.strictEqual(unmatchedBlockDiagnostics.length, 0, 'Should have no unmatched block diagnostics for blocks within comments');
+    // Also check that there are no unmatched block errors
+    const unmatchedBlockDiagnostics = diagnostics.filter(
+      d =>
+        d.message.includes('Missing closing tag') || d.message.includes('without matching opening')
+    );
+
+    assert.strictEqual(
+      unmatchedBlockDiagnostics.length,
+      0,
+      'Should have no unmatched block diagnostics for blocks within comments'
+    );
   });
 
   it('should handle the exact user example with commented HTML', async () => {
@@ -562,13 +599,300 @@ describe('validateTextDocument', () => {
 
     // Debug: log any diagnostics
     if (diagnostics.length > 0) {
-      console.log('Diagnostics found:', diagnostics.map(d => ({
-        message: d.message,
-        range: d.range
-      })));
+      console.log(
+        'Diagnostics found:',
+        diagnostics.map(d => ({
+          message: d.message,
+          range: d.range
+        }))
+      );
     }
 
     // Should have no diagnostics - the commented div should be ignored
-    assert.strictEqual(diagnostics.length, 0, `Should have no diagnostics for the user example, but got ${diagnostics.length}: ${diagnostics.map(d => d.message).join(', ')}`);
+    assert.strictEqual(
+      diagnostics.length,
+      0,
+      `Should have no diagnostics for the user example, but got ${diagnostics.length}: ${diagnostics
+        .map(d => d.message)
+        .join(', ')}`
+    );
+  });
+
+  it('should not validate HTML elements within attribute string values', async () => {
+    const content = `<template name="test">
+  {{#if isInRole 'admin,super,admiral' 'confirmed'}}
+    <button type="button"
+      data-bs-toggle="popover"
+      data-bs-trigger="hover"
+      data-bs-placement="bottom"
+      data-bs-html="true"
+      data-bs-content="
+        <div class='text-center'>
+           Toggle your sessions
+        </div>"
+      id="btn-me"
+      class="btn {{getMeToggleClass}} navbar-btn">
+      <i class="fa fa-user-circle"></i>
+    </button>
+  {{/if}}
+</template>`;
+
+    const document = TextDocument.create('file:///test.html', 'html', 1, content);
+    const diagnostics: any[] = [];
+
+    const mockConnection = {
+      sendDiagnostics: (params: any) => {
+        diagnostics.push(...params.diagnostics);
+      },
+      workspace: {
+        getConfiguration: () => Promise.resolve(mockSettings)
+      }
+    };
+
+    const config = createMockConfig({
+      connection: mockConnection as any
+    });
+
+    await validateTextDocument(config, document);
+
+    // Debug: log any diagnostics
+    if (diagnostics.length > 0) {
+      console.log(
+        'Diagnostics found:',
+        diagnostics.map(d => ({
+          message: d.message,
+          range: d.range
+        }))
+      );
+    }
+
+    // Should have no diagnostics - HTML elements inside attribute strings should be ignored
+    const invalidBlockDiagnostics = diagnostics.filter(d =>
+      d.message.includes('blocks cannot be used within HTML element tags')
+    );
+
+    assert.strictEqual(
+      invalidBlockDiagnostics.length,
+      0,
+      `Should have no diagnostics for HTML elements within attribute strings, but got ${
+        invalidBlockDiagnostics.length
+      }: ${invalidBlockDiagnostics.map(d => d.message).join(', ')}`
+    );
+  });
+
+  it('should not be confused by single quotes in Handlebars expressions', async () => {
+    const content = `<template name="move">
+  {{#if isType 'sessions'}}
+    {{> searchEntities options=options}}
+  {{else}}
+    <section class="section-move-internal">
+      <p>
+        Students will be moved to Session <span class="green">{{type}}</span>.
+      </p>
+      <button id="btn-move" class="btn btn-success">Move</button>
+    </section>
+  {{/if}}
+</template>`;
+
+    const document = TextDocument.create('file:///test.html', 'html', 1, content);
+    const diagnostics: any[] = [];
+
+    const mockConnection = {
+      sendDiagnostics: (params: any) => {
+        diagnostics.push(...params.diagnostics);
+      },
+      workspace: {
+        getConfiguration: () => Promise.resolve(mockSettings)
+      }
+    };
+
+    const config = createMockConfig({
+      connection: mockConnection as any
+    });
+
+    await validateTextDocument(config, document);
+
+    // Should have no diagnostics
+    assert.strictEqual(
+      diagnostics.length,
+      0,
+      `Should have no diagnostics for single quotes in Handlebars, but got ${diagnostics.length}: ${diagnostics
+        .map(d => d.message)
+        .join(', ')}`
+    );
+  });
+
+  it('should not error on HTML tags inside {{else}} blocks', async () => {
+    const content = `<template name="testTemplate">
+  {{#if isType 'sessions'}}
+    <div>Session content</div>
+  {{else}}
+    <section class="section-move-internal">
+      <p>Non-session content</p>
+    </section>
+  {{/if}}
+</template>`;
+
+    const document = TextDocument.create('file:///test.html', 'html', 1, content);
+    const diagnostics: any[] = [];
+
+    const mockConnection = {
+      sendDiagnostics: (params: any) => {
+        diagnostics.push(...params.diagnostics);
+      },
+      workspace: {
+        getConfiguration: () => Promise.resolve(mockSettings)
+      }
+    };
+
+    const config = createMockConfig({
+      connection: mockConnection as any
+    });
+
+    await validateTextDocument(config, document);
+
+    // Should have no diagnostics
+    assert.strictEqual(
+      diagnostics.length,
+      0,
+      `Should have no diagnostics for HTML in {{else}} blocks, but got ${diagnostics.length}: ${diagnostics
+        .map(d => d.message)
+        .join(', ')}`
+    );
+  });
+
+  it('should not error on HTML tags inside multiple {{#if}} blocks with same condition', async () => {
+    const content = `<template name="newProgram">
+  <div class="form-group row">
+    <div class="col-sm-12">
+      {{#if (sessionVar 'help')}}
+        <p class="help-text">
+          First help text.
+        </p>
+      {{/if}}
+    </div>
+  </div>
+
+  <div class="form-group row">
+    <div class="col-sm-12">
+      {{#if (sessionVar 'help')}}
+        <p class="help-text">
+          Second help text.
+        </p>
+        <p class="help-text">
+          Third help text.
+        </p>
+      {{/if}}
+    </div>
+  </div>
+</template>`;
+
+    const document = TextDocument.create('file:///test.html', 'html', 1, content);
+    const diagnostics: any[] = [];
+
+    const mockConnection = {
+      sendDiagnostics: (params: any) => {
+        diagnostics.push(...params.diagnostics);
+      },
+      workspace: {
+        getConfiguration: () => Promise.resolve(mockSettings)
+      }
+    };
+
+    const config = createMockConfig({
+      connection: mockConnection as any
+    });
+
+    await validateTextDocument(config, document);
+
+    // Should have no diagnostics
+    assert.strictEqual(
+      diagnostics.length,
+      0,
+      `Should have no diagnostics for multiple {{#if}} blocks, but got ${diagnostics.length}: ${diagnostics
+        .map(d => `Line ${d.range.start.line + 1}: ${d.message}`)
+        .join(', ')}`
+    );
+  });
+
+  it('should not error on nested {{#if}} blocks inside {{else}} branch', async () => {
+    const content = `<template name="testTemplate">
+  {{#if checkSomething 'stringValue'}}
+    <div>First branch</div>
+  {{else}}
+    <section>
+      {{#if anotherThing}}
+        <p>Nested if content</p>
+      {{/if}}
+    </section>
+  {{/if}}
+</template>`;
+
+    const document = TextDocument.create('file:///test.html', 'html', 1, content);
+    const diagnostics: any[] = [];
+
+    const mockConnection = {
+      sendDiagnostics: (params: any) => {
+        diagnostics.push(...params.diagnostics);
+      },
+      workspace: {
+        getConfiguration: () => Promise.resolve(mockSettings)
+      }
+    };
+
+    const config = createMockConfig({
+      connection: mockConnection as any
+    });
+
+    await validateTextDocument(config, document);
+
+    // Should have no diagnostics
+    assert.strictEqual(
+      diagnostics.length,
+      0,
+      `Should have no diagnostics for nested {{#if}} in {{else}}, but got ${diagnostics.length}: ${diagnostics
+        .map(d => `Line ${d.range.start.line + 1}: ${d.message}`)
+        .join(', ')}`
+    );
+  });
+
+  it('should handle multi-line <p> tags inside {{#if}} blocks', async () => {
+    const content = `<template name="newProgram">
+  <div class="col-sm-12">
+    {{#if (sessionVar 'help')}}
+      <p class="help-text">
+        A Program's tract is its area of study, or the set of Programs to
+        which it belongs.
+      </p>
+    {{/if}}
+  </div>
+</template>`;
+
+    const document = TextDocument.create('file:///test.html', 'html', 1, content);
+    const diagnostics: any[] = [];
+
+    const mockConnection = {
+      sendDiagnostics: (params: any) => {
+        diagnostics.push(...params.diagnostics);
+      },
+      workspace: {
+        getConfiguration: () => Promise.resolve(mockSettings)
+      }
+    };
+
+    const config = createMockConfig({
+      connection: mockConnection as any
+    });
+
+    await validateTextDocument(config, document);
+
+    // Should have no diagnostics
+    assert.strictEqual(
+      diagnostics.length,
+      0,
+      `Should have no diagnostics for multi-line <p> in {{#if}}, but got ${diagnostics.length}: ${diagnostics
+        .map(d => `Line ${d.range.start.line + 1}: ${d.message}`)
+        .join('\n  ')}`
+    );
   });
 });

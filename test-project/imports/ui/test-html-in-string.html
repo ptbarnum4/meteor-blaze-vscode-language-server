@@ -1,0 +1,17 @@
+<template name="test">
+  {{#if isInRole 'admin,super,admiral' 'confirmed'}}
+    <button type="button"
+      data-bs-toggle="popover"
+      data-bs-trigger="hover"
+      data-bs-placement="bottom"
+      data-bs-html="true"
+      data-bs-content="
+        <div class='text-center'>
+           Toggle your sessions
+        </div>"
+      id="btn-me"
+      class="btn {{getMeToggleClass}} navbar-btn">
+      <i class="fa fa-user-circle"></i>
+    </button>
+  {{/if}}
+</template>

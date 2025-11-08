@@ -1,0 +1,117 @@
+<!-- css acronym is apn admin-sessions-new -->
+<template name="newProgram">
+  <main id="newProgram">
+    <form id="form-new-program"
+      class="new-program-form">
+      <div class="row">
+        <div class="col col-md-11">
+          <h3>Create New Program</h3>
+        </div>
+        <div class="col col-md-1">{{> help}}</div>
+
+      </div>
+
+      <div class="form-group row">
+        <div class="super-label col-sm-2">Type</div>
+        <div class="col-sm-10">
+          <select class="form-control"
+            id="select-type"
+            name="type"
+            required>
+            <option value="default"
+              selected
+              disabled>
+              Select Program type...
+            </option>
+            {{#each programType in programTypes}}
+              <option value="{{programType.value}}">{{programType.label}}</option>
+            {{/each}}
+          </select>
+        </div>
+        <div class="col-sm-12">
+          {{#if (sessionVar 'help')}}
+            <p class="help-text">
+              A Program's type infers both how its conducted, ie, over time or a
+              limited session, and what students receive for completing the
+              Program, ie, a certificate and the opportunity to move onto the next
+              program, or, it's a workshop that happens over one day, and is
+              merely a learning opportunity.
+            </p>
+          {{/if}}
+        </div>
+      </div>
+
+      <div class="form-group row">
+        <div class="super-label col-sm-2">Tract</div>
+        <div class="col-sm-10">
+          <select class="form-control"
+            id="select-tract"
+            name="tract"
+            required>
+            <option value="default"
+              selected
+              disabled>
+              Select Program tract...
+            </option>
+            {{#each tracts}}
+              <option value="{{this}}">{{this}}</option>
+            {{/each}}
+          </select>
+        </div>
+        <div class="col-sm-12">
+          {{#if (sessionVar 'help')}}
+            <p class="help-text">
+              A Program's tract is its area of study, or the set of Programs to
+              which it belongs.
+            </p>
+          {{/if}}
+        </div>
+      </div>
+
+      <div class="form-group row">
+        <div class="super-label col-sm-2">Details</div>
+        <div class="col-sm-10">
+          {{> searchInUse config=configSearchName}}
+          {{> searchInUse config=configSearchPrefix}}
+          <div class="form-group">
+            <label class="minor-label"
+              for="desc">Description</label>
+            <textarea id="desc"
+              name="desc"
+              type="text"
+              class="form-control"
+              autocomplete="off"
+              maxlength="85"
+              placeholder="Provide a brief description for the Program..."></textarea>
+          </div>
+        </div>
+        <div class="col-sm-12">
+          {{#if (sessionVar 'help')}}
+            <p class="help-text">
+              Provide a unique name for the Program, and a brief description.
+            </p>
+            <p class="help-text">
+              Provide a unique short 2 or 3 character prefix for the Program. This
+              will be used to generate names for services like GitHub teams or
+              Slack channels.
+            </p>
+          {{/if}}
+        </div>
+      </div>
+      <div class="row">
+        <div class="new-program-form-footer px-0">
+          <button type="button"
+            id="btn-cancel-new-program"
+            class="btn btn-default">
+            Cancel
+          </button>
+          <button type="submit"
+            id="btn-create-new-program"
+            class="btn btn-outline-success">
+            Create
+          </button>
+        </div>
+      </div>
+    </form>
+  </main>
+</template>

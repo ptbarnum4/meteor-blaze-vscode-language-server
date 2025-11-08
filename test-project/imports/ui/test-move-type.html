@@ -1,0 +1,33 @@
+<template name="moveType">
+  <section class="section-move-type">
+    {{#if isType 'sessions'}}
+      <!-- show select session -->
+      {{> searchEntities options=options}}
+    {{else}}
+      <section class="section-move-internal">
+        <p>
+          Students will be moved to Session <span class="green">{{type}}</span>.
+          This move will preserve the student's progress in the Session, including
+          their report card.
+        </p>
+
+        {{#if isType 'dropouts'}}
+          <p>
+            Students dropped from the Session will have their report card set to a
+            <span class="red">status of red</span>.
+          </p>
+        {{/if}}
+
+        <p>
+          <strong>Note: </strong>Within the left-side list of students, those
+          <span class="red">marked in red</span> cannot be moved by the selected
+          move type.
+        </p>
+        <hr class="hr-4" />
+        <button id="btn-move"
+          class="btn btn-success w-full">Move</button>
+      </section>
+
+    {{/if}}
+  </section>
+</template>

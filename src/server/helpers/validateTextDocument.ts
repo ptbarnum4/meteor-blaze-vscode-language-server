@@ -194,7 +194,7 @@ function validateHtmlBlazeNesting(text: string, document: TextDocument): Diagnos
   const diagnostics: Diagnostic[] = [];
 
   interface Tag {
-    type: 'html-open' | 'html-close' | 'blaze-open' | 'blaze-close';
+    type: 'html-open' | 'html-close' | 'blaze-open' | 'blaze-close' | 'blaze-else';
     name: string;
     position: Range;
     isVoid?: boolean;
@@ -220,6 +220,58 @@ function validateHtmlBlazeNesting(text: string, document: TextDocument): Diagnos
     'wbr'
   ]);
 
+  // Helper function to check if a position is within a quoted string anywhere in the document
+  const isPositionInQuotedString = (position: number): boolean => {
+    let inSingleQuote = false;
+    let inDoubleQuote = false;
+    let inHandlebars = 0; // Track nesting level of handlebars expressions
+
+    for (let i = 0; i < position; i++) {
+      const char = text[i];
+      const nextChar = i < text.length - 1 ? text[i + 1] : '';
+      const prevChar = i > 0 ? text[i - 1] : '';
+
+      // Track Handlebars expression boundaries {{...}}
+      // Only track if we're not inside a quote
+      if (!inSingleQuote && !inDoubleQuote) {
+        if (char === '{' && nextChar === '{') {
+          inHandlebars++;
+          i++; // Skip the next '{'
+          continue;
+        } else if (char === '}' && nextChar === '}' && inHandlebars > 0) {
+          inHandlebars--;
+          i++; // Skip the next '}'
+          continue;
+        }
+      }
+
+      // Only track quotes outside of Handlebars expressions
+      // AND only if preceded by = or whitespace (to avoid apostrophes in text content)
+      if (inHandlebars === 0) {
+        const isQuoteContext = prevChar === '=' || /\s/.test(prevChar);
+
+        // Check for unescaped quotes
+        if (char === '"' && prevChar !== '\\') {
+          if (!inSingleQuote && isQuoteContext) {
+            inDoubleQuote = !inDoubleQuote;
+          } else if (inDoubleQuote) {
+            // Always close double quote even if not in quote context
+            inDoubleQuote = false;
+          }
+        } else if (char === "'" && prevChar !== '\\') {
+          if (!inDoubleQuote && isQuoteContext) {
+            inSingleQuote = !inSingleQuote;
+          } else if (inSingleQuote) {
+            // Always close single quote even if not in quote context
+            inSingleQuote = false;
+          }
+        }
+      }
+    }
+
+    return inSingleQuote || inDoubleQuote;
+  };
+
   // Find HTML opening tags
   const htmlOpenPattern = /<([a-zA-Z][a-zA-Z0-9-]*)\b[^>]*>/g;
   let match;
@@ -230,6 +282,11 @@ function validateHtmlBlazeNesting(text: string, document: TextDocument): Diagnos
     // Skip if this tag is within a comment
     const commentInfo = isWithinComment(text, matchStart);
     if (commentInfo.isWithin) {
+      continue;
+    }
+
+    // Skip if this tag is within a quoted attribute value
+    if (isPositionInQuotedString(matchStart)) {
       continue;
     }
 
@@ -256,6 +313,11 @@ function validateHtmlBlazeNesting(text: string, document: TextDocument): Diagnos
     // Skip if this tag is within a comment
     const commentInfo = isWithinComment(text, matchStart);
     if (commentInfo.isWithin) {
+      continue;
+    }
+
+    // Skip if this tag is within a quoted attribute value
+    if (isPositionInQuotedString(matchStart)) {
       continue;
     }
 
@@ -300,6 +362,20 @@ function validateHtmlBlazeNesting(text: string, document: TextDocument): Diagnos
     });
   }
 
+  // Find Blaze else blocks ({{else}}, {{^}}, {{else if}})
+  const blazeElsePattern = /\{\{\s*(?:else|[\^])\b[^}]*\}\}/g;
+  while ((match = blazeElsePattern.exec(text)) !== null) {
+    const startPos = document.positionAt(match.index);
+    const endPos = document.positionAt(match.index + match[0].length);
+    const range = Range.create(startPos, endPos);
+
+    tags.push({
+      type: 'blaze-else',
+      name: 'else',
+      position: range
+    });
+  }
+
   // Sort tags by position
   tags.sort((a, b) => {
     if (a.position.start.line !== b.position.start.line) {
@@ -314,6 +390,21 @@ function validateHtmlBlazeNesting(text: string, document: TextDocument): Diagnos
   for (const tag of tags) {
     if (tag.type === 'html-open' || tag.type === 'blaze-open') {
       stack.push(tag);
+    } else if (tag.type === 'blaze-else') {
+      // {{else}} acts as a boundary: remove all HTML tags since the last Blaze block
+      // This allows HTML to be opened in {{#if}} and closed in {{else}} or vice versa
+      let lastBlazeIndex = -1;
+      for (let i = stack.length - 1; i >= 0; i--) {
+        if (stack[i].type === 'blaze-open') {
+          lastBlazeIndex = i;
+          break;
+        }
+      }
+
+      // Remove all HTML tags after the last Blaze block
+      if (lastBlazeIndex >= 0) {
+        stack.splice(lastBlazeIndex + 1);
+      }
     } else if (tag.type === 'html-close' || tag.type === 'blaze-close') {
       // Find the matching opening tag
       let matchedIndex = -1;
@@ -389,6 +480,58 @@ function findInvalidBlocksInHtmlTags(text: string, textDocument: TextDocument): 
   const diagnostics: Diagnostic[] = [];
 
   try {
+    // Helper function to check if a position is within a quoted string anywhere in the document
+    const isPositionInQuotedString = (position: number): boolean => {
+      let inSingleQuote = false;
+      let inDoubleQuote = false;
+      let inHandlebars = 0; // Track nesting level of handlebars expressions
+
+      for (let i = 0; i < position; i++) {
+        const char = text[i];
+        const nextChar = i < text.length - 1 ? text[i + 1] : '';
+        const prevChar = i > 0 ? text[i - 1] : '';
+
+        // Track Handlebars expression boundaries {{...}}
+        // Only track if we're not inside a quote
+        if (!inSingleQuote && !inDoubleQuote) {
+          if (char === '{' && nextChar === '{') {
+            inHandlebars++;
+            i++; // Skip the next '{'
+            continue;
+          } else if (char === '}' && nextChar === '}' && inHandlebars > 0) {
+            inHandlebars--;
+            i++; // Skip the next '}'
+            continue;
+          }
+        }
+
+        // Only track quotes outside of Handlebars expressions
+        // AND only if preceded by = or whitespace (to avoid apostrophes in text content)
+        if (inHandlebars === 0) {
+          const isQuoteContext = prevChar === '=' || /\s/.test(prevChar);
+
+          // Check for unescaped quotes
+          if (char === '"' && prevChar !== '\\') {
+            if (!inSingleQuote && isQuoteContext) {
+              inDoubleQuote = !inDoubleQuote;
+            } else if (inDoubleQuote) {
+              // Always close double quote even if not in quote context
+              inDoubleQuote = false;
+            }
+          } else if (char === "'" && prevChar !== '\\') {
+            if (!inDoubleQuote && isQuoteContext) {
+              inSingleQuote = !inSingleQuote;
+            } else if (inSingleQuote) {
+              // Always close single quote even if not in quote context
+              inSingleQuote = false;
+            }
+          }
+        }
+      }
+
+      return inSingleQuote || inDoubleQuote;
+    };
+
     // Find all HTML opening tags (including their full content until >)
     const htmlTagPattern = /<([a-zA-Z][a-zA-Z0-9-]*)\b([^>]*)>/g;
     let tagMatch;
@@ -405,6 +548,11 @@ function findInvalidBlocksInHtmlTags(text: string, textDocument: TextDocument): 
       const tagEndCommentInfo = isWithinComment(text, tagEnd);
 
       if (tagStartCommentInfo.isWithin || tagEndCommentInfo.isWithin) {
+        continue;
+      }
+
+      // Skip if this tag is within a quoted attribute value
+      if (isPositionInQuotedString(tagStart)) {
         continue;
       }
 
