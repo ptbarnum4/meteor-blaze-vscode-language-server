@@ -101,7 +101,13 @@ Basic configuration in VS Code settings:
 
 ![Blaze Block Example 1](./docs/img/semanticTokenColorCustomizations_1.png)
 
+### Example Configuration Files
 
+For more configuration examples, see the example files in the [docs directory](./docs/):
+- **[example-settings.jsonc](./docs/example-settings.jsonc)** - Basic configuration
+- **[example-settings-auto-insert.jsonc](./docs/example-settings-auto-insert.jsonc)** - Auto-insert end tags
+- **[example-settings-blazeHelpers-colors.jsonc](./docs/example-settings-blazeHelpers-colors.jsonc)** - Custom helper colors
+- **[example-blaze-token-theme.jsonc](./docs/example-blaze-token-theme.jsonc)** - TextMate token customization
 
 📖 **For complete configuration options and advanced features, see [docs/SETUP.md](./docs/SETUP.md)**
 
