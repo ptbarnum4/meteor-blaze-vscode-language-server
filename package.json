@@ -2,7 +2,7 @@
   "name": "meteor-blaze-vscode-language-server",
   "displayName": "Meteor/Blaze HTML Language Server",
   "description": "A language server for the Meteor framework providing syntax highlighting, diagnostics, and code completion",
-  "version": "0.0.7",
+  "version": "0.1.0",
   "publisher": "ptbarnum4",
   "author": "ptbarnum4",
   "license": "MIT",
