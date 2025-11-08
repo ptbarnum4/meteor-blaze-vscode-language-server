@@ -364,6 +364,104 @@ function validateHtmlBlazeNesting(text: string, document: TextDocument): Diagnos
   return diagnostics;
 }
 
+/**
+ * Detects invalid #if/#unless blocks within HTML element tags
+ * This syntax is invalid because Blaze blocks cannot be used to conditionally set attributes
+ * Note: Blocks within attribute string values (e.g., class="{{#if}}...{{/if}}") are valid
+ */
+function findInvalidBlocksInHtmlTags(text: string, textDocument: TextDocument): Diagnostic[] {
+  const diagnostics: Diagnostic[] = [];
+
+  try {
+    // Find all HTML opening tags (including their full content until >)
+    const htmlTagPattern = /<([a-zA-Z][a-zA-Z0-9-]*)\b([^>]*)>/g;
+    let tagMatch;
+
+    while ((tagMatch = htmlTagPattern.exec(text)) !== null) {
+      const tagName = tagMatch[1];
+      const tagContent = tagMatch[2]; // Everything between tag name and >
+      const tagStart = tagMatch.index;
+
+      // Skip if this tag is within a comment
+      const commentInfo = isWithinComment(text, tagStart);
+      if (commentInfo.isWithin) {
+        continue;
+      }
+
+      // Helper function to check if a position is within a quoted string in the tag content
+      const isWithinQuotedString = (position: number): boolean => {
+        let inSingleQuote = false;
+        let inDoubleQuote = false;
+
+        for (let i = 0; i < position; i++) {
+          const char = tagContent[i];
+          const prevChar = i > 0 ? tagContent[i - 1] : '';
+
+          // Check for unescaped quotes
+          if (char === '"' && prevChar !== '\\') {
+            if (!inSingleQuote) {
+              inDoubleQuote = !inDoubleQuote;
+            }
+          } else if (char === "'" && prevChar !== '\\') {
+            if (!inDoubleQuote) {
+              inSingleQuote = !inSingleQuote;
+            }
+          }
+        }
+
+        return inSingleQuote || inDoubleQuote;
+      };
+
+      // Check if this tag contains any #if or #unless blocks
+      const blockPattern = /\{\{\s*#(if|unless)\b[^}]*\}\}/g;
+      let blockMatch;
+
+      while ((blockMatch = blockPattern.exec(tagContent)) !== null) {
+        const blockType = blockMatch[1];
+        const blockStartInTag = blockMatch.index;
+
+        // Skip if the block is within a quoted attribute value (which is valid)
+        if (isWithinQuotedString(blockStartInTag)) {
+          continue;
+        }
+
+        // Calculate absolute position in the document
+        // tagStart is the position of <
+        // We need to add the offset within tagContent plus the tag name length and <
+        const blockStart = tagStart + 1 + tagName.length + blockStartInTag;
+
+        // Find the corresponding closing tag for this block
+        const closingPattern = new RegExp(`\\{\\{\\s*/${blockType}\\s*\\}\\}`, 'g');
+        closingPattern.lastIndex = blockStart + blockMatch[0].length;
+        const closingMatch = closingPattern.exec(text);
+
+        let blockEnd = blockStart + blockMatch[0].length;
+
+        if (closingMatch) {
+          // Extend the error range to include the entire block from {{#if}} to {{/if}}
+          blockEnd = closingMatch.index + closingMatch[0].length;
+        }
+
+        const startPos = textDocument.positionAt(blockStart);
+        const endPos = textDocument.positionAt(blockEnd);
+
+        diagnostics.push({
+          severity: DiagnosticSeverity.Error,
+          range: Range.create(startPos, endPos),
+          message: `Invalid syntax: {{#${blockType}}} blocks cannot be used within HTML element tags to conditionally set attributes. Use a helper function or restructure your template instead.`,
+          source: 'meteor-blaze'
+        });
+      }
+    }
+  } catch (error) {
+    // If parsing fails, don't add diagnostics to avoid false positives
+    // Log for debugging purposes
+    console.error('Error in findInvalidBlocksInHtmlTags:', error);
+  }
+
+  return diagnostics;
+}
+
 // Helper function to find duplicate template parameters
 function findDuplicateTemplateParameters(text: string, textDocument: TextDocument): Diagnostic[] {
   const diagnostics: Diagnostic[] = [];
@@ -489,6 +587,10 @@ export const validateTextDocument = async (
     // Check for HTML/Blaze nesting violations
     const nestingDiagnostics = validateHtmlBlazeNesting(text, textDocument);
     diagnostics.push(...nestingDiagnostics);
+
+    // Check for invalid #if/#unless blocks within HTML element tags
+    const invalidBlocksInTags = findInvalidBlocksInHtmlTags(text, textDocument);
+    diagnostics.push(...invalidBlocksInTags);
 
     // Check for duplicate template parameters
     const duplicateParamDiagnostics = findDuplicateTemplateParameters(text, textDocument);

@@ -135,4 +135,292 @@ describe('validateTextDocument', () => {
 
     assert.ok(true);
   });
+
+  it('should detect invalid #if blocks within HTML element tags', async () => {
+    const content = `
+      <template name="testTemplate">
+        <select>
+          <option {{#if something}}selected{{/if}}>
+            Some option
+          </option>
+        </select>
+      </template>
+    `;
+
+    const document = TextDocument.create('file:///test.html', 'html', 1, content);
+    const diagnostics: any[] = [];
+
+    const mockConnection = {
+      sendDiagnostics: (params: any) => {
+        diagnostics.push(...params.diagnostics);
+      },
+      workspace: {
+        getConfiguration: () => Promise.resolve(mockSettings)
+      }
+    };
+
+    const config = createMockConfig({
+      connection: mockConnection as any
+    });
+
+    await validateTextDocument(config, document);
+
+    // Should have at least one diagnostic for the invalid #if block
+    assert.ok(diagnostics.length > 0, 'Should have diagnostics');
+
+    const invalidBlockDiagnostic = diagnostics.find(d =>
+      d.message.includes('{{#if}} blocks cannot be used within HTML element tags')
+    );
+
+    assert.ok(invalidBlockDiagnostic, 'Should have diagnostic for invalid #if in tag');
+  });
+
+  it('should detect invalid #unless blocks within HTML element tags', async () => {
+    const content = `
+      <template name="testTemplate">
+        <button {{#unless enabled}}disabled{{/unless}}>Click me</button>
+      </template>
+    `;
+
+    const document = TextDocument.create('file:///test.html', 'html', 1, content);
+    const diagnostics: any[] = [];
+
+    const mockConnection = {
+      sendDiagnostics: (params: any) => {
+        diagnostics.push(...params.diagnostics);
+      },
+      workspace: {
+        getConfiguration: () => Promise.resolve(mockSettings)
+      }
+    };
+
+    const config = createMockConfig({
+      connection: mockConnection as any
+    });
+
+    await validateTextDocument(config, document);
+
+    // Should have at least one diagnostic for the invalid #unless block
+    assert.ok(diagnostics.length > 0, 'Should have diagnostics');
+
+    const invalidBlockDiagnostic = diagnostics.find(d =>
+      d.message.includes('{{#unless}} blocks cannot be used within HTML element tags')
+    );
+
+    assert.ok(invalidBlockDiagnostic, 'Should have diagnostic for invalid #unless in tag');
+  });
+
+  it('should detect multiple invalid blocks in one HTML tag', async () => {
+    const content = `
+      <template name="testTemplate">
+        <input type="text" {{#if required}}required{{/if}} {{#if readonly}}readonly{{/if}} />
+      </template>
+    `;
+
+    const document = TextDocument.create('file:///test.html', 'html', 1, content);
+    const diagnostics: any[] = [];
+
+    const mockConnection = {
+      sendDiagnostics: (params: any) => {
+        diagnostics.push(...params.diagnostics);
+      },
+      workspace: {
+        getConfiguration: () => Promise.resolve(mockSettings)
+      }
+    };
+
+    const config = createMockConfig({
+      connection: mockConnection as any
+    });
+
+    await validateTextDocument(config, document);
+
+    // Should have diagnostics for both invalid #if blocks
+    const invalidBlockDiagnostics = diagnostics.filter(d =>
+      d.message.includes('blocks cannot be used within HTML element tags')
+    );
+
+    assert.strictEqual(invalidBlockDiagnostics.length, 2, 'Should have two diagnostics for two invalid blocks');
+  });
+
+  it('should allow #if blocks outside of HTML element tags', async () => {
+    const content = `
+      <template name="testTemplate">
+        {{#if user}}
+          <div class="user-info">
+            <p>{{user.name}}</p>
+          </div>
+        {{/if}}
+      </template>
+    `;
+
+    const document = TextDocument.create('file:///test.html', 'html', 1, content);
+    const diagnostics: any[] = [];
+
+    const mockConnection = {
+      sendDiagnostics: (params: any) => {
+        diagnostics.push(...params.diagnostics);
+      },
+      workspace: {
+        getConfiguration: () => Promise.resolve(mockSettings)
+      }
+    };
+
+    const config = createMockConfig({
+      connection: mockConnection as any
+    });
+
+    await validateTextDocument(config, document);
+
+    // Should have no diagnostics for blocks outside tags
+    const invalidBlockDiagnostics = diagnostics.filter(d =>
+      d.message.includes('blocks cannot be used within HTML element tags')
+    );
+
+    assert.strictEqual(invalidBlockDiagnostics.length, 0, 'Should have no diagnostics for blocks outside tags');
+  });
+
+  it('should highlight entire block from {{#if}} to {{/if}}', async () => {
+    const content = `<template name="test">
+<input type="checkbox" {{#if something}}checked{{/if}} />
+</template>`;
+
+    const document = TextDocument.create('file:///test.html', 'html', 1, content);
+    const diagnostics: any[] = [];
+
+    const mockConnection = {
+      sendDiagnostics: (params: any) => {
+        diagnostics.push(...params.diagnostics);
+      },
+      workspace: {
+        getConfiguration: () => Promise.resolve(mockSettings)
+      }
+    };
+
+    const config = createMockConfig({
+      connection: mockConnection as any
+    });
+
+    await validateTextDocument(config, document);
+
+    // Should have diagnostic for the invalid block
+    const invalidBlockDiagnostic = diagnostics.find(d =>
+      d.message.includes('{{#if}} blocks cannot be used within HTML element tags')
+    );
+
+    assert.ok(invalidBlockDiagnostic, 'Should have diagnostic for invalid #if in tag');
+
+    // The range should span from {{#if to {{/if}}
+    const text = document.getText();
+    const startOffset = document.offsetAt(invalidBlockDiagnostic.range.start);
+    const endOffset = document.offsetAt(invalidBlockDiagnostic.range.end);
+    const highlightedText = text.substring(startOffset, endOffset);
+
+    // Should include both opening and closing tags
+    assert.ok(highlightedText.includes('{{#if something}}'), 'Should include opening {{#if}}');
+    assert.ok(highlightedText.includes('{{/if}}'), 'Should include closing {{/if}}');
+    assert.ok(highlightedText.includes('checked'), 'Should include content between tags');
+  });
+
+  it('should allow #if blocks within attribute string values', async () => {
+    const content = `<template name="test">
+<i class="fa {{#if isRangeLocked}}fa-lock{{else}}fa-unlock{{/if}}"></i>
+</template>`;
+
+    const document = TextDocument.create('file:///test.html', 'html', 1, content);
+    const diagnostics: any[] = [];
+
+    const mockConnection = {
+      sendDiagnostics: (params: any) => {
+        diagnostics.push(...params.diagnostics);
+      },
+      workspace: {
+        getConfiguration: () => Promise.resolve(mockSettings)
+      }
+    };
+
+    const config = createMockConfig({
+      connection: mockConnection as any
+    });
+
+    await validateTextDocument(config, document);
+
+    // Should have NO diagnostics for blocks within quoted attribute values
+    const invalidBlockDiagnostics = diagnostics.filter(d =>
+      d.message.includes('blocks cannot be used within HTML element tags')
+    );
+
+    assert.strictEqual(invalidBlockDiagnostics.length, 0, 'Should have no diagnostics for blocks within attribute string values');
+  });
+
+  it('should allow #if blocks within single-quoted attribute values', async () => {
+    const content = `<template name="test">
+<div title='{{#if active}}Active{{else}}Inactive{{/if}}'></div>
+</template>`;
+
+    const document = TextDocument.create('file:///test.html', 'html', 1, content);
+    const diagnostics: any[] = [];
+
+    const mockConnection = {
+      sendDiagnostics: (params: any) => {
+        diagnostics.push(...params.diagnostics);
+      },
+      workspace: {
+        getConfiguration: () => Promise.resolve(mockSettings)
+      }
+    };
+
+    const config = createMockConfig({
+      connection: mockConnection as any
+    });
+
+    await validateTextDocument(config, document);
+
+    // Should have NO diagnostics for blocks within quoted attribute values
+    const invalidBlockDiagnostics = diagnostics.filter(d =>
+      d.message.includes('blocks cannot be used within HTML element tags')
+    );
+
+    assert.strictEqual(invalidBlockDiagnostics.length, 0, 'Should have no diagnostics for blocks within single-quoted attribute values');
+  });
+
+  it('should detect invalid blocks outside quotes but not inside quotes in same tag', async () => {
+    const content = `<template name="test">
+<div class="icon {{#if locked}}locked{{/if}}" {{#if disabled}}disabled{{/if}}></div>
+</template>`;
+
+    const document = TextDocument.create('file:///test.html', 'html', 1, content);
+    const diagnostics: any[] = [];
+
+    const mockConnection = {
+      sendDiagnostics: (params: any) => {
+        diagnostics.push(...params.diagnostics);
+      },
+      workspace: {
+        getConfiguration: () => Promise.resolve(mockSettings)
+      }
+    };
+
+    const config = createMockConfig({
+      connection: mockConnection as any
+    });
+
+    await validateTextDocument(config, document);
+
+    // Should have one diagnostic for the invalid block outside quotes
+    const invalidBlockDiagnostics = diagnostics.filter(d =>
+      d.message.includes('blocks cannot be used within HTML element tags')
+    );
+
+    assert.strictEqual(invalidBlockDiagnostics.length, 1, 'Should have one diagnostic for block outside quotes');
+
+    // The diagnostic should be for the 'disabled' block, not the one inside class
+    const text = document.getText();
+    const startOffset = document.offsetAt(invalidBlockDiagnostics[0].range.start);
+    const endOffset = document.offsetAt(invalidBlockDiagnostics[0].range.end);
+    const highlightedText = text.substring(startOffset, endOffset);
+
+    assert.ok(highlightedText.includes('disabled'), 'Should flag the block outside quotes');
+    assert.ok(!highlightedText.includes('locked'), 'Should not flag the block inside quotes');
+  });
 });
