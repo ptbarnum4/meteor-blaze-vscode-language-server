@@ -225,6 +225,14 @@ function validateHtmlBlazeNesting(text: string, document: TextDocument): Diagnos
   let match;
   while ((match = htmlOpenPattern.exec(text)) !== null) {
     const tagName = match[1].toLowerCase();
+    const matchStart = match.index;
+
+    // Skip if this tag is within a comment
+    const commentInfo = isWithinComment(text, matchStart);
+    if (commentInfo.isWithin) {
+      continue;
+    }
+
     const startPos = document.positionAt(match.index);
     const endPos = document.positionAt(match.index + match[0].length);
     const range = Range.create(startPos, endPos);
@@ -243,6 +251,14 @@ function validateHtmlBlazeNesting(text: string, document: TextDocument): Diagnos
   const htmlClosePattern = /<\/([a-zA-Z][a-zA-Z0-9-]*)\s*>/g;
   while ((match = htmlClosePattern.exec(text)) !== null) {
     const tagName = match[1].toLowerCase();
+    const matchStart = match.index;
+
+    // Skip if this tag is within a comment
+    const commentInfo = isWithinComment(text, matchStart);
+    if (commentInfo.isWithin) {
+      continue;
+    }
+
     const startPos = document.positionAt(match.index);
     const endPos = document.positionAt(match.index + match[0].length);
     const range = Range.create(startPos, endPos);
@@ -381,10 +397,14 @@ function findInvalidBlocksInHtmlTags(text: string, textDocument: TextDocument): 
       const tagName = tagMatch[1];
       const tagContent = tagMatch[2]; // Everything between tag name and >
       const tagStart = tagMatch.index;
+      const tagEnd = tagMatch.index + tagMatch[0].length - 1; // Position of the closing >
 
       // Skip if this tag is within a comment
-      const commentInfo = isWithinComment(text, tagStart);
-      if (commentInfo.isWithin) {
+      // Check both the opening < and the closing > to ensure the entire tag is not in a comment
+      const tagStartCommentInfo = isWithinComment(text, tagStart);
+      const tagEndCommentInfo = isWithinComment(text, tagEnd);
+
+      if (tagStartCommentInfo.isWithin || tagEndCommentInfo.isWithin) {
         continue;
       }
 

@@ -1,0 +1,22 @@
+<template name="testComments">
+  <!-- This should NOT trigger an error (HTML comment) -->
+  <!-- <div {{#if test}}class="active"{{/if}}></div> -->
+
+  {{!-- This should NOT trigger an error (Handlebars comment) --}}
+  {{!-- <div class="pull-right edit-exam"> --}}
+
+  {{! This should NOT trigger an error (inline Handlebars comment) }}
+  {{! <button {{#if active}}disabled{{/if}}></button> }}
+
+  <!-- Multi-line HTML comment should NOT trigger error
+  <input type="text" {{#if required}}required{{/if}} />
+  <button {{#unless enabled}}disabled{{/unless}}>Click</button>
+  -->
+
+  {{!-- Multi-line Handlebars comment should NOT trigger error
+  <div {{#if isActive}}class="active"{{/if}}>Content</div>
+  --}}
+
+  <!-- This SHOULD trigger an error (not in comment) -->
+  <div {{#if isActive}}class="active"{{/if}}>Content</div>
+</template>

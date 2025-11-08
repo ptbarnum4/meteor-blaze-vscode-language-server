@@ -63,6 +63,26 @@ describe('isWithinComment', () => {
       assert.strictEqual(result.isWithin, true);
       assert.strictEqual(result.commentType, 'handlebars-inline');
     });
+
+    it('should handle nested Handlebars expressions in inline comments', () => {
+      const text = '{{! <button {{#if active}}disabled{{/if}}></button> }}';
+
+      // Test that positions within the comment are detected as being in a comment
+      const offset1 = 10; // Inside '<button'
+      const result1 = isWithinComment(text, offset1);
+      assert.strictEqual(result1.isWithin, true);
+      assert.strictEqual(result1.commentType, 'handlebars-inline');
+
+      const offset2 = 25; // Inside '{{#if active}}'
+      const result2 = isWithinComment(text, offset2);
+      assert.strictEqual(result2.isWithin, true);
+      assert.strictEqual(result2.commentType, 'handlebars-inline');
+
+      const offset3 = 40; // Inside '{{/if}}'
+      const result3 = isWithinComment(text, offset3);
+      assert.strictEqual(result3.isWithin, true);
+      assert.strictEqual(result3.commentType, 'handlebars-inline');
+    });
   });
 
   describe('JavaScript Comments', () => {

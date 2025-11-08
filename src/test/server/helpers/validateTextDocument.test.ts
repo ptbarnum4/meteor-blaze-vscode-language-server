@@ -423,4 +423,152 @@ describe('validateTextDocument', () => {
     assert.ok(highlightedText.includes('disabled'), 'Should flag the block outside quotes');
     assert.ok(!highlightedText.includes('locked'), 'Should not flag the block inside quotes');
   });
+
+  it('should not validate blocks within HTML comments', async () => {
+    const content = `<template name="test">
+<!-- <div {{#if test}}class="active"{{/if}}></div> -->
+<div>Valid content</div>
+</template>`;
+
+    const document = TextDocument.create('file:///test.html', 'html', 1, content);
+    const diagnostics: any[] = [];
+
+    const mockConnection = {
+      sendDiagnostics: (params: any) => {
+        diagnostics.push(...params.diagnostics);
+      },
+      workspace: {
+        getConfiguration: () => Promise.resolve(mockSettings)
+      }
+    };
+
+    const config = createMockConfig({
+      connection: mockConnection as any
+    });
+
+    await validateTextDocument(config, document);
+
+    // Should have no diagnostics for blocks within comments
+    const invalidBlockDiagnostics = diagnostics.filter(d =>
+      d.message.includes('blocks cannot be used within HTML element tags')
+    );
+
+    assert.strictEqual(invalidBlockDiagnostics.length, 0, 'Should have no diagnostics for blocks within HTML comments');
+  });
+
+  it('should not validate blocks within Handlebars block comments', async () => {
+    const content = `<template name="test">
+{{!-- <div class="pull-right edit-exam"> --}}
+<div>Valid content</div>
+</template>`;
+
+    const document = TextDocument.create('file:///test.html', 'html', 1, content);
+    const diagnostics: any[] = [];
+
+    const mockConnection = {
+      sendDiagnostics: (params: any) => {
+        diagnostics.push(...params.diagnostics);
+      },
+      workspace: {
+        getConfiguration: () => Promise.resolve(mockSettings)
+      }
+    };
+
+    const config = createMockConfig({
+      connection: mockConnection as any
+    });
+
+    await validateTextDocument(config, document);
+
+    // Should have no diagnostics for blocks within comments
+    const invalidBlockDiagnostics = diagnostics.filter(d =>
+      d.message.includes('blocks cannot be used within HTML element tags')
+    );
+
+    assert.strictEqual(invalidBlockDiagnostics.length, 0, 'Should have no diagnostics for blocks within Handlebars comments');
+  });
+
+  it('should not validate blocks within Handlebars inline comments with nested expressions', async () => {
+    const content = `<template name="test">
+{{! <button {{#if active}}disabled{{/if}}></button> }}
+<div>Valid content</div>
+</template>`;
+
+    const document = TextDocument.create('file:///test.html', 'html', 1, content);
+    const diagnostics: any[] = [];
+
+    const mockConnection = {
+      sendDiagnostics: (params: any) => {
+        diagnostics.push(...params.diagnostics);
+      },
+      workspace: {
+        getConfiguration: () => Promise.resolve(mockSettings)
+      }
+    };
+
+    const config = createMockConfig({
+      connection: mockConnection as any
+    });
+
+    await validateTextDocument(config, document);
+
+    // Should have no diagnostics for blocks within inline comments
+    const invalidBlockDiagnostics = diagnostics.filter(d =>
+      d.message.includes('blocks cannot be used within HTML element tags')
+    );
+
+    assert.strictEqual(invalidBlockDiagnostics.length, 0, 'Should have no diagnostics for blocks within Handlebars inline comments');
+
+    // Also check that there are no unmatched block errors
+    const unmatchedBlockDiagnostics = diagnostics.filter(d =>
+      d.message.includes('Missing closing tag') || d.message.includes('without matching opening')
+    );
+
+    assert.strictEqual(unmatchedBlockDiagnostics.length, 0, 'Should have no unmatched block diagnostics for blocks within comments');
+  });
+
+  it('should handle the exact user example with commented HTML', async () => {
+    const content = `<template name="test">
+   {{#if isEditingExamName}}
+        <div id="exam-name">
+          <button id="save-exam-name-btn">Save</button>
+        </div>
+      {{else}}
+        <div id="exam-name">
+          <label>{{exam.name}}</label>
+          {{!-- <div class="pull-right edit-exam"> --}}
+          <button id="edit-exam-name-btn">Edit</button>
+        </div>
+      {{/if}}
+</template>`;
+
+    const document = TextDocument.create('file:///test.html', 'html', 1, content);
+    const diagnostics: any[] = [];
+
+    const mockConnection = {
+      sendDiagnostics: (params: any) => {
+        diagnostics.push(...params.diagnostics);
+      },
+      workspace: {
+        getConfiguration: () => Promise.resolve(mockSettings)
+      }
+    };
+
+    const config = createMockConfig({
+      connection: mockConnection as any
+    });
+
+    await validateTextDocument(config, document);
+
+    // Debug: log any diagnostics
+    if (diagnostics.length > 0) {
+      console.log('Diagnostics found:', diagnostics.map(d => ({
+        message: d.message,
+        range: d.range
+      })));
+    }
+
+    // Should have no diagnostics - the commented div should be ignored
+    assert.strictEqual(diagnostics.length, 0, `Should have no diagnostics for the user example, but got ${diagnostics.length}: ${diagnostics.map(d => d.message).join(', ')}`);
+  });
 });

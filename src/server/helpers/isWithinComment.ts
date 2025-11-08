@@ -138,12 +138,23 @@ function checkHandlebarsComment(text: string, offset: number): IsWithinCommentRe
   }
 
   if (inlineCommentStart !== -1) {
-    // Look for inline comment end
+    // Look for inline comment end - need to handle nested {{ }} within the comment
     let inlineCommentEnd = -1;
+    let braceDepth = 1; // We've already seen the opening {{
+
     for (let i = inlineCommentStart + 3; i <= text.length - 2; i++) {
-      if (text.substring(i, i + 2) === '}}') {
-        inlineCommentEnd = i + 2;
-        break;
+      const twoChar = text.substring(i, i + 2);
+
+      if (twoChar === '{{') {
+        braceDepth++;
+        i++; // Skip next char since we've already processed it
+      } else if (twoChar === '}}') {
+        braceDepth--;
+        if (braceDepth === 0) {
+          inlineCommentEnd = i + 2;
+          break;
+        }
+        i++; // Skip next char since we've already processed it
       }
     }
 
