@@ -4,6 +4,116 @@ All notable changes to the "meteor-blaze-vscode-language-server" extension will 
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [0.0.8] - 2025-11-08
+
+### ✨ New Features
+
+#### Invalid Block Detection in HTML Tags
+- **Detects invalid Blaze syntax patterns**: Extension now identifies and reports errors when `{{#if}}` or `{{#unless}}` blocks are used directly within HTML element tags to conditionally set attributes
+- **Smart validation**: Correctly allows blocks within quoted attribute values (e.g., `class="{{#if}}...{{/if}}"`)
+- **Comment-aware**: Skips validation within HTML (`<!-- -->`) and Handlebars (`{{!-- --}}`, `{{! }}`) comments
+- **Helpful error messages**: Provides clear guidance on proper alternatives (helper functions or template restructuring)
+- **Complete block highlighting**: Highlights entire blocks from `{{#if}}` to `{{/if}}` for better error visibility
+
+#### Workspace-Wide Validation
+- **New command**: "Meteor/Blaze: Validate All Templates in Workspace" accessible via Command Palette
+- **Automatic validation on startup**: Validates all `.html`, `.htm`, `.meteor`, and `.hbs` files when language server starts (configurable)
+- **New setting**: `meteorLanguageServer.validateWorkspaceOnStartup` (default: `true`)
+- **Centralized error management**: All validation errors appear in the Problems panel for easy navigation
+- **Click-to-fix**: Jump directly to problematic code from the Problems panel
+- **Large project support**: Efficiently handles projects with many template files
+
+#### Enhanced HTML/Blaze Nesting Validation
+- **{{else}} boundary support**: Added `{{else}}` tag recognition as a structural boundary
+- **Flexible HTML placement**: Allows HTML to be opened in `{{#if}}` and closed in `{{else}}` (or vice versa)
+- **Better nested block handling**: Improved validation of nested blocks within `{{else}}` branches
+- **Context-aware validation**: Skips validation for tags within comments or quoted strings
+
+### 🐛 Bug Fixes
+
+#### Duplicate Parameter Detection
+- **Fixed false positives for hyphenated attributes**: Now correctly distinguishes between similar hyphenated HTML attributes (e.g., `data-test-id`, `data-custom-id`, `data-id`)
+- **Technical improvement**: Updated regex pattern from `/\b([a-zA-Z_$][a-zA-Z0-9_$]*)=/g` to `/(?:^|\s)([a-zA-Z_$][a-zA-Z0-9_$-]*)=/g` to properly handle hyphens in attribute names
+- **Eliminated false duplicates**: Attributes like `data-test-id` and `data-custom-id` are now correctly recognized as different parameters
+
+#### Handlebars Inline Comment Detection
+- **Fixed nested expression handling**: Correctly handles inline comments containing nested `{{ }}` expressions
+- **Brace depth tracking**: Implemented proper brace counting to identify true comment boundaries
+- **Eliminated false positives**: Comments like `{{! <button {{#if active}}disabled{{/if}}></button> }}` are now correctly recognized as single comments
+- **Improved parser accuracy**: No longer treats the first `}}` within a comment as the comment's end
+
+#### Quote Tracking in Template Files
+- **Smart quote detection**: Enhanced quote tracking to avoid false positives from single quotes in Handlebars expressions
+- **Context-aware parsing**: Only tracks quotes within attribute assignments, not within Handlebars expression arguments
+- **Better handling of complex templates**: Properly handles templates with quotes in parameters like `{{#if isInRole 'admin,super,admiral' 'confirmed'}}`
+- **Reduced noise**: Significantly reduced false validation errors in real-world templates
+
+### 📝 Documentation
+
+#### New Example Configuration Files
+- **example-settings.jsonc**: Basic language server configuration with block conditions and custom helpers
+- **example-settings-auto-insert.jsonc**: Auto-insert end tags configuration examples
+- **example-settings-blazeHelpers-colors.jsonc**: Custom colors for Blaze helper tokens
+- **example-blaze-token-theme.jsonc**: TextMate token color customization examples
+
+#### Updated Documentation
+- **README.md**: Added workspace validation section with configuration examples and example file references
+- **SETUP.md**: Added reference to example configuration files at the top with detailed descriptions
+- **Enhanced feature documentation**: Improved examples and use cases throughout documentation
+
+### 🏗️ Technical Changes
+
+#### New Files
+- `src/server/helpers/validateWorkspace.ts`: Workspace validation logic with recursive file discovery and error handling
+- 20+ test files in `test-project/imports/ui/`: Comprehensive test coverage for edge cases and validation scenarios
+
+#### Modified Files
+- `src/server/helpers/validateTextDocument.ts`: Core validation logic with new validators for invalid blocks and enhanced nesting
+- `src/server/helpers/isWithinComment.ts`: Enhanced comment detection with brace depth tracking for nested expressions
+- `src/server/connection/onInitialized.ts`: Auto-validation on startup with configurable settings
+- `src/server/index.ts`: Custom request handler for workspace validation command
+- `src/extension/activate.ts`: Validate workspace command registration
+- `package.json`: New command and setting configuration
+
+#### Test Coverage
+Added 20+ comprehensive test cases:
+- Invalid blocks in HTML tags (multiple scenarios)
+- Blocks within quoted attribute values (valid use cases)
+- Comment detection (HTML and Handlebars, including nested)
+- Nested blocks and complex expressions
+- Single vs. double quote handling
+- HTML within `{{else}}` blocks
+- Multi-line templates and edge cases
+- False positive prevention scenarios
+
+### 🎨 Code Quality Improvements
+
+#### Enhanced Quote Tracking Algorithm
+- Properly distinguishes between quotes in attribute assignments vs. text content
+- Handles nested Handlebars expressions within quotes
+- Tracks single and double quotes independently
+- Respects escape sequences
+
+#### Improved Comment Handling
+- Implemented brace depth tracking for inline comments
+- Handles nested `{{ }}` expressions within comments
+- Supports all comment types: HTML (`<!-- -->`), Handlebars block (`{{!-- --}}`), and inline (`{{! }}`)
+
+#### Pattern Matching Enhancements
+- Fixed regex patterns to handle hyphenated attribute names
+- Improved parameter extraction accounting for whitespace and special characters
+- Added lookbehind assertions for more accurate matching
+
+### 📊 Statistics
+- **New files**: 23
+- **Modified files**: 12
+- **Test cases added**: 20+
+- **Lines of documentation**: 100+
+- **Bug fixes**: 3 major false positive scenarios resolved
+
+### 🔄 Breaking Changes
+**None.** This release is fully backward compatible.
+
 ## [0.0.7] - 2025-09-21
 
 ### 🔄 Major Infrastructure & Dependency Updates
