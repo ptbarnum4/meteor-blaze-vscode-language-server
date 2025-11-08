@@ -645,7 +645,9 @@ function findDuplicateTemplateParameters(text: string, textDocument: TextDocumen
       const inclusionStart = match.index;
 
       // Extract all parameter names from this template inclusion
-      const parameterPattern = /\b([a-zA-Z_$][a-zA-Z0-9_$]*)\s*=/g;
+      // Match attribute names including those with hyphens (e.g., data-test-id)
+      // Use lookbehind to ensure we match from the start of the attribute name
+      const parameterPattern = /(?:^|\s)([a-zA-Z_$][a-zA-Z0-9_$-]*)\s*=/g;
       const usedParams: Array<{ name: string; start: number; end: number }> = [];
       let paramMatch;
 
@@ -665,7 +667,11 @@ function findDuplicateTemplateParameters(text: string, textDocument: TextDocumen
         const parametersStartInMatch = templateNameEnd;
 
         // The actual parameter start position in the document
-        const paramStart = inclusionStart + parametersStartInMatch + paramMatch.index;
+        // paramMatch.index is the position in parametersSection where the match starts
+        // We need to find where the parameter name (paramMatch[1]) starts within the matched text (paramMatch[0])
+        const paramNameOffsetInMatch = paramMatch[0].indexOf(paramMatch[1]);
+        const paramStart =
+          inclusionStart + parametersStartInMatch + paramMatch.index + paramNameOffsetInMatch;
         const paramEnd = paramStart + paramName.length;
 
         usedParams.push({

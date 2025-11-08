@@ -1,0 +1,28 @@
+<template name="testDuplicateParams">
+  <!-- This should NOT trigger a duplicate parameter error -->
+  {{> quickForm
+        doc=user
+        schema=schemaDetails
+        collection=collection
+        id="formUpdateDetails"
+        data-test-id='update-details'
+        type="normal"
+        resetOnSuccess=false
+        buttonClasses="btn btn-sm btn-primary btn-quickform"
+        buttonContent="Update"
+      }}
+
+  <!-- This SHOULD trigger a duplicate parameter error -->
+  {{> someTemplate
+        id="first"
+        name="test"
+        id="second"
+      }}
+
+  <!-- This should NOT trigger an error - different hyphenated attributes -->
+  {{> anotherTemplate
+        data-id="1"
+        data-test-id="2"
+        data-custom-id="3"
+      }}
+</template>
