@@ -1,0 +1,53 @@
+<template name="newProctor">
+  <div class="new-proctor">
+    {{#if shouldWait}} One moment please... {{else}}
+
+    <header>
+      <div class="heading-login-proctor">
+        <h4>Hello there! Thanks for joining Operation Spark!</h4>
+      </div>
+    </header>
+    <hr />
+    <div>
+      <div class="simple-row register-proctor-content">
+        <div class="login-logo">
+          <img
+            class="logo-register-proctor"
+            src="/img/halle-331x400.png"
+            alt=""
+          />
+        </div>
+        <section id="section-proctor-form" class="section-group">
+          {{> quickForm schema=schema doc=proctor id="formNewProctor"
+          type="normal" clearOnDestroy=true persist=false}}
+        </section>
+        <section
+          id="section-success"
+          class="alert alert-warning"
+          style="display: none"
+        >
+          <div class="simple-row">
+            <div>
+              <h4>Great Stuff!</h4>
+
+              <div class="register-proctor-success-text">
+                <p>We got your deets!</p>
+                <p>
+                  Please check your email for a message from Operation Spark
+                  requesting verification of your email address.
+                </p>
+                <p>
+                  From there, you'll be given instructions for logging in.
+                  Thanks!
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+    <hr class="hr-simple" />
+
+    {{/if}}
+  </div>
+</template>

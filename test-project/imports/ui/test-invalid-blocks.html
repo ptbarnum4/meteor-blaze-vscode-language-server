@@ -1,0 +1,49 @@
+<template name="testInvalidBlocks">
+  <!-- These should trigger lint errors -->
+
+  <!-- Example 1: Invalid use of #if in select option -->
+  <select>
+    <option {{#if something}}selected{{/if}}>
+      Some option
+    </option>
+  </select>
+
+  <!-- Example 2: Invalid use of #if in input checkbox -->
+  <input type="checkbox" {{#if something}}checked{{/if}} />
+
+  <!-- Example 3: Invalid use of #unless in disabled attribute -->
+  <button {{#unless enabled}}disabled{{/unless}}>Click me</button>
+
+  <!-- Example 4: Invalid use of #if for class attribute -->
+  <div {{#if isActive}}class="active"{{/if}}>Content</div>
+
+  <!-- Example 5: Multiple invalid blocks in one tag -->
+  <input type="text" {{#if required}}required{{/if}} {{#if readonly}}readonly{{/if}} />
+
+  <i class="fa {{#if isRangeLocked}}fa-lock{{else}}fa-unlock{{/if}}"></i>
+
+  <!-- Valid alternatives - these should NOT trigger errors -->
+
+  <!-- Using helpers instead -->
+  <select>
+    <option {{selectedIf something}}>
+      Some option
+    </option>
+  </select>
+
+  <input type="checkbox" {{checkedIf something}} />
+
+  <!-- Using conditional templates -->
+  {{#if something}}
+    <input type="checkbox" checked />
+  {{else}}
+    <input type="checkbox" />
+  {{/if}}
+
+  <!-- Blocks outside of tags are valid -->
+  {{#if user}}
+    <div class="user-info">
+      <p>{{user.name}}</p>
+    </div>
+  {{/if}}
+</template>

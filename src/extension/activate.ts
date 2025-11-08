@@ -1,19 +1,19 @@
 import path from 'path';
 import vscode from 'vscode';
 import {
-  LanguageClient,
-  LanguageClientOptions,
-  ServerOptions,
-  TransportKind
+    LanguageClient,
+    LanguageClientOptions,
+    ServerOptions,
+    TransportKind
 } from 'vscode-languageclient/node';
 
 import createCompletionItemProvider from './helpers/activate/createCompletionItemProvider';
 import createSemanticProvider from './helpers/activate/createSemanticProvider';
 import promptIfNoConfigsSet from './helpers/activate/promptIfNoConfigsSet';
 import {
-  createBlockConditionDecorationType,
-  updateBlockConditionDecorations,
-  updateDecorationType
+    createBlockConditionDecorationType,
+    updateBlockConditionDecorations,
+    updateDecorationType
 } from './helpers/blockConditions/decorationType';
 import { isMeteorProject } from './helpers/meteor';
 import { ExtensionConfig } from '/types';
@@ -123,7 +123,27 @@ export const createActivate = (extConfig: ExtensionConfig) => {
       }
     );
 
-    context.subscriptions.push(restartCommand);
+    // Register validate workspace command
+    const validateWorkspaceCommand = vscode.commands.registerCommand(
+      'meteor-blaze-vscode-language-server.validateWorkspace',
+      async () => {
+        if (!extConfig.client) {
+          vscode.window.showErrorMessage('Meteor/Blaze Language Server is not running');
+          return;
+        }
+
+        vscode.window.showInformationMessage('Validating all templates in workspace...');
+
+        try {
+          await extConfig.client.sendRequest('workspace/validateAll');
+          vscode.window.showInformationMessage('Workspace validation complete. Check the Problems panel for issues.');
+        } catch (error) {
+          vscode.window.showErrorMessage(`Workspace validation failed: ${error}`);
+        }
+      }
+    );
+
+    context.subscriptions.push(restartCommand, validateWorkspaceCommand);
 
     // Start the client. This will also launch the server
     console.info('Meteor/Blaze Language Server: Starting language client...');

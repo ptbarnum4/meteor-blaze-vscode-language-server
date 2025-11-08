@@ -14,13 +14,16 @@ describe('connection/onInitialized', () => {
 
   const createMockConnection = () => ({
     console: {
-      log: () => {} // Mock console log
+      log: () => {}, // Mock console log
+      info: () => {}, // Mock console info
+      error: () => {} // Mock console error
     },
     client: {
       register: () => Promise.resolve() // Mock client.register
     },
     workspace: {
-      onDidChangeWorkspaceFolders: () => {} // Mock workspace folder change handler
+      onDidChangeWorkspaceFolders: () => {}, // Mock workspace folder change handler
+      getConfiguration: () => Promise.resolve({ validateWorkspaceOnStartup: false }) // Mock config
     }
   });
 

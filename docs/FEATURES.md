@@ -215,6 +215,38 @@ Intelligent validation that detects missing or mismatched Blaze block end tags:
 - Identifies mismatched block types
 - Shows clear error messages with context
 - Highlights problematic blocks
+- **Workspace-wide validation** to find issues across all template files
+
+### Workspace Validation
+
+The extension can validate all template files in your workspace at once, making it easy to find issues without opening each file individually.
+
+**Automatic Validation on Startup:**
+By default, the extension validates all `.html`, `.htm`, `.meteor`, and `.hbs` files when the language server starts. All errors appear in the **Problems panel** (View → Problems or `Cmd/Ctrl+Shift+M`).
+
+**Manual Validation:**
+You can also manually trigger workspace validation at any time:
+
+1. Open the Command Palette (`Cmd/Ctrl+Shift+P`)
+2. Run: `Meteor/Blaze: Validate All Templates in Workspace`
+3. Check the Problems panel for results
+
+**Configuration:**
+```json
+{
+  // Enable/disable automatic validation on startup (default: true)
+  "meteorLanguageServer.validateWorkspaceOnStartup": true,
+
+  // Maximum number of problems to report per file
+  "meteorLanguageServer.maxNumberOfProblems": 100
+}
+```
+
+**Benefits:**
+- ✅ Find errors across your entire project without opening each file
+- ✅ See all validation errors in one centralized Problems panel
+- ✅ Click on any error to jump directly to the problematic code
+- ✅ Particularly useful for large projects with many template files
 
 ### Error Examples
 ```html

@@ -2,7 +2,7 @@
   "name": "meteor-blaze-vscode-language-server",
   "displayName": "Meteor/Blaze HTML Language Server",
   "description": "A language server for the Meteor framework providing syntax highlighting, diagnostics, and code completion",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "publisher": "ptbarnum4",
   "author": "ptbarnum4",
   "license": "MIT",
@@ -133,6 +133,10 @@
       {
         "command": "meteor-blaze-vscode-language-server.restart",
         "title": "Restart Meteor/Blaze HTML Language Server"
+      },
+      {
+        "command": "meteor-blaze-vscode-language-server.validateWorkspace",
+        "title": "Meteor/Blaze: Validate All Templates in Workspace"
       }
     ],
     "colors": [
@@ -218,6 +222,12 @@
           "type": "number",
           "default": 100,
           "description": "Controls the maximum number of problems reported by the server."
+        },
+        "meteorLanguageServer.validateWorkspaceOnStartup": {
+          "scope": "window",
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically validate all template files in the workspace when the language server starts. This helps detect errors across your entire project without opening each file."
         },
         "meteorLanguageServer.trace.server": {
           "scope": "window",

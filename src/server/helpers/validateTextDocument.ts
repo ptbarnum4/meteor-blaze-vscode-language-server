@@ -194,7 +194,7 @@ function validateHtmlBlazeNesting(text: string, document: TextDocument): Diagnos
   const diagnostics: Diagnostic[] = [];
 
   interface Tag {
-    type: 'html-open' | 'html-close' | 'blaze-open' | 'blaze-close';
+    type: 'html-open' | 'html-close' | 'blaze-open' | 'blaze-close' | 'blaze-else';
     name: string;
     position: Range;
     isVoid?: boolean;
@@ -220,11 +220,76 @@ function validateHtmlBlazeNesting(text: string, document: TextDocument): Diagnos
     'wbr'
   ]);
 
+  // Helper function to check if a position is within a quoted string anywhere in the document
+  const isPositionInQuotedString = (position: number): boolean => {
+    let inSingleQuote = false;
+    let inDoubleQuote = false;
+    let inHandlebars = 0; // Track nesting level of handlebars expressions
+
+    for (let i = 0; i < position; i++) {
+      const char = text[i];
+      const nextChar = i < text.length - 1 ? text[i + 1] : '';
+      const prevChar = i > 0 ? text[i - 1] : '';
+
+      // Track Handlebars expression boundaries {{...}}
+      // Only track if we're not inside a quote
+      if (!inSingleQuote && !inDoubleQuote) {
+        if (char === '{' && nextChar === '{') {
+          inHandlebars++;
+          i++; // Skip the next '{'
+          continue;
+        } else if (char === '}' && nextChar === '}' && inHandlebars > 0) {
+          inHandlebars--;
+          i++; // Skip the next '}'
+          continue;
+        }
+      }
+
+      // Only track quotes outside of Handlebars expressions
+      // AND only if preceded by = or whitespace (to avoid apostrophes in text content)
+      if (inHandlebars === 0) {
+        const isQuoteContext = prevChar === '=' || /\s/.test(prevChar);
+
+        // Check for unescaped quotes
+        if (char === '"' && prevChar !== '\\') {
+          if (!inSingleQuote && isQuoteContext) {
+            inDoubleQuote = !inDoubleQuote;
+          } else if (inDoubleQuote) {
+            // Always close double quote even if not in quote context
+            inDoubleQuote = false;
+          }
+        } else if (char === "'" && prevChar !== '\\') {
+          if (!inDoubleQuote && isQuoteContext) {
+            inSingleQuote = !inSingleQuote;
+          } else if (inSingleQuote) {
+            // Always close single quote even if not in quote context
+            inSingleQuote = false;
+          }
+        }
+      }
+    }
+
+    return inSingleQuote || inDoubleQuote;
+  };
+
   // Find HTML opening tags
   const htmlOpenPattern = /<([a-zA-Z][a-zA-Z0-9-]*)\b[^>]*>/g;
   let match;
   while ((match = htmlOpenPattern.exec(text)) !== null) {
     const tagName = match[1].toLowerCase();
+    const matchStart = match.index;
+
+    // Skip if this tag is within a comment
+    const commentInfo = isWithinComment(text, matchStart);
+    if (commentInfo.isWithin) {
+      continue;
+    }
+
+    // Skip if this tag is within a quoted attribute value
+    if (isPositionInQuotedString(matchStart)) {
+      continue;
+    }
+
     const startPos = document.positionAt(match.index);
     const endPos = document.positionAt(match.index + match[0].length);
     const range = Range.create(startPos, endPos);
@@ -243,6 +308,19 @@ function validateHtmlBlazeNesting(text: string, document: TextDocument): Diagnos
   const htmlClosePattern = /<\/([a-zA-Z][a-zA-Z0-9-]*)\s*>/g;
   while ((match = htmlClosePattern.exec(text)) !== null) {
     const tagName = match[1].toLowerCase();
+    const matchStart = match.index;
+
+    // Skip if this tag is within a comment
+    const commentInfo = isWithinComment(text, matchStart);
+    if (commentInfo.isWithin) {
+      continue;
+    }
+
+    // Skip if this tag is within a quoted attribute value
+    if (isPositionInQuotedString(matchStart)) {
+      continue;
+    }
+
     const startPos = document.positionAt(match.index);
     const endPos = document.positionAt(match.index + match[0].length);
     const range = Range.create(startPos, endPos);
@@ -284,6 +362,20 @@ function validateHtmlBlazeNesting(text: string, document: TextDocument): Diagnos
     });
   }
 
+  // Find Blaze else blocks ({{else}}, {{^}}, {{else if}})
+  const blazeElsePattern = /\{\{\s*(?:else|[\^])\b[^}]*\}\}/g;
+  while ((match = blazeElsePattern.exec(text)) !== null) {
+    const startPos = document.positionAt(match.index);
+    const endPos = document.positionAt(match.index + match[0].length);
+    const range = Range.create(startPos, endPos);
+
+    tags.push({
+      type: 'blaze-else',
+      name: 'else',
+      position: range
+    });
+  }
+
   // Sort tags by position
   tags.sort((a, b) => {
     if (a.position.start.line !== b.position.start.line) {
@@ -298,6 +390,21 @@ function validateHtmlBlazeNesting(text: string, document: TextDocument): Diagnos
   for (const tag of tags) {
     if (tag.type === 'html-open' || tag.type === 'blaze-open') {
       stack.push(tag);
+    } else if (tag.type === 'blaze-else') {
+      // {{else}} acts as a boundary: remove all HTML tags since the last Blaze block
+      // This allows HTML to be opened in {{#if}} and closed in {{else}} or vice versa
+      let lastBlazeIndex = -1;
+      for (let i = stack.length - 1; i >= 0; i--) {
+        if (stack[i].type === 'blaze-open') {
+          lastBlazeIndex = i;
+          break;
+        }
+      }
+
+      // Remove all HTML tags after the last Blaze block
+      if (lastBlazeIndex >= 0) {
+        stack.splice(lastBlazeIndex + 1);
+      }
     } else if (tag.type === 'html-close' || tag.type === 'blaze-close') {
       // Find the matching opening tag
       let matchedIndex = -1;
@@ -364,6 +471,165 @@ function validateHtmlBlazeNesting(text: string, document: TextDocument): Diagnos
   return diagnostics;
 }
 
+/**
+ * Detects invalid #if/#unless blocks within HTML element tags
+ * This syntax is invalid because Blaze blocks cannot be used to conditionally set attributes
+ * Note: Blocks within attribute string values (e.g., class="{{#if}}...{{/if}}") are valid
+ */
+function findInvalidBlocksInHtmlTags(text: string, textDocument: TextDocument): Diagnostic[] {
+  const diagnostics: Diagnostic[] = [];
+
+  try {
+    // Helper function to check if a position is within a quoted string anywhere in the document
+    const isPositionInQuotedString = (position: number): boolean => {
+      let inSingleQuote = false;
+      let inDoubleQuote = false;
+      let inHandlebars = 0; // Track nesting level of handlebars expressions
+
+      for (let i = 0; i < position; i++) {
+        const char = text[i];
+        const nextChar = i < text.length - 1 ? text[i + 1] : '';
+        const prevChar = i > 0 ? text[i - 1] : '';
+
+        // Track Handlebars expression boundaries {{...}}
+        // Only track if we're not inside a quote
+        if (!inSingleQuote && !inDoubleQuote) {
+          if (char === '{' && nextChar === '{') {
+            inHandlebars++;
+            i++; // Skip the next '{'
+            continue;
+          } else if (char === '}' && nextChar === '}' && inHandlebars > 0) {
+            inHandlebars--;
+            i++; // Skip the next '}'
+            continue;
+          }
+        }
+
+        // Only track quotes outside of Handlebars expressions
+        // AND only if preceded by = or whitespace (to avoid apostrophes in text content)
+        if (inHandlebars === 0) {
+          const isQuoteContext = prevChar === '=' || /\s/.test(prevChar);
+
+          // Check for unescaped quotes
+          if (char === '"' && prevChar !== '\\') {
+            if (!inSingleQuote && isQuoteContext) {
+              inDoubleQuote = !inDoubleQuote;
+            } else if (inDoubleQuote) {
+              // Always close double quote even if not in quote context
+              inDoubleQuote = false;
+            }
+          } else if (char === "'" && prevChar !== '\\') {
+            if (!inDoubleQuote && isQuoteContext) {
+              inSingleQuote = !inSingleQuote;
+            } else if (inSingleQuote) {
+              // Always close single quote even if not in quote context
+              inSingleQuote = false;
+            }
+          }
+        }
+      }
+
+      return inSingleQuote || inDoubleQuote;
+    };
+
+    // Find all HTML opening tags (including their full content until >)
+    const htmlTagPattern = /<([a-zA-Z][a-zA-Z0-9-]*)\b([^>]*)>/g;
+    let tagMatch;
+
+    while ((tagMatch = htmlTagPattern.exec(text)) !== null) {
+      const tagName = tagMatch[1];
+      const tagContent = tagMatch[2]; // Everything between tag name and >
+      const tagStart = tagMatch.index;
+      const tagEnd = tagMatch.index + tagMatch[0].length - 1; // Position of the closing >
+
+      // Skip if this tag is within a comment
+      // Check both the opening < and the closing > to ensure the entire tag is not in a comment
+      const tagStartCommentInfo = isWithinComment(text, tagStart);
+      const tagEndCommentInfo = isWithinComment(text, tagEnd);
+
+      if (tagStartCommentInfo.isWithin || tagEndCommentInfo.isWithin) {
+        continue;
+      }
+
+      // Skip if this tag is within a quoted attribute value
+      if (isPositionInQuotedString(tagStart)) {
+        continue;
+      }
+
+      // Helper function to check if a position is within a quoted string in the tag content
+      const isWithinQuotedString = (position: number): boolean => {
+        let inSingleQuote = false;
+        let inDoubleQuote = false;
+
+        for (let i = 0; i < position; i++) {
+          const char = tagContent[i];
+          const prevChar = i > 0 ? tagContent[i - 1] : '';
+
+          // Check for unescaped quotes
+          if (char === '"' && prevChar !== '\\') {
+            if (!inSingleQuote) {
+              inDoubleQuote = !inDoubleQuote;
+            }
+          } else if (char === "'" && prevChar !== '\\') {
+            if (!inDoubleQuote) {
+              inSingleQuote = !inSingleQuote;
+            }
+          }
+        }
+
+        return inSingleQuote || inDoubleQuote;
+      };
+
+      // Check if this tag contains any #if or #unless blocks
+      const blockPattern = /\{\{\s*#(if|unless)\b[^}]*\}\}/g;
+      let blockMatch;
+
+      while ((blockMatch = blockPattern.exec(tagContent)) !== null) {
+        const blockType = blockMatch[1];
+        const blockStartInTag = blockMatch.index;
+
+        // Skip if the block is within a quoted attribute value (which is valid)
+        if (isWithinQuotedString(blockStartInTag)) {
+          continue;
+        }
+
+        // Calculate absolute position in the document
+        // tagStart is the position of <
+        // We need to add the offset within tagContent plus the tag name length and <
+        const blockStart = tagStart + 1 + tagName.length + blockStartInTag;
+
+        // Find the corresponding closing tag for this block
+        const closingPattern = new RegExp(`\\{\\{\\s*/${blockType}\\s*\\}\\}`, 'g');
+        closingPattern.lastIndex = blockStart + blockMatch[0].length;
+        const closingMatch = closingPattern.exec(text);
+
+        let blockEnd = blockStart + blockMatch[0].length;
+
+        if (closingMatch) {
+          // Extend the error range to include the entire block from {{#if}} to {{/if}}
+          blockEnd = closingMatch.index + closingMatch[0].length;
+        }
+
+        const startPos = textDocument.positionAt(blockStart);
+        const endPos = textDocument.positionAt(blockEnd);
+
+        diagnostics.push({
+          severity: DiagnosticSeverity.Error,
+          range: Range.create(startPos, endPos),
+          message: `Invalid syntax: {{#${blockType}}} blocks cannot be used within HTML element tags to conditionally set attributes. Use a helper function or restructure your template instead.`,
+          source: 'meteor-blaze'
+        });
+      }
+    }
+  } catch (error) {
+    // If parsing fails, don't add diagnostics to avoid false positives
+    // Log for debugging purposes
+    console.error('Error in findInvalidBlocksInHtmlTags:', error);
+  }
+
+  return diagnostics;
+}
+
 // Helper function to find duplicate template parameters
 function findDuplicateTemplateParameters(text: string, textDocument: TextDocument): Diagnostic[] {
   const diagnostics: Diagnostic[] = [];
@@ -379,7 +645,9 @@ function findDuplicateTemplateParameters(text: string, textDocument: TextDocumen
       const inclusionStart = match.index;
 
       // Extract all parameter names from this template inclusion
-      const parameterPattern = /\b([a-zA-Z_$][a-zA-Z0-9_$]*)\s*=/g;
+      // Match attribute names including those with hyphens (e.g., data-test-id)
+      // Use lookbehind to ensure we match from the start of the attribute name
+      const parameterPattern = /(?:^|\s)([a-zA-Z_$][a-zA-Z0-9_$-]*)\s*=/g;
       const usedParams: Array<{ name: string; start: number; end: number }> = [];
       let paramMatch;
 
@@ -399,7 +667,11 @@ function findDuplicateTemplateParameters(text: string, textDocument: TextDocumen
         const parametersStartInMatch = templateNameEnd;
 
         // The actual parameter start position in the document
-        const paramStart = inclusionStart + parametersStartInMatch + paramMatch.index;
+        // paramMatch.index is the position in parametersSection where the match starts
+        // We need to find where the parameter name (paramMatch[1]) starts within the matched text (paramMatch[0])
+        const paramNameOffsetInMatch = paramMatch[0].indexOf(paramMatch[1]);
+        const paramStart =
+          inclusionStart + parametersStartInMatch + paramMatch.index + paramNameOffsetInMatch;
         const paramEnd = paramStart + paramName.length;
 
         usedParams.push({
@@ -489,6 +761,10 @@ export const validateTextDocument = async (
     // Check for HTML/Blaze nesting violations
     const nestingDiagnostics = validateHtmlBlazeNesting(text, textDocument);
     diagnostics.push(...nestingDiagnostics);
+
+    // Check for invalid #if/#unless blocks within HTML element tags
+    const invalidBlocksInTags = findInvalidBlocksInHtmlTags(text, textDocument);
+    diagnostics.push(...invalidBlocksInTags);
 
     // Check for duplicate template parameters
     const duplicateParamDiagnostics = findDuplicateTemplateParameters(text, textDocument);

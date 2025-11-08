@@ -1,0 +1,50 @@
+<template name="test">
+  {{#if showCodeInput}}
+    {{> inputBlocks
+      title="Enter Code from Email"
+      onSubmit=handleCodeSubmit
+      size=8
+      placeholder="•"
+      scale=1
+      testId="login-code-input"
+      loadingText="Logging in..."
+      helpText="Enter 8 character code from your email"
+    }}
+
+    <div class="d-flex flex-column align-items-center">
+      <small class="text-secondary">
+        Didn't get a link? Check your spam folder or
+      </small>
+      <button id="btn-sign-no-password"
+        class="btn btn-secondary badge btn-sm"
+        {{disableSendEmail}}>
+
+        {{#if disabledSeconds}}
+          Resend Code in {{disabledSeconds}} seconds
+        {{else}}
+          Email New Code
+        {{/if}}
+      </button>
+    </div>
+    <button id="btn-toggle-code"
+      class="btn btn-default">
+      Close
+    </button>
+  {{else}}
+    {{#if isAvailableService 'passwordless'}}
+      <div class="d-flex justify-content-center mt-4">
+        <div class="d-flex w-100 flex-center login-group">
+          <button id="btn-toggle-code"
+            class="btn btn-default input-group input-group-sm border-1 d-flex flex-nowrap p-0 justify-content-center">
+            <span class="input-group-text">
+              <i class="fa fa-key"> </i>
+            </span>
+            <div class="input-group-text d-flex flex-center login-group-text">
+              Enter Login Code
+            </div>
+          </button>
+        </div>
+      </div>
+    {{/if}} <!-- isAvailableService passwordless -->
+  {{/if}} <!-- showCodeInput -->
+</template>

@@ -29,6 +29,8 @@ src/test/**
 *.tmp
 **/*.tmp
 test-pad-analysis.js
+test-*.js
+test-*.html
 
 # Build artifacts
 *.log

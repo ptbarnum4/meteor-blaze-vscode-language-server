@@ -1,0 +1,19 @@
+<template name="codeViewer">
+  <div>
+    {{> React
+      component=AdminCodeViewer
+      code=currentCode
+      useBoilerplate=useBoilerplate
+      reqName=codeRequirement.name
+      codeUrl=codeRequirement.repoUrl
+      instructions=codeRequirement.instructions
+      testSpec=codeRequirement.testCode
+      onError=handleError
+      studentName=studentName
+      isReady=isReady
+      attemptOptions=attemptOptions
+      disableSubmit=disableSubmit
+      attemptOptions=attemptOptions
+    }}
+  </div>
+</template>

@@ -14,6 +14,7 @@ import { createConnection, ProposedFeatures, TextDocuments } from 'vscode-langua
 import { CurrentConnectionConfig } from '/types';
 
 // Request/notification handlers
+import { validateWorkspace } from '../helpers/validateWorkspace';
 import onCompletion from './onCompletion';
 import onCompletionResolve from './onCompletionResolve';
 import onDefinition from './onDefinition';
@@ -72,6 +73,12 @@ connection.onDefinition(onDefinition(config));
 // Register document event handlers
 documents.onDidClose(onDidClose(config));
 documents.onDidChangeContent(onDidChangeContent(config));
+
+// Register custom request handlers
+connection.onRequest('workspace/validateAll', async () => {
+  await validateWorkspace(config);
+  return { success: true };
+});
 
 // --- Export -----------------------------------------------------------------
 /**

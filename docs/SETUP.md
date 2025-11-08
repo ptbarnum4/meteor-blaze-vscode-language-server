@@ -2,6 +2,17 @@
 
 Complete guide for setting up and configuring the Meteor/Blaze HTML Language Server extension.
 
+## 📋 Example Configuration Files
+
+The following example configuration files are available in this directory for reference:
+
+- **[example-settings.jsonc](./example-settings.jsonc)** - Basic language server configuration with block conditions and custom helpers
+- **[example-settings-auto-insert.jsonc](./example-settings-auto-insert.jsonc)** - Auto-insert end tags configuration examples
+- **[example-settings-blazeHelpers-colors.jsonc](./example-settings-blazeHelpers-colors.jsonc)** - Custom colors for Blaze helper tokens
+- **[example-blaze-token-theme.jsonc](./example-blaze-token-theme.jsonc)** - TextMate token color customization examples
+
+You can copy settings from these files into your VS Code `settings.json` file.
+
 ## Quick Setup
 
 ### Access VS Code Settings
