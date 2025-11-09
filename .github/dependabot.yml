@@ -52,19 +52,3 @@ updates:
     commit-message:
       prefix: "ci"
       include: "scope"
-
-  # Check for test-project dependencies separately if needed
-  - package-ecosystem: "npm"
-    directory: "/test-project"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "09:00"
-    open-pull-requests-limit: 5
-    reviewers:
-      - "ptbarnum4"
-    assignees:
-      - "ptbarnum4"
-    commit-message:
-      prefix: "test-deps"
-      include: "scope"
