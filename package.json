@@ -2,7 +2,7 @@
   "name": "meteor-blaze-vscode-language-server",
   "displayName": "Meteor/Blaze HTML Language Server",
   "description": "A language server for the Meteor framework providing syntax highlighting, diagnostics, and code completion",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "publisher": "ptbarnum4",
   "author": "ptbarnum4",
   "license": "MIT",
@@ -26,7 +26,7 @@
     "html"
   ],
   "engines": {
-    "vscode": "^1.104.0"
+    "vscode": "^1.105.0"
   },
   "categories": [
     "Programming Languages",
@@ -387,18 +387,18 @@
     "test-manual": "node out/test/runTest.js"
   },
   "devDependencies": {
-    "@eslint/js": "^9.0.0",
+    "@eslint/js": "^9.39.1",
     "@types/mocha": "^10.0.1",
-    "@types/node": "^24.5.2",
-    "@types/vscode": "^1.104.0",
-    "@typescript-eslint/eslint-plugin": "^8.0.0",
-    "@typescript-eslint/parser": "^8.0.0",
+    "@types/node": "^24.10.0",
+    "@types/vscode": "^1.105.0",
+    "@typescript-eslint/eslint-plugin": "^8.46.3",
+    "@typescript-eslint/parser": "^8.46.3",
     "@vscode/test-electron": "^2.5.2",
-    "esbuild": "^0.25.10",
-    "eslint": "^9.0.0",
-    "mocha": "^11.7.2",
+    "esbuild": "^0.25.12",
+    "eslint": "^9.39.1",
+    "mocha": "^11.7.5",
     "npm-run-all": "^4.1.5",
-    "typescript": "^5.3.3"
+    "typescript": "^5.9.3"
   },
   "dependencies": {
     "glob": "^11.0.3",
