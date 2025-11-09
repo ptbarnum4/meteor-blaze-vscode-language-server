@@ -4,51 +4,51 @@
 version: 2
 updates:
   # Check for npm dependency updates
-  - package-ecosystem: "npm"
-    directory: "/"
+  - package-ecosystem: 'npm'
+    directory: '/'
     schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "09:00"
+      interval: 'weekly'
+      day: 'monday'
+      time: '09:00'
     open-pull-requests-limit: 10
     reviewers:
-      - "ptbarnum4"
+      - 'ptbarnum4'
     assignees:
-      - "ptbarnum4"
+      - 'ptbarnum4'
     commit-message:
-      prefix: "npm"
-      include: "scope"
+      prefix: 'npm'
+      include: 'scope'
     groups:
       development-dependencies:
-        dependency-type: "development"
+        dependency-type: 'development'
         patterns:
-          - "@types/*"
-          - "eslint*"
-          - "typescript"
-          - "*-dev"
+          - '@types/*'
+          - 'eslint*'
+          - 'typescript'
+          - '*-dev'
       testing-dependencies:
         patterns:
-          - "@types/node"
-          - "mocha"
-          - "chai"
-          - "*test*"
+          - '@types/node'
+          - 'mocha'
+          - 'chai'
+          - '*test*'
       vscode-dependencies:
         patterns:
-          - "vscode-*"
-          - "@vscode/*"
+          - 'vscode-*'
+          - '@vscode/*'
 
   # Check for GitHub Actions updates
-  - package-ecosystem: "github-actions"
-    directory: "/"
+  - package-ecosystem: 'github-actions'
+    directory: '/'
     schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "09:00"
+      interval: 'weekly'
+      day: 'monday'
+      time: '09:00'
     open-pull-requests-limit: 5
     reviewers:
-      - "ptbarnum4"
+      - 'ptbarnum4'
     assignees:
-      - "ptbarnum4"
+      - 'ptbarnum4'
     commit-message:
-      prefix: "ci"
-      include: "scope"
+      prefix: 'ci'
+      include: 'scope'
