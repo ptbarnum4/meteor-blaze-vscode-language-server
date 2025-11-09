@@ -14,9 +14,9 @@ jobs:
         uses: actions/checkout@v5
 
       - name: Use Node.js 22.x
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v6
         with:
-          node-version: 22.x
+          node-version: 24.x
           cache: 'npm'
 
       - name: Install dependencies
@@ -48,7 +48,7 @@ jobs:
 
       - name: Upload VSIX as Artifact
         if: github.event_name == 'workflow_dispatch'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: meteor-blaze-vscode-language-server-${{ steps.package-version.outputs.version }}
           path: meteor-blaze-vscode-language-server-${{ steps.package-version.outputs.version }}.vsix
