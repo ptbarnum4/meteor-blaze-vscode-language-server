@@ -4,6 +4,24 @@ All notable changes to the "meteor-blaze-vscode-language-server" extension will 
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [0.0.9] - 2025-11-08
+
+### 🔧 Maintenance
+
+#### Development Dependencies Updated
+- **@eslint/js**: Updated from ^9.0.0 to ^9.39.1
+- **@types/node**: Updated from ^24.5.2 to ^24.10.0
+- **@types/vscode**: Updated from ^1.104.0 to ^1.105.0
+- **@typescript-eslint/eslint-plugin**: Updated from ^8.0.0 to ^8.46.3
+- **@typescript-eslint/parser**: Updated from ^8.0.0 to ^8.46.3
+- **esbuild**: Updated from ^0.25.10 to ^0.25.12
+- **eslint**: Updated from ^9.0.0 to ^9.39.1
+- **mocha**: Updated from ^11.7.2 to ^11.7.5
+- **typescript**: Updated from ^5.3.3 to ^5.9.3
+- **VS Code engine**: Updated from ^1.104.0 to ^1.105.0
+
+No functional changes to the extension - this is a pure dependency maintenance release ensuring compatibility with the latest tooling and security patches.
+
 ## [0.0.8] - 2025-11-08
 
 ### ✨ New Features
