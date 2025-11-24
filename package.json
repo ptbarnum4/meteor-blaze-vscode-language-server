@@ -401,7 +401,7 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
-    "glob": "^11.0.3",
+    "glob": "^13.0.0",
     "vscode-languageclient": "^9.0.1",
     "vscode-languageserver": "^9.0.1",
     "vscode-languageserver-textdocument": "^1.0.8"
