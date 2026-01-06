@@ -1,6 +1,11 @@
 import fsSync from 'fs'; // for existsSync and where sync is needed
 import path from 'path';
-import { AnalyzeGlobalHelpersResult, GlobalHelperInfo } from '/types';
+import {
+  AnalyzeGlobalHelpersResult,
+  GlobalHelperConfig,
+  GlobalHelperInfo,
+  LanguageServerSettings
+} from '/types';
 
 // Function to extract JSDoc comment from lines above a target line
 const extractJSDocComment = (lines: string[], targetLineIndex: number): string | undefined => {
@@ -402,5 +407,174 @@ export const analyzeGlobalHelpers = async (
   return {
     helpers: helperNames,
     helperDetails: globalHelpers
+  };
+};
+
+/**
+ * Transforms a GlobalHelperConfig object into a GlobalHelperInfo object.
+ * Builds rich documentation from the config fields.
+ */
+export const transformConfigToHelperInfo = (config: GlobalHelperConfig): GlobalHelperInfo => {
+  // Build JSDoc documentation
+  let markdownParts: string[] = [];
+
+  // Add main documentation
+  if (config.doc) {
+    markdownParts.push(config.doc);
+  }
+
+  // Add parameter documentation
+  if (config.params && config.params.length > 0) {
+    markdownParts.push(''); // Empty line
+    markdownParts.push('**Parameters:**');
+    config.params.forEach(param => {
+      let paramLine = `- \`${param.name}\``;
+      if (param.type) {
+        const typeStr = Array.isArray(param.type) ? param.type.join(' | ') : param.type;
+        paramLine += ` *(${typeStr})*`;
+      }
+      if (param.optional) {
+        paramLine += ' *(optional)*';
+      }
+      if (param.default) {
+        paramLine += ` - Default: \`${param.default}\``;
+      }
+      if (param.doc) {
+        paramLine += ` - ${param.doc}`;
+      }
+      markdownParts.push(paramLine);
+    });
+  }
+
+  // Add return type documentation
+  if (config.return) {
+    markdownParts.push(''); // Empty line
+    let returnLine = '**Returns:**';
+    if (config.return.type) {
+      returnLine += ` \`${config.return.type}\``;
+    }
+    if (config.return.doc) {
+      returnLine += ` - ${config.return.doc}`;
+    }
+    markdownParts.push(returnLine);
+  }
+
+  // Add examples
+  if (config.examples && config.examples.length > 0) {
+    markdownParts.push(''); // Empty line
+    markdownParts.push('**Examples:**');
+    markdownParts.push(''); // Empty line before code block
+    config.examples.forEach(example => {
+      if (example.html) {
+        markdownParts.push('```handlebars');
+        markdownParts.push(example.html);
+        markdownParts.push('```');
+        markdownParts.push(''); // Empty line after code block
+      }
+    });
+  }
+
+  // Build signature
+  let signature = config.name;
+  if (config.params && config.params.length > 0) {
+    const paramNames = config.params
+      .map(p => {
+        let pName = p.name;
+        if (p.optional) {
+          pName += '?';
+        }
+        return pName;
+      })
+      .join(', ');
+    signature += `(${paramNames})`;
+  } else {
+    signature += '()';
+  }
+
+  // Add return type to signature
+  if (config.return?.type) {
+    signature += `: ${config.return.type}`;
+  }
+
+  // Extract parameters string
+  const parameters = config.params?.map(p => p.name).join(', ') || '';
+
+  // Extract return type
+  const returnType = config.return?.type || '';
+
+  return {
+    name: config.name,
+    markdown: markdownParts.join('\n'),
+    signature,
+    returnType,
+    parameters,
+    filePath: 'settings' // Mark as coming from settings
+  };
+};
+
+/**
+ * Merges configured global helpers with detected helpers.
+ * Configured helpers override detected ones with the same name.
+ */
+export const mergeConfiguredHelpers = (
+  detectedHelpers: AnalyzeGlobalHelpersResult,
+  settings: LanguageServerSettings
+): AnalyzeGlobalHelpersResult => {
+  const configuredHelpers: GlobalHelperInfo[] = [];
+  const configuredNames: string[] = [];
+
+  // Process globalHelpers.extend (new format with full documentation)
+  if (settings.globalHelpers?.extend && Array.isArray(settings.globalHelpers.extend)) {
+    try {
+      settings.globalHelpers.extend.forEach(config => {
+        if (typeof config === 'object' && config !== null && typeof config.name === 'string') {
+          const helperInfo = transformConfigToHelperInfo(config as GlobalHelperConfig);
+          configuredHelpers.push(helperInfo);
+          configuredNames.push(config.name);
+        }
+      });
+    } catch (error) {
+      console.error('Error processing globalHelpers.extend:', error);
+    }
+  }
+
+  // Process legacy blazeHelpers.extend (simple format with name and doc)
+  if (settings.blazeHelpers?.extend && Array.isArray(settings.blazeHelpers.extend)) {
+    try {
+      settings.blazeHelpers.extend.forEach(helper => {
+        if (
+          typeof helper === 'object' &&
+          helper !== null &&
+          typeof helper.name === 'string' &&
+          !configuredNames.includes(helper.name) // Don't override globalHelpers
+        ) {
+          configuredHelpers.push({
+            name: helper.name,
+            markdown: helper.doc || '',
+            signature: `${helper.name}()`,
+            returnType: '',
+            parameters: '',
+            filePath: 'settings'
+          });
+          configuredNames.push(helper.name);
+        }
+      });
+    } catch (error) {
+      console.error('Error processing blazeHelpers.extend:', error);
+    }
+  }
+
+  // Filter out detected helpers that are overridden by configured ones
+  const filteredDetectedHelpers = detectedHelpers.helperDetails.filter(
+    h => !configuredNames.includes(h.name)
+  );
+  const filteredDetectedNames = detectedHelpers.helpers.filter(
+    h => !configuredNames.includes(h)
+  );
+
+  // Merge: configured helpers first, then detected helpers
+  return {
+    helpers: [...configuredNames, ...filteredDetectedNames],
+    helperDetails: [...configuredHelpers, ...filteredDetectedHelpers]
   };
 };

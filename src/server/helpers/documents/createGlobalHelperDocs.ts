@@ -12,11 +12,15 @@ const createGlobalTemplateHelperDocs = (
 ) => {
   const hoverContent = [`**\`${word}\`** - Global Template Helper`, ``];
 
-  // Add JSDoc description if available
+  // Add markdown description if available
   if (globalHelper.jsdoc) {
     hoverContent.push(
       '```ts\n/**\n * ' + globalHelper.jsdoc.split('\n').join('\n * ') + '\n*/\n```'
     );
+    hoverContent.push(``);
+  }
+  if (globalHelper.markdown) {
+    hoverContent.push(globalHelper.markdown.split('\n').join('\n'));
     hoverContent.push(``);
   }
 

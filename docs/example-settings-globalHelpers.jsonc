@@ -1,0 +1,145 @@
+{
+  // Example configuration for custom global helpers
+  // This demonstrates the new globalHelpers.extend feature
+  "meteorLanguageServer.globalHelpers": {
+    "extend": [
+      // Simple helper with just a name and documentation
+      {
+        "name": "trim",
+        "doc": "Trims whitespace from the beginning and end of a string."
+      },
+      // Helper with parameters
+      {
+        "name": "formatDate",
+        "doc": "Format the given date string into a more readable format.",
+        "params": [
+          {
+            "name": "date",
+            "type": ["string", "Date"],
+            "doc": "The date string to format."
+          },
+          {
+            "name": "format",
+            "type": "string",
+            "optional": true,
+            "default": "MM/DD/YYYY",
+            "doc": "The desired output format (e.g., 'MM/DD/YYYY')."
+          }
+        ],
+        "return": {
+          "type": "string",
+          "doc": "The formatted date string."
+        },
+        "examples": [
+          {
+            "html": "{{ formatDate '2023-10-05' 'DD-MM-YYYY' }}"
+          },
+          {
+            "html": "{{ formatDate createdAt }}"
+          }
+        ]
+      },
+      // Helper with array parameter
+      {
+        "name": "join",
+        "doc": "Joins an array of strings into a single string with a separator.",
+        "params": [
+          {
+            "name": "array",
+            "type": "Array<string>",
+            "doc": "The array of strings to join."
+          },
+          {
+            "name": "separator",
+            "type": "string",
+            "optional": true,
+            "default": ", ",
+            "doc": "The separator to use between elements."
+          }
+        ],
+        "return": {
+          "type": "string",
+          "doc": "The joined string."
+        },
+        "examples": [
+          {
+            "html": "{{ join tags ', ' }}"
+          }
+        ]
+      },
+      // Helper for currency formatting
+      {
+        "name": "currency",
+        "doc": "Formats a number as currency with the appropriate symbol and formatting.",
+        "params": [
+          {
+            "name": "amount",
+            "type": ["number", "string"],
+            "doc": "The amount to format."
+          },
+          {
+            "name": "currencyCode",
+            "type": "string",
+            "optional": true,
+            "default": "USD",
+            "doc": "The currency code (e.g., 'USD', 'EUR', 'GBP')."
+          }
+        ],
+        "return": {
+          "type": "string",
+          "doc": "The formatted currency string."
+        },
+        "examples": [
+          {
+            "html": "{{ currency price 'USD' }}"
+          },
+          {
+            "html": "{{ currency total }}"
+          }
+        ]
+      },
+      // Helper with boolean return type
+      {
+        "name": "isEmpty",
+        "doc": "Checks if a value is empty (null, undefined, empty string, or empty array).",
+        "params": [
+          {
+            "name": "value",
+            "type": "any",
+            "doc": "The value to check."
+          }
+        ],
+        "return": {
+          "type": "boolean",
+          "doc": "True if the value is empty, false otherwise."
+        },
+        "examples": [
+          {
+            "html": "{{#if (isEmpty items)}}No items{{/if}}"
+          }
+        ]
+      },
+      // Helper for external package (e.g., moment.js wrapper)
+      {
+        "name": "fromNow",
+        "doc": "Display a date as a relative time from now (e.g., '2 hours ago').",
+        "params": [
+          {
+            "name": "date",
+            "type": ["string", "Date"],
+            "doc": "The date to format."
+          }
+        ],
+        "return": {
+          "type": "string",
+          "doc": "The relative time string."
+        },
+        "examples": [
+          {
+            "html": "{{ fromNow createdAt }}"
+          }
+        ]
+      }
+    ]
+  }
+}

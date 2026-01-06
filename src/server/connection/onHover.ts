@@ -4,10 +4,11 @@ import { TextDocument } from 'vscode-languageserver-textdocument';
 import { Hover, MarkupKind, TextDocumentPositionParams } from 'vscode-languageserver/node';
 
 import { CurrentConnectionConfig } from '../../types';
-import { analyzeGlobalHelpers } from '../helpers/analyzeGlobalHelpers';
+import { analyzeGlobalHelpers, mergeConfiguredHelpers } from '../helpers/analyzeGlobalHelpers';
 import { containsMeteorTemplates } from '../helpers/containsMeteorTemplates';
 import createGlobalTemplateHelperDocs from '../helpers/documents/createGlobalHelperDocs';
 import { findEnclosingEachInContext } from '../helpers/findEnclosingEachInContext';
+import getDocumentSettings from '../helpers/getDocumentSettings';
 import { getWordRangeAtPosition } from '../helpers/getWordRangeAtPosition';
 import { isWithinComment } from '../helpers/isWithinComment';
 import { isWithinHandlebarsExpression } from '../helpers/isWithinHandlebarsExpression';
@@ -127,7 +128,7 @@ const onHover = (config: CurrentConnectionConfig) => {
 
         // Add JSDoc description if available
         if (helperInfo?.jsdoc) {
-          hoverContent.push(`**Description:** ${helperInfo.jsdoc}`);
+          hoverContent.push(helperInfo.jsdoc);
           hoverContent.push(``);
         }
 
@@ -264,15 +265,21 @@ const onHover = (config: CurrentConnectionConfig) => {
         return null;
       }
 
+      // Get document settings to access configured global helpers
+      const settings = await getDocumentSettings(config, document.uri);
+
       // Add timeout to prevent hanging during tests or large projects
       const timeoutPromise = new Promise<never>((_, reject) => {
         setTimeout(() => reject(new Error('Global helpers analysis timed out')), 5000);
       });
 
-      const globalHelpersResult = await Promise.race([
+      const detectedHelpers = await Promise.race([
         analyzeGlobalHelpers(workspaceRoot),
         timeoutPromise
       ]);
+
+      // Merge configured helpers with detected helpers
+      const globalHelpersResult = mergeConfiguredHelpers(detectedHelpers, settings);
 
       const globalHelper = globalHelpersResult.helperDetails.find(
         (helper: any) => helper.name === word

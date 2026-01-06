@@ -43,6 +43,61 @@
     ]
   },
 
+  // New globalHelpers configuration with rich documentation
+  "meteorLanguageServer.globalHelpers": {
+    "extend": [
+      {
+        "name": "testHelper",
+        "doc": "A test helper for demonstrating the new configuration format.",
+        "params": [
+          {
+            "name": "value",
+            "type": "string",
+            "doc": "The value to process."
+          }
+        ],
+        "return": {
+          "type": "string",
+          "doc": "The processed value."
+        },
+        "examples": [
+          {
+            "html": "{{ testHelper 'example' }}"
+          }
+        ]
+      },
+      {
+        "name": "formatCurrency",
+        "doc": "Format a number as currency.",
+        "params": [
+          {
+            "name": "amount",
+            "type": ["number", "string"],
+            "doc": "The amount to format."
+          },
+          {
+            "name": "currency",
+            "type": "string",
+            "optional": true,
+            "default": "USD",
+            "doc": "The currency code."
+          }
+        ],
+        "return": {
+          "type": "string"
+        },
+        "examples": [
+          {
+            "html": "{{ formatCurrency 99.99 }}"
+          },
+          {
+            "html": "{{ formatCurrency total 'EUR' }}"
+          }
+        ]
+      }
+    ]
+  },
+
   // Additional VS Code settings for better development experience
   "editor.formatOnSave": true,
   "editor.tabSize": 2,

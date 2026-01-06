@@ -94,6 +94,25 @@ Basic configuration in VS Code settings:
     ]
   },
 
+  // New: Rich global helper configuration with parameters and examples
+  "meteorLanguageServer.globalHelpers": {
+    "extend": [
+      {
+        "name": "formatDate",
+        "doc": "Format dates with custom patterns",
+        "params": [
+          {
+            "name": "date",
+            "type": ["string", "Date"],
+            "doc": "Date to format"
+          }
+        ],
+        "return": { "type": "string" },
+        "examples": [{ "html": "{{ formatDate createdAt }}" }]
+      }
+    ]
+  }
+
 }
 ```
 

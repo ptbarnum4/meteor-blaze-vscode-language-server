@@ -53,11 +53,74 @@ export type FileAnalysis = {
 };
 
 /**
+ * Represents a parameter in a global helper configuration.
+ */
+export type GlobalHelperParam = {
+  /** The name of the parameter. */
+  name: string;
+  /** Optional type(s) for the parameter. Can be a single type or array of types. */
+  type?: string | string[];
+  /** Optional documentation for the parameter. */
+  doc?: string;
+  /** Whether the parameter is optional. */
+  optional?: boolean;
+  /** Default value for the parameter. */
+  default?: string;
+};
+
+/**
+ * Represents return type information for a global helper.
+ */
+export type GlobalHelperReturn = {
+  /** Optional return type. */
+  type?: string;
+  /** Optional documentation for the return value. */
+  doc?: string;
+};
+
+/**
+ * Represents an example usage of a global helper.
+ */
+export type GlobalHelperExample = {
+  /** Example HTML/template usage. */
+  html?: string;
+};
+
+/**
+ * Configuration for a custom global helper.
+ */
+export type GlobalHelperConfig = {
+  /** The name of the helper (required). */
+  name: string;
+  /** Optional documentation for the helper. */
+  doc?: string;
+  /** Optional array of parameters. */
+  params?: GlobalHelperParam[];
+  /** Optional return type information. */
+  return?: GlobalHelperReturn;
+  /** Optional array of usage examples. */
+  examples?: GlobalHelperExample[];
+};
+
+/**
  * Represents the settings for the language server.
  */
 export type LanguageServerSettings = {
   /** Maximum number of problems to report. */
   maxNumberOfProblems: number;
+  /** Settings for global helpers. */
+  globalHelpers?: {
+    /** Array of custom global helper configurations. */
+    extend?: GlobalHelperConfig[];
+  };
+  /** Legacy settings for Blaze helpers (kept for backward compatibility). */
+  blazeHelpers?: {
+    /** Array of simple helper configurations with name and doc. */
+    extend?: Array<{
+      name: string;
+      doc: string;
+    }>;
+  };
 };
 
 /**
@@ -97,7 +160,10 @@ export type ExtensionConfig = {
 
 export type GlobalHelperInfo = {
   name: string;
+  /** JSDoc documentation from code analysis */
   jsdoc?: string;
+  /** Rich markdown documentation from config settings */
+  markdown?: string;
   signature?: string;
   returnType?: string;
   parameters?: string;

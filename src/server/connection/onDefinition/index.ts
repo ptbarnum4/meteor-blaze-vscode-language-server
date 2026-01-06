@@ -3,9 +3,10 @@ import path from 'path';
 import { DefinitionParams, Location } from 'vscode-languageserver/node';
 
 import { CurrentConnectionConfig } from '../../../types';
-import { analyzeGlobalHelpers } from '../../helpers/analyzeGlobalHelpers';
+import { analyzeGlobalHelpers, mergeConfiguredHelpers } from '../../helpers/analyzeGlobalHelpers';
 import { containsMeteorTemplates } from '../../helpers/containsMeteorTemplates';
 import { findEnclosingEachInContext } from '../../helpers/findEnclosingEachInContext';
+import getDocumentSettings from '../../helpers/getDocumentSettings';
 import { getWordRangeAtPosition } from '../../helpers/getWordRangeAtPosition';
 import { isWithinComment } from '../../helpers/isWithinComment';
 import { isWithinHandlebarsExpression } from '../../helpers/isWithinHandlebarsExpression';
@@ -415,15 +416,25 @@ const onDefinition = (config: CurrentConnectionConfig) => {
           setTimeout(() => reject(new Error('Global helpers analysis timed out')), 5000);
         });
 
-        const globalHelpersResult = await Promise.race([
+        // Get document settings to access configured global helpers
+        const settings = await getDocumentSettings(config, document.uri);
+
+        const detectedHelpers = await Promise.race([
           analyzeGlobalHelpers(workspaceRoot),
           timeoutPromise
         ]);
+
+        // Merge configured helpers with detected helpers
+        const globalHelpersResult = mergeConfiguredHelpers(detectedHelpers, settings);
 
         const globalHelper = globalHelpersResult.helperDetails.find(
           (helper: any) => helper.name === word
         );
         if (globalHelper) {
+          // Skip definition for helpers configured in settings (they don't have a real file)
+          if (globalHelper.filePath === 'settings') {
+            return null;
+          }
           // Read the file and find the Template.registerHelper line
           const content = require('fs').readFileSync(globalHelper.filePath, 'utf8');
           const lines = content.split('\n');
