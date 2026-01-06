@@ -4,6 +4,60 @@ All notable changes to the "meteor-blaze-vscode-language-server" extension will 
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [Unreleased]
+
+### ✨ New Features
+
+#### Rich Global Helper Configuration
+- **New `meteorLanguageServer.globalHelpers` setting**: Define custom global helpers with comprehensive documentation
+- **Parameter definitions**: Document parameter names, types, and descriptions
+- **Return type information**: Specify and document return types
+- **Usage examples**: Provide template code examples for each helper
+- **Optional parameters**: Mark parameters as optional with default values
+- **Union types**: Support multiple types for parameters (e.g., `["string", "Date"]`)
+- **Enhanced IntelliSense**: Full documentation appears in hover and completion
+- **Backward compatible**: Legacy `blazeHelpers.extend` still supported
+
+#### Configuration Example
+```json
+{
+  "meteorLanguageServer.globalHelpers": {
+    "extend": [
+      {
+        "name": "formatDate",
+        "doc": "Format dates with custom patterns",
+        "params": [
+          {
+            "name": "date",
+            "type": ["string", "Date"],
+            "doc": "Date to format"
+          },
+          {
+            "name": "format",
+            "type": "string",
+            "optional": true,
+            "default": "MM/DD/YYYY"
+          }
+        ],
+        "return": {
+          "type": "string",
+          "doc": "Formatted date string"
+        },
+        "examples": [
+          { "html": "{{ formatDate createdAt 'DD-MM-YYYY' }}" }
+        ]
+      }
+    ]
+  }
+}
+```
+
+**Benefits:**
+- Better documentation for external package helpers
+- Improved team collaboration with shared helper docs
+- Enhanced code completion with type information
+- Quick reference through hover and examples
+
 ## [0.0.9] - 2025-11-08
 
 ### 🔧 Maintenance

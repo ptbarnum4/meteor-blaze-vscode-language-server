@@ -144,7 +144,114 @@ The extension provides custom theme colors for advanced syntax highlighting:
 }
 ```
 
-### Available Custom Colors
+## Custom Global Helpers
+
+### `meteorLanguageServer.globalHelpers`
+Define custom global helpers with rich documentation, parameter types, and examples. This is useful for:
+- Helpers from external packages not auto-detected
+- Custom app-level helpers with detailed documentation
+- Providing better IntelliSense for team members
+
+#### Simple Helper Configuration
+```json
+{
+  "meteorLanguageServer.globalHelpers": {
+    "extend": [
+      {
+        "name": "trim",
+        "doc": "Trims whitespace from the beginning and end of a string."
+      }
+    ]
+  }
+}
+```
+
+#### Full Helper Configuration with Parameters
+```json
+{
+  "meteorLanguageServer.globalHelpers": {
+    "extend": [
+      {
+        "name": "formatDate",
+        "doc": "Format the given date string into a more readable format.",
+        "params": [
+          {
+            "name": "date",
+            "type": ["string", "Date"],
+            "doc": "The date string to format."
+          },
+          {
+            "name": "format",
+            "type": "string",
+            "optional": true,
+            "default": "MM/DD/YYYY",
+            "doc": "The desired output format (e.g., 'MM/DD/YYYY')."
+          }
+        ],
+        "return": {
+          "type": "string",
+          "doc": "The formatted date string."
+        },
+        "examples": [
+          {
+            "html": "{{ formatDate '2023-10-05' 'DD-MM-YYYY' }}"
+          },
+          {
+            "html": "{{ formatDate createdAt }}"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+#### Configuration Fields
+
+**Required:**
+- `name` (string): The helper name
+
+**Optional:**
+- `doc` (string): Description of what the helper does
+- `params` (array): Array of parameter definitions
+  - `name` (string): Parameter name (required)
+  - `type` (string | string[]): Type(s) for the parameter
+  - `doc` (string): Parameter documentation
+  - `optional` (boolean): Whether parameter is optional
+  - `default` (string): Default value
+- `return` (object): Return value information
+  - `type` (string): Return type
+  - `doc` (string): Return value documentation
+- `examples` (array): Usage examples
+  - `html` (string): Example template code
+
+#### Benefits
+- **IntelliSense**: Hover over helpers to see full documentation
+- **Type Information**: Parameter and return types displayed
+- **Examples**: Quick reference for correct usage
+- **Completions**: Custom helpers appear in autocomplete
+
+See [example-settings-globalHelpers.jsonc](./example-settings-globalHelpers.jsonc) for more examples.
+
+### `meteorLanguageServer.blazeHelpers` (Legacy)
+Simple helper configuration with name and doc only. For more advanced documentation, use `globalHelpers` instead.
+
+```json
+{
+  "meteorLanguageServer.blazeHelpers": {
+    "extend": [
+      {
+        "name": "#customBlock",
+        "doc": "Custom block helper with documentation"
+      }
+    ]
+  }
+}
+```
+
+## Token Color Customization
+
+### Semantic Token Colors
 - `blazeBlockHash.defaultColor` - `#808080`
 - `blazeBlockName.defaultColor` - `#f177ff`
 - `blazeBlockArgs.defaultColor` - `#fffec4`

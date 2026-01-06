@@ -355,6 +355,103 @@
               "description": "Custom color for the brackets '{{' and '}}' in Blaze helpers. Use hex or theme color."
             }
           }
+        },
+        "meteorLanguageServer.globalHelpers": {
+          "type": "object",
+          "default": {},
+          "description": "Settings for custom global helpers with rich documentation support.",
+          "properties": {
+            "extend": {
+              "type": "array",
+              "default": [],
+              "description": "Define custom global helpers with full parameter and return type information. Example: [{ name: 'formatDate', doc: 'Formats a date', params: [{ name: 'date', type: 'string', doc: 'Date to format' }], return: { type: 'string' } }]",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "The name of the helper (required)."
+                  },
+                  "doc": {
+                    "type": "string",
+                    "description": "Documentation describing what the helper does."
+                  },
+                  "params": {
+                    "type": "array",
+                    "description": "Array of parameter definitions.",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": "string",
+                          "description": "The parameter name."
+                        },
+                        "type": {
+                          "oneOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ],
+                          "description": "The parameter type(s). Can be a single type or array of types."
+                        },
+                        "doc": {
+                          "type": "string",
+                          "description": "Documentation for this parameter."
+                        },
+                        "optional": {
+                          "type": "boolean",
+                          "description": "Whether this parameter is optional."
+                        },
+                        "default": {
+                          "type": "string",
+                          "description": "Default value for this parameter."
+                        }
+                      },
+                      "required": [
+                        "name"
+                      ]
+                    }
+                  },
+                  "return": {
+                    "type": "object",
+                    "description": "Return type information.",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "description": "The return type."
+                      },
+                      "doc": {
+                        "type": "string",
+                        "description": "Documentation for the return value."
+                      }
+                    }
+                  },
+                  "examples": {
+                    "type": "array",
+                    "description": "Array of usage examples.",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "html": {
+                          "type": "string",
+                          "description": "Example HTML/template code showing how to use this helper."
+                        }
+                      }
+                    }
+                  }
+                },
+                "required": [
+                  "name"
+                ]
+              }
+            }
+          }
         }
       }
     }

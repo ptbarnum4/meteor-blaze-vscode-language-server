@@ -294,8 +294,53 @@ Extend the extension with custom block helpers:
 }
 ```
 
-### Custom Blaze Helpers
-Add custom helpers for completion and hover:
+### Custom Global Helpers with Rich Documentation
+Define custom global helpers with complete documentation, parameter types, return types, and examples:
+
+```json
+{
+  "meteorLanguageServer.globalHelpers": {
+    "extend": [
+      {
+        "name": "formatDate",
+        "doc": "Format the given date string into a more readable format.",
+        "params": [
+          {
+            "name": "date",
+            "type": ["string", "Date"],
+            "doc": "The date string to format."
+          },
+          {
+            "name": "format",
+            "type": "string",
+            "optional": true,
+            "default": "MM/DD/YYYY",
+            "doc": "The desired output format."
+          }
+        ],
+        "return": {
+          "type": "string",
+          "doc": "The formatted date string."
+        },
+        "examples": [
+          {
+            "html": "{{ formatDate '2023-10-05' 'DD-MM-YYYY' }}"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+**Benefits:**
+- **Rich Hover Information**: See full documentation with parameter types and examples
+- **Better IntelliSense**: Parameter information displayed in completions
+- **Type Safety**: Document expected types for better code quality
+- **Team Collaboration**: Share helper documentation across your team
+
+### Custom Blaze Helpers (Legacy)
+Simple helper configuration with name and doc only:
 
 ```json
 {
@@ -313,6 +358,8 @@ Add custom helpers for completion and hover:
   }
 }
 ```
+
+For more advanced documentation, use `globalHelpers` instead.
 
 ## 📊 Performance & Optimization
 

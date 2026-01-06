@@ -3,18 +3,19 @@ import path from 'path';
 
 import { TextDocument } from 'vscode-languageserver-textdocument';
 import {
-  CompletionItem,
-  CompletionItemKind,
-  MarkupKind,
-  TextDocumentPositionParams
+    CompletionItem,
+    CompletionItemKind,
+    MarkupKind,
+    TextDocumentPositionParams
 } from 'vscode-languageserver/node';
 
 import { CurrentConnectionConfig } from '../../types';
-import { analyzeGlobalHelpers } from '../helpers/analyzeGlobalHelpers';
+import { analyzeGlobalHelpers, mergeConfiguredHelpers } from '../helpers/analyzeGlobalHelpers';
 import { createBlockCompletions, shouldProvideBlockCompletion } from '../helpers/autoInsertEndTags';
 import { containsMeteorTemplates } from '../helpers/containsMeteorTemplates';
 import { findEnclosingEachInContext } from '../helpers/findEnclosingEachInContext';
 import { findEnclosingIfOrUnlessBlock } from '../helpers/findEnclosingIfOrUnlessBlock';
+import getDocumentSettings from '../helpers/getDocumentSettings';
 import { isWithinComment } from '../helpers/isWithinComment';
 import { isWithinHandlebarsExpression } from '../helpers/isWithinHandlebarsExpression';
 
@@ -195,25 +196,34 @@ const onCompletion = (config: CurrentConnectionConfig) => {
       }
 
       try {
+        // Get document settings to access configured global helpers
+        const settings = await getDocumentSettings(config, document.uri);
+
         // Add timeout to prevent hanging during tests or large projects
         const timeoutPromise = new Promise<never>((_, reject) => {
           setTimeout(() => reject(new Error('Global helpers analysis timed out')), 5000);
         });
 
-        const globalHelpersResult = await Promise.race([
+        const detectedHelpers = await Promise.race([
           analyzeGlobalHelpers(workspaceRoot),
           timeoutPromise
         ]);
+
+        // Merge configured helpers with detected helpers
+        const globalHelpersResult = mergeConfiguredHelpers(detectedHelpers, settings);
 
         globalHelpersResult.helperDetails.forEach(helper => {
           // Avoid duplicates with existing completions
           if (!completions.find(c => c.label === helper.name)) {
             const documentation =
               helper.jsdoc || `Globally registered template helper: ${helper.name}`;
+            const detail = helper.signature
+              ? `Global helper: ${helper.signature}`
+              : `Global template helper ${helper.name}`;
             completions.push({
               label: helper.name,
               kind: CompletionItemKind.Function,
-              detail: `Global template helper ${helper.name}`,
+              detail,
               documentation: helper.jsdoc
                 ? { kind: MarkupKind.Markdown, value: helper.jsdoc }
                 : documentation
