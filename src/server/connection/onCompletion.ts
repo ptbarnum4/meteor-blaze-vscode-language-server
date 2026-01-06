@@ -215,8 +215,9 @@ const onCompletion = (config: CurrentConnectionConfig) => {
         globalHelpersResult.helperDetails.forEach(helper => {
           // Avoid duplicates with existing completions
           if (!completions.find(c => c.label === helper.name)) {
+            // Prefer markdown (from config) over jsdoc (from code)
             const documentation =
-              helper.jsdoc || `Globally registered template helper: ${helper.name}`;
+              helper.markdown || helper.jsdoc || `Globally registered template helper: ${helper.name}`;
             const detail = helper.signature
               ? `Global helper: ${helper.signature}`
               : `Global template helper ${helper.name}`;
@@ -224,8 +225,8 @@ const onCompletion = (config: CurrentConnectionConfig) => {
               label: helper.name,
               kind: CompletionItemKind.Function,
               detail,
-              documentation: helper.jsdoc
-                ? { kind: MarkupKind.Markdown, value: helper.jsdoc }
+              documentation: helper.markdown || helper.jsdoc
+                ? { kind: MarkupKind.Markdown, value: helper.markdown || helper.jsdoc || '' }
                 : documentation
             });
           }

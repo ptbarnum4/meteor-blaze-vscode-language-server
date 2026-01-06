@@ -160,7 +160,10 @@ export type ExtensionConfig = {
 
 export type GlobalHelperInfo = {
   name: string;
+  /** JSDoc documentation from code analysis */
   jsdoc?: string;
+  /** Rich markdown documentation from config settings */
+  markdown?: string;
   signature?: string;
   returnType?: string;
   parameters?: string;

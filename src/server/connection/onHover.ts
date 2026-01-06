@@ -13,8 +13,8 @@ import { getWordRangeAtPosition } from '../helpers/getWordRangeAtPosition';
 import { isWithinComment } from '../helpers/isWithinComment';
 import { isWithinHandlebarsExpression } from '../helpers/isWithinHandlebarsExpression';
 import {
-    trimLanguageDocumentation,
-    trimUsageDocumentation
+  trimLanguageDocumentation,
+  trimUsageDocumentation
 } from '../helpers/trimUsageDocumentation';
 
 const onHover = (config: CurrentConnectionConfig) => {
@@ -128,7 +128,7 @@ const onHover = (config: CurrentConnectionConfig) => {
 
         // Add JSDoc description if available
         if (helperInfo?.jsdoc) {
-          hoverContent.push(`**Description:** ${helperInfo.jsdoc}`);
+          hoverContent.push(helperInfo.jsdoc);
           hoverContent.push(``);
         }
 

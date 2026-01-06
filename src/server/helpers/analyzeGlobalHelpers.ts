@@ -1,10 +1,10 @@
 import fsSync from 'fs'; // for existsSync and where sync is needed
 import path from 'path';
 import {
-    AnalyzeGlobalHelpersResult,
-    GlobalHelperConfig,
-    GlobalHelperInfo,
-    LanguageServerSettings
+  AnalyzeGlobalHelpersResult,
+  GlobalHelperConfig,
+  GlobalHelperInfo,
+  LanguageServerSettings
 } from '/types';
 
 // Function to extract JSDoc comment from lines above a target line
@@ -416,17 +416,17 @@ export const analyzeGlobalHelpers = async (
  */
 export const transformConfigToHelperInfo = (config: GlobalHelperConfig): GlobalHelperInfo => {
   // Build JSDoc documentation
-  let jsdocParts: string[] = [];
+  let markdownParts: string[] = [];
 
   // Add main documentation
   if (config.doc) {
-    jsdocParts.push(config.doc);
+    markdownParts.push(config.doc);
   }
 
   // Add parameter documentation
   if (config.params && config.params.length > 0) {
-    jsdocParts.push(''); // Empty line
-    jsdocParts.push('**Parameters:**');
+    markdownParts.push(''); // Empty line
+    markdownParts.push('**Parameters:**');
     config.params.forEach(param => {
       let paramLine = `- \`${param.name}\``;
       if (param.type) {
@@ -442,13 +442,13 @@ export const transformConfigToHelperInfo = (config: GlobalHelperConfig): GlobalH
       if (param.doc) {
         paramLine += ` - ${param.doc}`;
       }
-      jsdocParts.push(paramLine);
+      markdownParts.push(paramLine);
     });
   }
 
   // Add return type documentation
   if (config.return) {
-    jsdocParts.push(''); // Empty line
+    markdownParts.push(''); // Empty line
     let returnLine = '**Returns:**';
     if (config.return.type) {
       returnLine += ` \`${config.return.type}\``;
@@ -456,18 +456,20 @@ export const transformConfigToHelperInfo = (config: GlobalHelperConfig): GlobalH
     if (config.return.doc) {
       returnLine += ` - ${config.return.doc}`;
     }
-    jsdocParts.push(returnLine);
+    markdownParts.push(returnLine);
   }
 
   // Add examples
   if (config.examples && config.examples.length > 0) {
-    jsdocParts.push(''); // Empty line
-    jsdocParts.push('**Examples:**');
+    markdownParts.push(''); // Empty line
+    markdownParts.push('**Examples:**');
+    markdownParts.push(''); // Empty line before code block
     config.examples.forEach(example => {
       if (example.html) {
-        jsdocParts.push('```handlebars');
-        jsdocParts.push(example.html);
-        jsdocParts.push('```');
+        markdownParts.push('```handlebars');
+        markdownParts.push(example.html);
+        markdownParts.push('```');
+        markdownParts.push(''); // Empty line after code block
       }
     });
   }
@@ -502,7 +504,7 @@ export const transformConfigToHelperInfo = (config: GlobalHelperConfig): GlobalH
 
   return {
     name: config.name,
-    jsdoc: jsdocParts.join('\n'),
+    markdown: markdownParts.join('\n'),
     signature,
     returnType,
     parameters,
@@ -548,7 +550,7 @@ export const mergeConfiguredHelpers = (
         ) {
           configuredHelpers.push({
             name: helper.name,
-            jsdoc: helper.doc || '',
+            markdown: helper.doc || '',
             signature: `${helper.name}()`,
             returnType: '',
             parameters: '',
