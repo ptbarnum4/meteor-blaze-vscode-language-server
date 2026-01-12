@@ -487,7 +487,7 @@
     "@eslint/js": "^9.39.2",
     "@types/mocha": "^10.0.1",
     "@types/node": "^25.0.3",
-    "@types/vscode": "^1.107.0",
+    "@types/vscode": "^1.108.1",
     "@typescript-eslint/eslint-plugin": "^8.52.0",
     "@typescript-eslint/parser": "^8.52.0",
     "@vscode/test-electron": "^2.5.2",
