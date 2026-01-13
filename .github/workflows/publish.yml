@@ -7,6 +7,8 @@ on:
 
 jobs:
   publish:
+    # Skip this job until vscode publish is resolved
+    if: false
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -37,9 +39,12 @@ jobs:
         id: package-version
         run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
 
+      # List all .vsix files in the current directory to verify package creation
       - name: List generated files
         run: ls -la *.vsix
 
+      # Attach the VSIX file to the GitHub release (only runs when triggered by a release event)
+      # This makes the extension package downloadable directly from the GitHub release page
       - name: Attach VSIX to Release
         if: github.event_name == 'release'
         uses: softprops/action-gh-release@v2
@@ -48,6 +53,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      # Upload the VSIX as a GitHub Actions artifact (only runs on manual workflow dispatch)
+      # This allows downloading the extension package from the Actions run page for testing
       - name: Upload VSIX as Artifact
         if: github.event_name == 'workflow_dispatch'
         uses: actions/upload-artifact@v5
@@ -56,6 +63,8 @@ jobs:
           path: meteor-blaze-vscode-language-server-${{ steps.package-version.outputs.version }}.vsix
           retention-days: 30
 
+      # Publish the extension to the VS Code Marketplace using the VSCE_PAT secret
+      # The baseImagesUrl and baseContentUrl ensure images and links work correctly in the marketplace
       - name: Publish to VS Code Marketplace
         env:
           VSCE_PAT: ${{ secrets.VSCE_PAT }}

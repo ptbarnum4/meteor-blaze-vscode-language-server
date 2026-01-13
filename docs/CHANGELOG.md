@@ -4,6 +4,23 @@ All notable changes to the "meteor-blaze-vscode-language-server" extension will 
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [0.0.11] - 2026-01-13
+
+### 🐛 Bug Fixes
+- Improved stability and error handling in language server
+- Enhanced template parsing for edge cases
+- Fixed minor issues with code completion accuracy
+
+### ✨ Enhancements
+- Performance improvements in document analysis
+- Better handling of complex template structures
+- Enhanced diagnostic messages for better clarity
+
+### 🔧 Maintenance
+- Code refactoring and cleanup
+- Updated internal dependencies
+- Improved test coverage
+
 ## [0.0.10] - 2026-01-06
 
 ### ✨ New Features
