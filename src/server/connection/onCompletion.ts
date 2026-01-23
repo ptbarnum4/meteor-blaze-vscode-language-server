@@ -841,32 +841,42 @@ async function getTemplateParameterCompletions(
     // Parse already used parameters from the current template inclusion
     const usedParameters = parseUsedParameters(textBeforeCursor, templateName);
 
+    // Use workspace analysis to find child template's data properties
+    let childTemplateDataProps: string[] = [];
+
+    // Search through all analyzed files for the child template's data properties
+    for (const [key, dataProps] of config.fileAnalysis.dataProperties?.entries() || []) {
+      // Check if this key is for the child template we're looking for
+      if (key.endsWith(`/${templateName}`)) {
+        childTemplateDataProps = dataProps;
+        break;
+      }
+    }
+
     // Find associated JS/TS file
     const associatedFile = findAssociatedJSFile(currentDir, currentBaseName);
-    if (!associatedFile) {
-      return completions;
+
+    let templateFile: string | null = null;
+    if (associatedFile) {
+      // Parse imports from the associated file to find the template
+      const importedTemplates = parseTemplateImports(associatedFile);
+
+      if (importedTemplates.includes(templateName)) {
+        // Find the template file to analyze its data usage
+        templateFile = findImportedTemplateFile(associatedFile, templateName, connection);
+      }
     }
 
-    // Parse imports from the associated file to find the template
-    const importedTemplates = parseTemplateImports(associatedFile);
-
-    if (!importedTemplates.includes(templateName)) {
-      return completions;
+    let templateDataProperties: string[] = [];
+    if (templateFile) {
+      // Read and analyze the template file for data properties
+      const templateContent = fsSync.readFileSync(templateFile, 'utf8');
+      templateDataProperties = extractDataPropertiesFromTemplate(templateContent, templateName);
     }
-
-    // Find the template file to analyze its data usage
-    const templateFile = findImportedTemplateFile(associatedFile, templateName, connection);
-    if (!templateFile) {
-      return completions;
-    }
-
-    // Read and analyze the template file for data properties
-    const templateContent = fsSync.readFileSync(templateFile, 'utf8');
-    const templateDataProperties = extractDataPropertiesFromTemplate(templateContent, templateName);
 
     // Also analyze the associated TypeScript file for type definitions
     // We need to find the actual template's TypeScript file, not the importing file
-    const templateTsFile = findTemplateTypeScriptFile(associatedFile, templateName, connection);
+    const templateTsFile = associatedFile ? findTemplateTypeScriptFile(associatedFile, templateName, connection) : null;
     let typeDataProperties: Array<{ name: string; type?: string; documentation?: string }> = [];
 
     if (templateTsFile) {
@@ -876,32 +886,31 @@ async function getTemplateParameterCompletions(
     // Extract helper function names from the TypeScript file to exclude them from parameters
     const helperNames = templateTsFile ? extractHelperNames(templateTsFile, templateName) : [];
 
-    // Combine TypeScript properties (with enhanced type info) and template properties (with default any type)
+    // Combine all sources of data properties
+    const allPropertyNames = new Set<string>([
+      ...childTemplateDataProps,
+      ...templateDataProperties,
+      ...typeDataProperties.map(p => p.name)
+    ]);
+
     // Create a map of TypeScript properties for easy lookup
     const typePropsMap = new Map(typeDataProperties.map(prop => [prop.name, prop]));
 
-    // Start with all template properties, then enhance with TypeScript info where available
-    // Filter out any properties that are actually helper functions
-    const templateProps = templateDataProperties
-      .filter(propName => !helperNames.includes(propName)) // Exclude helper functions
-      .map(propName => {
-        const typeInfo = typePropsMap.get(propName);
-        return typeInfo || { name: propName, type: 'any' };
-      });
+    // Build completions for each property
+    const allDataProperties: Array<{ name: string; type?: string; documentation?: string }> = [];
 
-    // Add any TypeScript-only properties that aren't in the template HTML
-    const templatePropNames = new Set(templateDataProperties);
-    const typeOnlyProps = typeDataProperties.filter(
-      prop => !templatePropNames.has(prop.name) && !helperNames.includes(prop.name)
-    );
+    for (const propName of allPropertyNames) {
+      // Skip helper functions and already used parameters
+      if (helperNames.includes(propName) || usedParameters.includes(propName)) {
+        continue;
+      }
 
-    // Combine both sets of properties and filter out already used parameters
-    const allDataProperties: Array<{ name: string; type?: string; documentation?: string }> = [
-      ...templateProps,
-      ...typeOnlyProps
-    ]
-      .filter(property => !usedParameters.includes(property.name)) // Filter out used parameters
-      .sort((a, b) => a.name.localeCompare(b.name));
+      const typeInfo = typePropsMap.get(propName);
+      allDataProperties.push(typeInfo || { name: propName, type: 'any' });
+    }
+
+    // Sort by name
+    allDataProperties.sort((a, b) => a.name.localeCompare(b.name));
 
     // Create completions for each available data property
     allDataProperties.forEach(property => {

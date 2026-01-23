@@ -83,7 +83,9 @@ const onDefinition = (config: CurrentConnectionConfig) => {
       offset,
       word,
       dir,
-      connection
+      document.uri,
+      connection,
+      config
     );
     if (templateInclusionResult) {
       return templateInclusionResult;

@@ -12,12 +12,12 @@ export type TemplateDataAnalysis = {
 const extractPropsFromBlock = (body: string): { names: string[]; types: Record<string, string> } => {
   const names: string[] = [];
   const types: Record<string, string> = {};
-  // Capture key and following type up to comma or semicolon or newline
-  const propRegex = /\b(\w+)\s*:\s*([^;\n,\r\}]+)[;\n,\r]?/g;
+  // Capture key with optional '?' and following type up to comma or semicolon or newline
+  const propRegex = /\b(\w+)\??(\s*:\s*([^;\n,\r\}]+))?[;\n,\r]?/g;
   let p;
   while ((p = propRegex.exec(body)) !== null) {
     const key = p[1];
-    const typeStr = (p[2] || '').trim();
+    const typeStr = (p[3] || '').trim();
     if (!names.includes(key)) {
       names.push(key);
     }
