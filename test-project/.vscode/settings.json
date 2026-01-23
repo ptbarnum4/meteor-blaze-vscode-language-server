@@ -97,6 +97,11 @@
       }
     ]
   },
+  "meteorLanguageServer.formatting": {
+    "enabled": true,
+    "indentSize": 2,
+    "baseFormatter": "vscode.html-language-features"
+  },
 
   // Additional VS Code settings for better development experience
   "editor.formatOnSave": true,
@@ -107,9 +112,12 @@
 
   // Language-specific settings
   "[html]": {
-    "editor.defaultFormatter": "vscode.html-language-features",
+    "editor.defaultFormatter": "ptbarnum4.meteor-blaze-vscode-language-server",
     "editor.suggest.insertMode": "replace",
     "editor.bracketPairColorization.enabled": false // Disable bracket pair colorization for HTML
+  },
+  "[handlebars]": {
+    "editor.defaultFormatter": "ptbarnum4.meteor-blaze-vscode-language-server"
   },
   "html.format.indentHandlebars": true,
   "html.format.templating": true,
@@ -119,7 +127,7 @@
   "html.format.unformattedContentDelimiter": "<!-- no-format -->",
 
   "[javascript]": {
-    "editor.defaultFormatter": "vscode.typescript-language-features"
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
   "[typescript]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"

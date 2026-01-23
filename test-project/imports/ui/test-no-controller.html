@@ -1,0 +1,35 @@
+<template name="parentWithController">
+  <div>
+    {{> childWithoutController
+      userName=userName
+      userAge=age
+      isActive=isActive
+    }}
+  </div>
+</template>
+
+<template name="childWithoutController">
+  <div class="user-card">
+    <h2>{{userName}}</h2>
+    <p>Age: {{userAge}}</p>
+    <p>Active: {{this.isActive}}</p>
+    <p>Formatted: {{formatText userDescription}}</p>
+
+    {{#if isActive}}
+      <p>The user is active.</p>
+    {{else}}
+      <p>The user is not active.</p>
+    {{/if}}
+
+    {{#each image in images}}
+      <img src="{{image.url}}"
+        alt="{{image.altText}}" />
+    {{/each}}
+
+    {{#with address}}
+      <div class="address">
+        <p>{{street}}, {{city}}, {{state}} {{zip}}</p>
+      </div>
+    {{/with}}
+  </div>
+</template>

@@ -134,9 +134,9 @@ export const analyzeNeighboringFiles = (fileAnalysis: FileAnalysis, document: Te
                 fileAnalysis.dataTypeByKey = new Map();
               }
               fileAnalysis.dataTypeByKey.set(dirTemplateKey, mappedType);
-            } else if (allTypeProps.length) {
-              propsForTemplate = allTypeProps;
             }
+            // Only add data properties if we found a specific type for this template
+            // Don't fall back to allTypeProps as that would include properties from other templates
             if (propsForTemplate.length) {
               if (!fileAnalysis.dataProperties) {
                 fileAnalysis.dataProperties = new Map();

@@ -51,7 +51,7 @@ const findParameterDefinition = async (
     }
 
     // Find where the child template HTML is defined
-    const childTemplateLocation = findTemplateDefinition(templateName, currentDir, connection);
+    const childTemplateLocation = findTemplateDefinition(templateName, currentDir, connection, currentFileUri);
     let childTemplateDir = currentDir;
     let childTemplateFile: string | null = null;
 
@@ -217,6 +217,20 @@ const findParameterDefinition = async (
           }
         }
       }
+    }
+
+    // If we still haven't found anything, try HTML search again as a final fallback
+    // This ensures we always check HTML even if TypeScript search failed
+    const htmlFallbackResult = findParameterInTemplateHtml(
+      parameterName,
+      templateName,
+      currentDir,
+      currentFileUri,
+      fs,
+      path
+    );
+    if (htmlFallbackResult) {
+      return htmlFallbackResult;
     }
   } catch (error) {
     console.error(`Error finding parameter definition for ${parameterName}:`, error);

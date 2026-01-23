@@ -23,7 +23,7 @@ const handleTemplateInclusionDefinition = async (
 
   if (templateInclusionMatch && templateInclusionMatch[1] === word) {
     // Navigate to the template definition
-    return findTemplateDefinition(word, currentDir, connection);
+    return findTemplateDefinition(word, currentDir, connection, currentFileUri);
   }
 
   // Check if we're in template parameters: {{> templateName param=value}}
@@ -37,7 +37,7 @@ const handleTemplateInclusionDefinition = async (
 
   // If the word is the template name, navigate to template
   if (word === templateName) {
-    return findTemplateDefinition(templateName, currentDir, connection);
+    return findTemplateDefinition(templateName, currentDir, connection, currentFileUri);
   }
 
   // Also check if we're still within the template inclusion by looking for the closing }}

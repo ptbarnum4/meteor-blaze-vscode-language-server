@@ -7,10 +7,37 @@ import { VSCodeServerConnection } from '/types';
 const findTemplateDefinition = (
   templateName: string,
   currentDir: string,
-  _connection: VSCodeServerConnection
+  _connection: VSCodeServerConnection,
+  currentFileUri?: string
 ): Location[] | null => {
   try {
-    // First, try to find the template through import analysis (same approach as hover)
+    // FIRST: Check if the template is in the current file (same file navigation)
+    if (currentFileUri) {
+      const currentFilePath = currentFileUri.replace('file://', '');
+      if (fs.existsSync(currentFilePath)) {
+        const content = fs.readFileSync(currentFilePath, 'utf8');
+        const templateRegex = new RegExp(`<template\\s+name=["']${templateName}["'][^>]*>`);
+        const match = templateRegex.exec(content);
+
+        if (match) {
+          const lines = content.substring(0, match.index).split('\n');
+          const line = lines.length - 1;
+          const character = match.index - content.lastIndexOf('\n', match.index) - 1;
+
+          return [
+            {
+              uri: currentFileUri,
+              range: {
+                start: { line, character },
+                end: { line, character: character + templateName.length }
+              }
+            }
+          ];
+        }
+      }
+    }
+
+    // Second, try to find the template through import analysis (same approach as hover)
     const associatedFile = findAssociatedJSFileForDefinition(currentDir, fs, path);
 
     if (associatedFile) {

@@ -3,16 +3,17 @@ import path from 'path';
 
 import { TextDocument } from 'vscode-languageserver-textdocument';
 import {
-    CompletionItem,
-    CompletionItemKind,
-    MarkupKind,
-    TextDocumentPositionParams
+  CompletionItem,
+  CompletionItemKind,
+  MarkupKind,
+  TextDocumentPositionParams
 } from 'vscode-languageserver/node';
 
 import { CurrentConnectionConfig, HelperInfo } from '../../types';
 import { analyzeGlobalHelpers, mergeConfiguredHelpers } from '../helpers/analyzeGlobalHelpers';
 import { createBlockCompletions, shouldProvideBlockCompletion } from '../helpers/autoInsertEndTags';
 import { containsMeteorTemplates } from '../helpers/containsMeteorTemplates';
+import { extractParametersFromTemplate } from '../helpers/extractTemplateParameters';
 import { findEnclosingEachInContext } from '../helpers/findEnclosingEachInContext';
 import { findEnclosingIfOrUnlessBlock } from '../helpers/findEnclosingIfOrUnlessBlock';
 import getDocumentSettings from '../helpers/getDocumentSettings';
@@ -63,7 +64,9 @@ const onCompletion = (config: CurrentConnectionConfig) => {
 
     // Check if we're positioned after an equals sign (for value completion)
     // Match: paramName=|cursor or paramName=partial|cursor
-    const afterEqualsMatch = textBeforeCursor.match(/([a-zA-Z_$][a-zA-Z0-9_$]*)\s*=\s*([a-zA-Z0-9_$]*)$/);
+    const afterEqualsMatch = textBeforeCursor.match(
+      /([a-zA-Z_$][a-zA-Z0-9_$]*)\s*=\s*([a-zA-Z0-9_$]*)$/
+    );
     const isAfterEquals = afterEqualsMatch !== null;
     const paramNameBeforeEquals = afterEqualsMatch ? afterEqualsMatch[1] : '';
     const partialValueAfterEquals = afterEqualsMatch ? afterEqualsMatch[2] : '';
@@ -73,9 +76,7 @@ const onCompletion = (config: CurrentConnectionConfig) => {
     // 2. We're not completing the template name itself (isTemplateInclusion is false)
     // 3. We're NOT after an equals sign at all
     const isTemplateParameter =
-      templateParameterMatch !== null &&
-      !isTemplateInclusion &&
-      !isAfterEquals;
+      templateParameterMatch !== null && !isTemplateInclusion && !isAfterEquals;
     const templateNameForParams = templateParameterMatch ? templateParameterMatch[1] : '';
 
     // We're in template parameter VALUE context (right of =) if:
@@ -233,7 +234,9 @@ const onCompletion = (config: CurrentConnectionConfig) => {
           if (!completions.find(c => c.label === helper.name)) {
             // Prefer markdown (from config) over jsdoc (from code)
             const documentation =
-              helper.markdown || helper.jsdoc || `Globally registered template helper: ${helper.name}`;
+              helper.markdown ||
+              helper.jsdoc ||
+              `Globally registered template helper: ${helper.name}`;
             const detail = helper.signature
               ? `Global helper: ${helper.signature}`
               : `Global template helper ${helper.name}`;
@@ -241,9 +244,10 @@ const onCompletion = (config: CurrentConnectionConfig) => {
               label: helper.name,
               kind: CompletionItemKind.Function,
               detail,
-              documentation: helper.markdown || helper.jsdoc
-                ? { kind: MarkupKind.Markdown, value: helper.markdown || helper.jsdoc || '' }
-                : documentation
+              documentation:
+                helper.markdown || helper.jsdoc
+                  ? { kind: MarkupKind.Markdown, value: helper.markdown || helper.jsdoc || '' }
+                  : documentation
             });
           }
         });
@@ -858,10 +862,10 @@ async function getTemplateParameterCompletions(
 
     // Use workspace analysis to find child template's data properties
     let childTemplateDataProps: string[] = [];
+    const typedParams = new Map<string, { type: string; doc?: string }>();
 
     // Search through all analyzed files for the child template's data properties
     for (const [key, dataProps] of config.fileAnalysis.dataProperties?.entries() || []) {
-
       // Check if this key is for the child template we're looking for
       // The key format is: /full/path/to/dir/templateName
       // Extract the template name from the key (everything after the last /)
@@ -869,21 +873,92 @@ async function getTemplateParameterCompletions(
 
       if (keyTemplateName === templateName) {
         childTemplateDataProps = dataProps;
+
+        // Also get the types and JSDoc for these parameters
+        const typeMap = config.fileAnalysis.dataPropertyTypesByKey?.get(key) || {};
+        const jsDocMap = config.fileAnalysis.dataPropertyJsDocsByKey?.get(key) || {};
+
+        for (const prop of dataProps) {
+          typedParams.set(prop, {
+            type: typeMap[prop] || 'any',
+            doc: jsDocMap[prop]
+          });
+        }
         break;
       }
     }
 
-    // Create a set of all property names from workspace analysis only
+    // Always try extracting from template HTML to catch any additional parameters
+    const fs = await import('fs');
+    const path = await import('path');
+
+    const currentFilePath = currentDocument.uri.replace('file://', '');
+    const currentDir = path.dirname(currentFilePath);
+    const currentBaseName = path.basename(currentFilePath, path.extname(currentFilePath));
+
+    // Get global helpers to filter out from parameters
+    const globalHelpers: string[] = [];
+
+    // Find where the child template is actually located
+    let childTemplateFileUri = currentDocument.uri;
+    let childTemplateDir = currentDir;
+
+    // First check if template is in the same file
+    const content = currentDocument.getText();
+    const sameFileRegex = new RegExp(
+      `<template\\s+name=["']${templateName}["'][^>]*>`,
+      'i'
+    );
+    const isInSameFile = sameFileRegex.test(content);
+
+    // If not in same file, check if it's imported
+    if (!isInSameFile) {
+      // Find associated JS/TS file
+      const associatedFile = findAssociatedJSFileForCompletion(currentDir, currentBaseName, fs, path);
+
+      if (associatedFile) {
+        // Find the imported template file
+        const templateInfo = findImportedTemplateFile(templateName, associatedFile, fs, path);
+
+        if (templateInfo) {
+          childTemplateFileUri = `file://${templateInfo.file}`;
+          childTemplateDir = path.dirname(templateInfo.file);
+        }
+      }
+    }
+
+    const extractedParams = extractParametersFromTemplate(
+      templateName,
+      childTemplateFileUri,
+      childTemplateDir,
+      fs,
+      path,
+      globalHelpers
+    );
+
+    // Merge typed parameters with extracted parameters
     const allPropertyNames = new Set<string>(childTemplateDataProps);
+
+    // Add extracted parameters that aren't already typed
+    for (const param of extractedParams) {
+      allPropertyNames.add(param.name);
+    }
 
     // Filter out already used parameters
     const filteredProperties = Array.from(allPropertyNames)
       .filter(propName => !usedParameters.includes(propName))
       .sort();
 
-    // Build completions for each property
+    // Build completions for each property with type information if available
     const allDataProperties: Array<{ name: string; type?: string; documentation?: string }> =
-      filteredProperties.map(propName => ({ name: propName, type: 'any' }));
+      filteredProperties.map(propName => {
+        const typedInfo = typedParams.get(propName);
+        return {
+          name: propName,
+          type: typedInfo?.type || 'any',
+          documentation: typedInfo?.doc
+        };
+      });
 
     // Create completion items
     for (const prop of allDataProperties) {
@@ -930,7 +1005,10 @@ async function getTemplateParameterValueCompletions(
     }
 
     // Get helpers and data properties from the current template's context
-    const dirLookupKeys = [`${currentDir}/${currentTemplateName}`, `${currentDir}/${currentBaseName}`];
+    const dirLookupKeys = [
+      `${currentDir}/${currentTemplateName}`,
+      `${currentDir}/${currentBaseName}`
+    ];
 
     // Collect helpers from the current template
     const helpers = new Set<string>();
@@ -1023,6 +1101,84 @@ async function getTemplateParameterValueCompletions(
   return completions;
 }
 
+// Helper function to find associated JS/TS file for an HTML template
+function findAssociatedJSFileForCompletion(
+  currentDir: string,
+  baseName: string,
+  fs: any,
+  path: any
+): string | null {
+  const possibleExtensions = ['.ts', '.js'];
+
+  // First, try exact base name match
+  for (const ext of possibleExtensions) {
+    const filePath = path.join(currentDir, baseName + ext);
+    try {
+      if (fs.existsSync(filePath)) {
+        return filePath;
+      }
+    } catch {
+      // Continue trying other extensions
+    }
+  }
+
+  return null;
+}
+
+// Helper function to find an imported template file
+function findImportedTemplateFile(
+  templateName: string,
+  jsFilePath: string,
+  fs: any,
+  path: any
+): { file: string; content: string } | null {
+  try {
+    const jsContent = fs.readFileSync(jsFilePath, 'utf8');
+    const jsDir = path.dirname(jsFilePath);
+
+    // Look for import statements that might import this template
+    // Match patterns like: import './templateName/templateName' or import './templateName'
+    const importRegex = /import\s+['"]([^'"]+)['"]/g;
+    let match;
+
+    while ((match = importRegex.exec(jsContent)) !== null) {
+      const importPath = match[1];
+
+      // Resolve the import path
+      const possiblePaths = [
+        path.join(jsDir, importPath),
+        path.join(jsDir, importPath + '.html'),
+        path.join(jsDir, importPath, 'template.html'),
+        path.join(jsDir, importPath, path.basename(importPath) + '.html')
+      ];
+
+      for (const filePath of possiblePaths) {
+        try {
+          if (fs.existsSync(filePath)) {
+            const content = fs.readFileSync(filePath, 'utf8');
+
+            // Check if this file contains the template
+            const templateRegex = new RegExp(
+              `<template\\s+name=["']${templateName}["'][^>]*>`,
+              'i'
+            );
+
+            if (templateRegex.test(content)) {
+              return { file: filePath, content };
+            }
+          }
+        } catch {
+          // Continue checking other paths
+        }
+      }
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 // Helper function to parse already used parameters in the current template inclusion
 function parseUsedParameters(textBeforeCursor: string, templateName: string): string[] {
   const usedParams: string[] = [];
@@ -1054,4 +1210,3 @@ function parseUsedParameters(textBeforeCursor: string, templateName: string): st
 }
 
 export default onCompletion;
-
