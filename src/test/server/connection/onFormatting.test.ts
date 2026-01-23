@@ -660,7 +660,7 @@ param2=value2
       };
 
       const edits = await handler(params);
-      
+
       // Should not truncate the parameter value
       if (edits.length > 0) {
         const formatted = edits[0].newText;
@@ -698,15 +698,15 @@ param2=value2
       };
 
       const edits = await handler(params);
-      
+
       assert.strictEqual(edits.length, 1);
-      
+
       const expectedFormatted = `{{> alumniListCard
        alum=alum
        addToAlumni=addToAlumni
        gradProgram=(getFinalProgram alum.alumni.graduation.programId)
      }}`;
-      
+
       assert.strictEqual(edits[0].newText, expectedFormatted);
     });
   });

@@ -339,7 +339,7 @@ export const onDocumentFormatting = (config: CurrentConnectionConfig) => {
     if (baseFormatter) {
       try {
         connection.console.log(`Requesting base formatter '${baseFormatter}' for ${params.textDocument.uri}`);
-        
+
         const result = await connection.sendRequest<TextEdit[] | null>('meteor/applyBaseFormatter', {
           uri: params.textDocument.uri,
           formatterId: baseFormatter,
@@ -385,7 +385,7 @@ export const onDocumentFormatting = (config: CurrentConnectionConfig) => {
     if (baseEdits.length > 0 && meteorEdits.length > 0) {
       // Apply Meteor edits on top of the already-modified text
       const finalText = applyTextEdits(workingText, meteorEdits);
-      
+
       // Return a single edit that replaces the entire document
       const originalLines = document.getText().split('\n');
       return [

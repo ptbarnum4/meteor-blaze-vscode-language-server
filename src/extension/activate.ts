@@ -165,11 +165,11 @@ export const createActivate = (extConfig: ExtensionConfig) => {
           console.log('Prevented recursive base formatter call');
           return null;
         }
-        
+
         isApplyingBaseFormatter = true;
-        
+
         const uri = vscode.Uri.parse(params.uri);
-        
+
         // Get the document
         const document = await vscode.workspace.openTextDocument(uri);
         if (!document) {
@@ -177,19 +177,19 @@ export const createActivate = (extConfig: ExtensionConfig) => {
           isApplyingBaseFormatter = false;
           return null;
         }
-        
+
         // Show document in editor (required for formatting commands to work reliably)
         await vscode.window.showTextDocument(document, { preview: false, preserveFocus: true });
-        
+
         // Get editor configuration for the document
         const config = vscode.workspace.getConfiguration('editor', document);
         const originalFormatter = config.get<string | null>('defaultFormatter');
-        
+
         // Determine the configuration target and whether it's language-specific
         const inspection = config.inspect<string | null>('defaultFormatter');
         let configurationTarget = vscode.ConfigurationTarget.Global;
         let isLanguageSpecific = false;
-        
+
         if (inspection) {
           if (inspection.workspaceFolderLanguageValue !== undefined || inspection.workspaceFolderValue !== undefined) {
             configurationTarget = vscode.ConfigurationTarget.WorkspaceFolder;
@@ -202,11 +202,11 @@ export const createActivate = (extConfig: ExtensionConfig) => {
             isLanguageSpecific = inspection.globalLanguageValue !== undefined;
           }
         }
-        
+
         try {
           // Save the original text before formatting
           const originalText = document.getText();
-          
+
           // Update the default formatter temporarily
           await config.update(
             'defaultFormatter',
@@ -214,23 +214,23 @@ export const createActivate = (extConfig: ExtensionConfig) => {
             configurationTarget,
             isLanguageSpecific
           );
-          
+
           // Execute format document command
           // This respects the workspace html.format.* settings
           await vscode.commands.executeCommand('editor.action.formatDocument');
-          
+
           // Get the current document text after formatting
           const formattedText = document.getText();
-          
+
           // Check if there were any changes
           if (formattedText === originalText) {
             return null; // No changes
           }
-          
+
           // Return a single edit that replaces the entire document
           const lastLine = document.lineCount - 1;
           const lastChar = document.lineAt(lastLine).text.length;
-          
+
           return [{
             range: {
               start: { line: 0, character: 0 },
@@ -238,7 +238,7 @@ export const createActivate = (extConfig: ExtensionConfig) => {
             },
             newText: formattedText
           }];
-          
+
         } finally {
           // Restore original formatter setting
           await config.update(
