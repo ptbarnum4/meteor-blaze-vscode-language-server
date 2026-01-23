@@ -13,8 +13,8 @@ import { getWordRangeAtPosition } from '../helpers/getWordRangeAtPosition';
 import { isWithinComment } from '../helpers/isWithinComment';
 import { isWithinHandlebarsExpression } from '../helpers/isWithinHandlebarsExpression';
 import {
-    trimLanguageDocumentation,
-    trimUsageDocumentation
+  trimLanguageDocumentation,
+  trimUsageDocumentation
 } from '../helpers/trimUsageDocumentation';
 
 const onHover = (config: CurrentConnectionConfig) => {
@@ -100,6 +100,8 @@ const onHover = (config: CurrentConnectionConfig) => {
       text,
       offset,
       word,
+      wordRange,
+      document,
       dir,
       currentTemplateName,
       config
@@ -1313,11 +1315,97 @@ function getParentTemplatePropertyHover(
   return null;
 }
 
+// Helper function to get hover info for child template properties (parameters)
+function getChildTemplatePropertyHover(
+  word: string,
+  childTemplateName: string,
+  currentDir: string,
+  config: CurrentConnectionConfig
+): string | null {
+  // Look for this word in child template's data properties
+  // We need to find where the child template's files are located
+  // Try to find the child template in various locations
+
+  // First, check if it's in the same directory
+  const sameDirKey = `${currentDir}/${childTemplateName}`;
+
+  // Also check subdirectories and imported locations
+  // We'll need to search through all keys in fileAnalysis to find ones that match the template name
+  const possibleKeys: string[] = [sameDirKey];
+
+  // Search through all keys to find ones that end with the template name
+  // Check all three maps: dataProperties, helperDetails, and templates
+  const allKeys = new Set<string>();
+
+  for (const key of config.fileAnalysis.dataProperties?.keys() || []) {
+    if (key.endsWith(`/${childTemplateName}`)) {
+      allKeys.add(key);
+    }
+  }
+
+  for (const key of config.fileAnalysis.helperDetails?.keys() || []) {
+    if (key.endsWith(`/${childTemplateName}`)) {
+      allKeys.add(key);
+    }
+  }
+
+  // Also try matching without the leading slash for edge cases
+  for (const key of config.fileAnalysis.dataProperties?.keys() || []) {
+    if (key.includes(`/${childTemplateName}`) || key === childTemplateName) {
+      allKeys.add(key);
+    }
+  }
+
+  // Add all found keys to possibleKeys
+  for (const key of allKeys) {
+    if (!possibleKeys.includes(key)) {
+      possibleKeys.push(key);
+    }
+  }
+
+  for (const key of possibleKeys) {
+    const dataProps = config.fileAnalysis.dataProperties?.get(key) || [];
+    const typeMap = config.fileAnalysis.dataPropertyTypesByKey?.get(key) || {};
+    const jsDocMap = config.fileAnalysis.dataPropertyJsDocsByKey?.get(key) || {};
+
+    if (dataProps.includes(word)) {
+      const propType = typeMap[word];
+      const jsDoc = jsDocMap[word];
+
+      // Check if property is optional
+      const isOptional = propType?.includes('undefined') || propType?.includes('| null');
+      const optionalMarker = isOptional ? '?' : '';
+
+      const hoverLines: string[] = [];
+
+      // Format like VS Code TypeScript hover
+      hoverLines.push(`\`\`\`typescript`);
+      hoverLines.push(`(property) ${word}${optionalMarker}: ${propType || 'any'}`);
+      hoverLines.push(`\`\`\``);
+
+      // Add JSDoc documentation if available
+      if (jsDoc) {
+        hoverLines.push('');
+        hoverLines.push(jsDoc);
+      }
+
+      return hoverLines.join('\n');
+    }
+  }
+
+  return null;
+}
+
 // Helper function to provide hover information for template parameters
 async function getTemplateParameterHover(
   text: string,
   offset: number,
   word: string,
+  wordRange: {
+    start: { line: number; character: number };
+    end: { line: number; character: number };
+  },
+  document: TextDocument,
   currentDir: string,
   currentTemplateName: string | null,
   config: CurrentConnectionConfig
@@ -1332,11 +1420,16 @@ async function getTemplateParameterHover(
     const afterCursor = text.substring(offset, Math.min(text.length, offset + 500));
 
     // Check if we're in template parameters: {{> templateName param=value}}
-    // Use a more flexible pattern that handles multiline parameters
-    const parameterMatch = beforeCursor.match(/\{\{\s*>\s*([a-zA-Z0-9_]+)[\s\S]*$/);
-    if (!parameterMatch) {
+    // Find the CLOSEST/LAST {{> before the cursor, not the first one
+    // Use a global match and take the last one
+    const allMatches = [...beforeCursor.matchAll(/\{\{\s*>\s*([a-zA-Z0-9_]+)/g)];
+
+    if (allMatches.length === 0) {
       return null;
     }
+
+    // Get the LAST match (closest to cursor)
+    const parameterMatch = allMatches[allMatches.length - 1];
 
     const templateName = parameterMatch[1];
 
@@ -1390,35 +1483,91 @@ async function getTemplateParameterHover(
     }
 
     // Determine if we're on the left or right side of the '=' sign
-    // Look at the immediate context around the word
-    const contextBefore = text.substring(Math.max(0, offset - 50), offset);
-    const contextAfter = text.substring(offset, Math.min(text.length, offset + 50));
+    // Use the exact word boundaries from wordRange
+    const wordStartOffset = document.offsetAt(wordRange.start);
+    const wordEndOffset = document.offsetAt(wordRange.end);
 
-    // Find the position of '=' relative to the word
-    // Check if there's an '=' immediately after the word (we're on the left)
-    const afterWordMatch = contextAfter.match(/^[a-zA-Z0-9_]*\s*=/);
+    // Get context before the word starts and after the word ends
+    const contextBeforeWord = text.substring(Math.max(0, wordStartOffset - 50), wordStartOffset);
+    const contextAfterWord = text.substring(
+      wordEndOffset,
+      Math.min(text.length, wordEndOffset + 50)
+    );
+
+    // Check if there's an '=' immediately after the word (we're on the left side - parameter name)
+    // Pattern: word followed by optional whitespace then '='
+    const afterWordMatch = contextAfterWord.match(/^\s*=/);
     const isLeftSide = !!afterWordMatch;
 
-    // Check if there's an '=' immediately before the word (we're on the right)
-    const beforeWordMatch = contextBefore.match(/=\s*[a-zA-Z0-9_]*$/);
-    const isRightSide = !!beforeWordMatch && !isLeftSide;
+    // Check if there's an '=' immediately before the word (we're on the right side - parameter value)
+    // Pattern: '=' followed by optional whitespace then word
+    const beforeWordMatch = contextBeforeWord.match(/=\s*$/);
+    const isRightSide = !!beforeWordMatch;
+
+    // IMPORTANT: If both are false, we're not in a parameter context (e.g., hovering template name)
+    // If both match somehow, prioritize left side (parameter name)
 
     // If we're on the right side of '=', show info from the parent template
-    if (isRightSide && currentTemplateName) {
-      return getParentTemplatePropertyHover(
+    if (isRightSide && !isLeftSide && currentTemplateName) {
+      const parentHover = getParentTemplatePropertyHover(
         word,
         currentTemplateName,
         currentDir,
         config
       );
+
+      // If found in parent, return it; otherwise continue to child lookup
+      if (parentHover) {
+        return parentHover;
+      }
+      // If not found in parent, continue to show child template info as fallback
     }
 
-    // If we're on the left side of '=', or no '=' context, show info from the child template
+    // If we're on the left side of '=', show info from the child template
+    // This MUST NOT fall through to parent template lookup in the main handler
+    if (isLeftSide) {
+      // First, try to get it from the fileAnalysis cache
+      const childTemplateHover = getChildTemplatePropertyHover(
+        word,
+        templateName,
+        currentDir,
+        config
+      );
+
+      if (childTemplateHover) {
+        return childTemplateHover;
+      }
+
+      // If not found in cache, immediately return a basic message
+      // DO NOT continue to file reading - just return now to prevent parent template lookup
+      return [
+        `\`\`\`typescript`,
+        `(property) ${word}: any`,
+        `\`\`\``,
+        '',
+        `Parameter for the \`${templateName}\` template.`
+      ].join('\n');
+    }
+
+    // If we reach here, we're either on the right side or no '=' context
+    // Continue with file reading for non-left-side cases
+    // Fall back to reading the child template's TypeScript file directly
     // Find the associated JS/TS file for the current template to parse imports
     const currentBaseName = path.basename(currentDir);
     const associatedFile = findAssociatedJSFileForHover(currentDir, currentBaseName, fs, path);
 
     if (!associatedFile) {
+      // If we're explicitly on left side, return basic info instead of null
+      // to prevent falling through to parent template lookup
+      if (isLeftSide) {
+        return [
+          `\`\`\`typescript`,
+          `(property) ${word}: any`,
+          `\`\`\``,
+          '',
+          `Parameter passed to the \`${templateName}\` template.`
+        ].join('\n');
+      }
       return null;
     }
 
@@ -1426,6 +1575,17 @@ async function getTemplateParameterHover(
     const importedTemplates = parseTemplateImportsForHover(associatedFile, fs, path);
 
     if (!importedTemplates.includes(templateName)) {
+      // If we're on left side, return a basic message instead of null
+      // to prevent falling through to parent template lookup
+      if (isLeftSide) {
+        return [
+          `\`\`\`typescript`,
+          `(property) ${word}: any`,
+          `\`\`\``,
+          '',
+          `Parameter passed to the \`${templateName}\` template.`
+        ].join('\n');
+      }
       return null;
     }
 

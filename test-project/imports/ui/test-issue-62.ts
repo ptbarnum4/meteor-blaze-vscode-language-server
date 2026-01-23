@@ -31,7 +31,7 @@ Template.testParameterCompletion.helpers({
 });
 
 // Define data context for childTemplate
-Template.childTemplate.onCreated(function() {
+Template.childTemplate.onCreated(function () {
   this.data = {
     childParam: 'default',
     childParam2: 0,
@@ -57,7 +57,7 @@ type AnotherTemplateData = {
   param3: string;
 };
 
-Template.anotherTemplate.onCreated(function() {
+Template.anotherTemplate.onCreated(function () {
   this.data = {
     param1: '',
     param2: '',
@@ -114,7 +114,7 @@ Template.parentTemplate.helpers({
   }
 });
 
-Template.paginatorTemplate.onCreated(function() {
+Template.paginatorTemplate.onCreated(function () {
   this.data = {
     page: 1,
     perPage: 10,
