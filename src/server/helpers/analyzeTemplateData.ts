@@ -1,31 +1,119 @@
 import fs from 'fs';
 import path from 'path';
+import * as ts from 'typescript';
 
 export type TemplateDataAnalysis = {
   types: Record<string, string[]>;          // TS type or interface name -> properties
   typePropertyTypes: Record<string, Record<string, string>>; // Type name -> property -> type string
+  typePropertyJsDocs: Record<string, Record<string, string>>; // Type name -> property -> JSDoc comment
   typedefs: Record<string, string[]>;       // JSDoc typedef name -> properties
   templateTypeMap: Record<string, string>;  // template name -> data type name
 };
 
-// Extract simple property keys from a type/interface body
-const extractPropsFromBlock = (body: string): { names: string[]; types: Record<string, string> } => {
-  const names: string[] = [];
-  const types: Record<string, string> = {};
-  // Capture key with optional '?' and following type up to comma or semicolon or newline
-  const propRegex = /\b(\w+)\??(\s*:\s*([^;\n,\r\}]+))?[;\n,\r]?/g;
-  let p;
-  while ((p = propRegex.exec(body)) !== null) {
-    const key = p[1];
-    const typeStr = (p[3] || '').trim();
-    if (!names.includes(key)) {
-      names.push(key);
+// Extract properties from types and interfaces in a TypeScript file
+const extractTypesFromFile = (content: string): {
+  types: Record<string, string[]>;
+  typePropertyTypes: Record<string, Record<string, string>>;
+  typePropertyJsDocs: Record<string, Record<string, string>>;
+} => {
+  const types: Record<string, string[]> = {};
+  const typePropertyTypes: Record<string, Record<string, string>> = {};
+  const typePropertyJsDocs: Record<string, Record<string, string>> = {};
+
+  // Parse the entire file with TypeScript
+  const sourceFile = ts.createSourceFile(
+    'temp.ts',
+    content,
+    ts.ScriptTarget.Latest,
+    true
+  );
+
+  // Helper to extract JSDoc comment
+  function getJsDocComment(node: ts.Node): string | undefined {
+    const jsDocComments = ts.getJSDocCommentsAndTags(node);
+
+    // Try to get the main JSDoc comment
+    for (const comment of jsDocComments) {
+      if (ts.isJSDoc(comment) && comment.comment) {
+        if (typeof comment.comment === 'string') {
+          return comment.comment;
+        } else if (Array.isArray(comment.comment)) {
+          return comment.comment.map(c => c.text).join('');
+        }
+      }
     }
-    if (typeStr) {
-      types[key] = typeStr;
-    }
+
+    return undefined;
   }
-  return { names, types };
+
+  // Visit each node in the AST
+  function visit(node: ts.Node) {
+    // Handle type aliases: type Name = { ... }
+    if (ts.isTypeAliasDeclaration(node) && node.name) {
+      const typeName = node.name.text;
+
+      // Check if the type is an object type literal
+      if (ts.isTypeLiteralNode(node.type)) {
+        const names: string[] = [];
+        const propTypes: Record<string, string> = {};
+        const propJsDocs: Record<string, string> = {};
+
+        node.type.members.forEach(member => {
+          if (ts.isPropertySignature(member) && member.name) {
+            const propName = member.name.getText(sourceFile);
+            const propType = member.type ? member.type.getText(sourceFile) : 'any';
+            const jsDoc = getJsDocComment(member);
+
+            if (!names.includes(propName)) {
+              names.push(propName);
+            }
+            propTypes[propName] = propType;
+            if (jsDoc) {
+              propJsDocs[propName] = jsDoc;
+            }
+          }
+        });
+
+        types[typeName] = names;
+        typePropertyTypes[typeName] = propTypes;
+        typePropertyJsDocs[typeName] = propJsDocs;
+      }
+    }
+
+    // Handle interfaces: interface Name { ... }
+    if (ts.isInterfaceDeclaration(node) && node.name) {
+      const interfaceName = node.name.text;
+      const names: string[] = [];
+      const propTypes: Record<string, string> = {};
+      const propJsDocs: Record<string, string> = {};
+
+      node.members.forEach(member => {
+        if (ts.isPropertySignature(member) && member.name) {
+          const propName = member.name.getText(sourceFile);
+          const propType = member.type ? member.type.getText(sourceFile) : 'any';
+          const jsDoc = getJsDocComment(member);
+
+          if (!names.includes(propName)) {
+            names.push(propName);
+          }
+          propTypes[propName] = propType;
+          if (jsDoc) {
+            propJsDocs[propName] = jsDoc;
+          }
+        }
+      });
+
+      types[interfaceName] = names;
+      typePropertyTypes[interfaceName] = propTypes;
+      typePropertyJsDocs[interfaceName] = propJsDocs;
+    }
+
+    ts.forEachChild(node, visit);
+  }
+
+  visit(sourceFile);
+
+  return { types, typePropertyTypes, typePropertyJsDocs };
 };
 
 // Extract JSDoc typedefs
@@ -73,11 +161,29 @@ function findTsConfigForTemplateData(startPath: string): any {
       if (fs.existsSync(tsconfigPath)) {
         try {
           const tsconfigContent = fs.readFileSync(tsconfigPath, 'utf8');
-          // Remove comments before parsing
-          const cleanContent = tsconfigContent.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
-          return JSON.parse(cleanContent);
-        } catch (e) {
-          console.error('Error parsing tsconfig.json:', e);
+
+          // Try multiple parsing strategies
+          // Strategy 1: Parse as-is (valid JSON without comments)
+          try {
+            return JSON.parse(tsconfigContent);
+          } catch {
+            // Strategy 2: Remove comments and try again
+            try {
+              const cleanContent = safelyRemoveJsonComments(tsconfigContent);
+              return JSON.parse(cleanContent);
+            } catch {
+              // Strategy 3: Remove comments AND trailing commas
+              try {
+                let cleaned = safelyRemoveJsonComments(tsconfigContent);
+                cleaned = cleaned.replace(/,(\s*[}\]])/g, '$1');
+                return JSON.parse(cleaned);
+              } catch {
+                // Silently fail - tsconfig is not critical
+                return null;
+              }
+            }
+          }
+        } catch {
           return null;
         }
       }
@@ -87,6 +193,84 @@ function findTsConfigForTemplateData(startPath: string): any {
   }
 
   return null;
+}
+
+// Safely remove comments from JSON content
+function safelyRemoveJsonComments(content: string): string {
+  const result: string[] = [];
+  let inString = false;
+  let inLineComment = false;
+  let inBlockComment = false;
+  let escapeNext = false;
+  let i = 0;
+
+  while (i < content.length) {
+    const char = content[i];
+    const nextChar = i + 1 < content.length ? content[i + 1] : '';
+
+    // Handle block comments (not inside strings)
+    if (!inString && inBlockComment) {
+      if (char === '*' && nextChar === '/') {
+        inBlockComment = false;
+        i += 2;
+        continue;
+      }
+      i++;
+      continue;
+    }
+
+    // Handle line comments (not inside strings)
+    if (!inString && inLineComment) {
+      if (char === '\n') {
+        inLineComment = false;
+        result.push(char);
+      }
+      i++;
+      continue;
+    }
+
+    // Handle escape sequences in strings
+    if (inString && escapeNext) {
+      result.push(char);
+      escapeNext = false;
+      i++;
+      continue;
+    }
+
+    // Check for escape character in strings
+    if (inString && char === '\\') {
+      result.push(char);
+      escapeNext = true;
+      i++;
+      continue;
+    }
+
+    // Handle string delimiters
+    if (char === '"') {
+      inString = !inString;
+      result.push(char);
+      i++;
+      continue;
+    }
+
+    // Look for comment starts only outside strings
+    if (!inString) {
+      if (char === '/' && nextChar === '/') {
+        inLineComment = true;
+        i += 2;
+        continue;
+      } else if (char === '/' && nextChar === '*') {
+        inBlockComment = true;
+        i += 2;
+        continue;
+      }
+    }
+
+    result.push(char);
+    i++;
+  }
+
+  return result.join('');
 }
 
 // TypeScript path resolution function for template data analysis
@@ -206,6 +390,7 @@ export const analyzeTemplateData = (entryFilePath: string): TemplateDataAnalysis
   const visited = new Set<string>();
   const types: Record<string, string[]> = {};
   const typePropertyTypes: Record<string, Record<string, string>> = {};
+  const typePropertyJsDocs: Record<string, Record<string, string>> = {};
   const typedefs: Record<string, string[]> = {};
   const templateTypeMap: Record<string, string> = {};
 
@@ -223,27 +408,11 @@ export const analyzeTemplateData = (entryFilePath: string): TemplateDataAnalysis
       continue;
     }
 
-    // Types: type Name = { ... }
-    const typeRegex = /type\s+(\w+)\s*=\s*\{([\s\S]*?)\};?/g;
-    let match;
-    while ((match = typeRegex.exec(content)) !== null) {
-      const typeName = match[1];
-      const body = match[2];
-      const { names, types: propTypes } = extractPropsFromBlock(body);
-      types[typeName] = names;
-      typePropertyTypes[typeName] = propTypes;
-    }
-
-    // Interfaces: interface Name { ... }
-    const ifaceRegex = /interface\s+(\w+)\s*\{([\s\S]*?)\}/g;
-    let im;
-    while ((im = ifaceRegex.exec(content)) !== null) {
-      const name = im[1];
-      const body = im[2];
-      const { names, types: propTypes } = extractPropsFromBlock(body);
-      types[name] = names;
-      typePropertyTypes[name] = propTypes;
-    }
+    // Extract types and interfaces from the entire file using TypeScript AST
+    const extracted = extractTypesFromFile(content);
+    Object.assign(types, extracted.types);
+    Object.assign(typePropertyTypes, extracted.typePropertyTypes);
+    Object.assign(typePropertyJsDocs, extracted.typePropertyJsDocs);
 
     // JSDoc typedefs
     const td = extractTypedefs(content);
@@ -262,5 +431,5 @@ export const analyzeTemplateData = (entryFilePath: string): TemplateDataAnalysis
     }
   }
 
-  return { types, typePropertyTypes, typedefs, templateTypeMap };
+  return { types, typePropertyTypes, typePropertyJsDocs, typedefs, templateTypeMap };
 };

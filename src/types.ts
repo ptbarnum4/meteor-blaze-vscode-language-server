@@ -50,6 +50,8 @@ export type FileAnalysis = {
   dataTypeByKey?: Map<string, string>;
   /** Map of data property types by key (property -> type string). */
   dataPropertyTypesByKey?: Map<string, Record<string, string>>;
+  /** Map of data property JSDoc comments by key (property -> JSDoc string). */
+  dataPropertyJsDocsByKey?: Map<string, Record<string, string>>;
 };
 
 /**

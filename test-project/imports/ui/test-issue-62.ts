@@ -64,3 +64,62 @@ Template.anotherTemplate.onCreated(function() {
     param3: ''
   } as AnotherTemplateData;
 });
+// Define data type for parentTemplate (testing same-named params)
+type ParentTemplateData = {
+  /** Page number from parent - used as value */
+  page: number;
+  /** Items per page from parent */
+  perPage: number;
+  /** Total results count from parent */
+  totalResults: number;
+  /** Loading state from parent */
+  isLoading: boolean;
+};
+
+// Define data type for paginatorTemplate (child)
+type PaginatorData = {
+  /** Current page number for paginator */
+  page: number;
+  /** Number of items per page */
+  perPage: number;
+  /** Total number of items */
+  total: number;
+  /** Whether pagination is disabled */
+  disabled?: boolean;
+  /** Whether to use fixed positioning */
+  fixed?: boolean;
+  /** Whether to enable query params */
+  enableQueryParams?: string[];
+};
+
+Template.parentTemplate.helpers({
+  /** Page number in parent context */
+  page(): number {
+    return 1;
+  },
+
+  /** Items per page in parent context */
+  perPage(): number {
+    return 10;
+  },
+
+  /** Total results in parent context */
+  totalResults(): number {
+    return 100;
+  },
+
+  /** Loading state in parent context */
+  isLoading(): boolean {
+    return false;
+  }
+});
+
+Template.paginatorTemplate.onCreated(function() {
+  this.data = {
+    page: 1,
+    perPage: 10,
+    total: 100,
+    disabled: false,
+    fixed: false
+  } as PaginatorData;
+});

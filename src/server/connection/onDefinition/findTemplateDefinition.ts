@@ -369,17 +369,28 @@ function findTsConfigForMeteorProject(startPath: string, fs: any, path: any): an
         try {
           const tsconfigContent = fs.readFileSync(tsconfigPath, 'utf8');
 
-          // Try parsing as-is first (in case it's valid JSON without comments)
+          // Try multiple parsing strategies
+          // Strategy 1: Parse as-is (valid JSON without comments)
           try {
             return JSON.parse(tsconfigContent);
           } catch {
-            // If that fails, try safer comment removal
-            const cleanContent = safelyRemoveJsonComments(tsconfigContent);
-            return JSON.parse(cleanContent);
+            // Strategy 2: Remove comments and try again
+            try {
+              const cleanContent = safelyRemoveJsonComments(tsconfigContent);
+              return JSON.parse(cleanContent);
+            } catch {
+              // Strategy 3: Remove comments AND trailing commas
+              try {
+                let cleaned = safelyRemoveJsonComments(tsconfigContent);
+                cleaned = cleaned.replace(/,(\s*[}\]])/g, '$1');
+                return JSON.parse(cleaned);
+              } catch {
+                // Silently fail - tsconfig is not critical
+                return null;
+              }
+            }
           }
-        } catch (e) {
-          console.error('Error parsing tsconfig.json:', e);
-          console.error('File path:', tsconfigPath);
+        } catch {
           return null;
         }
       }
@@ -397,14 +408,15 @@ function safelyRemoveJsonComments(content: string): string {
   let inString = false;
   let inLineComment = false;
   let inBlockComment = false;
+  let escapeNext = false;
   let i = 0;
 
   while (i < content.length) {
     const char = content[i];
     const nextChar = i + 1 < content.length ? content[i + 1] : '';
 
-    // Handle block comments
-    if (inBlockComment) {
+    // Handle block comments (not inside strings)
+    if (!inString && inBlockComment) {
       if (char === '*' && nextChar === '/') {
         inBlockComment = false;
         i += 2; // Skip the */
@@ -414,8 +426,8 @@ function safelyRemoveJsonComments(content: string): string {
       continue;
     }
 
-    // Handle line comments
-    if (inLineComment) {
+    // Handle line comments (not inside strings)
+    if (!inString && inLineComment) {
       if (char === '\n') {
         inLineComment = false;
         result.push(char); // Keep the newline
@@ -424,8 +436,24 @@ function safelyRemoveJsonComments(content: string): string {
       continue;
     }
 
-    // Handle strings (don't process comments inside strings)
-    if (char === '"' && (i === 0 || content[i - 1] !== '\\')) {
+    // Handle escape sequences in strings
+    if (inString && escapeNext) {
+      result.push(char);
+      escapeNext = false;
+      i++;
+      continue;
+    }
+
+    // Check for escape character in strings
+    if (inString && char === '\\') {
+      result.push(char);
+      escapeNext = true;
+      i++;
+      continue;
+    }
+
+    // Handle string delimiters
+    if (char === '"') {
       inString = !inString;
       result.push(char);
       i++;

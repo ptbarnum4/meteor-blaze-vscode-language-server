@@ -13,8 +13,8 @@ import { getWordRangeAtPosition } from '../helpers/getWordRangeAtPosition';
 import { isWithinComment } from '../helpers/isWithinComment';
 import { isWithinHandlebarsExpression } from '../helpers/isWithinHandlebarsExpression';
 import {
-  trimLanguageDocumentation,
-  trimUsageDocumentation
+    trimLanguageDocumentation,
+    trimUsageDocumentation
 } from '../helpers/trimUsageDocumentation';
 
 const onHover = (config: CurrentConnectionConfig) => {
@@ -96,7 +96,14 @@ const onHover = (config: CurrentConnectionConfig) => {
     }
 
     // Check if we're hovering over a template parameter (e.g., {{> templateName param=value}})
-    const templateParameterHover = await getTemplateParameterHover(text, offset, word, dir);
+    const templateParameterHover = await getTemplateParameterHover(
+      text,
+      offset,
+      word,
+      dir,
+      currentTemplateName,
+      config
+    );
     if (templateParameterHover) {
       return {
         contents: templateParameterHover,
@@ -297,6 +304,7 @@ const onHover = (config: CurrentConnectionConfig) => {
       const dataProps = config.fileAnalysis.dataProperties?.get(key as string) || [];
       const typeName = config.fileAnalysis.dataTypeByKey?.get(key as string);
       const typeMap = config.fileAnalysis.dataPropertyTypesByKey?.get(key as string) || {};
+      const jsDocMap = config.fileAnalysis.dataPropertyJsDocsByKey?.get(key as string) || {};
 
       // #each alias hover: allow hover on alias even if it's not part of template data properties
       if (eachCtx && eachCtx.alias === word) {
@@ -367,8 +375,9 @@ const onHover = (config: CurrentConnectionConfig) => {
 
       // Data property hover (includes #each value in list context awareness)
       if (dataProps.includes(word)) {
-        const templateFileName = path.basename(filePath);
         const propType = typeMap[word];
+        const jsDoc = jsDocMap[word];
+
         // Check #each alias context: `{{#each value in list}}` so value should use element type of list
         let adjustedType: string | undefined = propType;
         if (eachCtx && eachCtx.alias === word) {
@@ -404,36 +413,24 @@ const onHover = (config: CurrentConnectionConfig) => {
             adjustedType = elem;
           }
         }
-        let elementType: string | undefined;
-        if (adjustedType) {
-          // Extract array element type for forms like Type[] or Array<Type>
-          const arrMatchBracket = adjustedType.match(/^\s*([^\[\]]+)\[\]\s*$/);
-          const arrMatchGeneric = adjustedType.match(/^\s*Array\s*<\s*([^>]+)\s*>\s*$/);
-          if (arrMatchBracket) {
-            elementType = arrMatchBracket[1].trim();
-          } else if (arrMatchGeneric) {
-            elementType = arrMatchGeneric[1].trim();
-          }
-        }
+
+        // Check if property is optional by looking at the type
+        const isOptional = propType?.includes('undefined') || propType?.includes('| null');
+        const optionalMarker = isOptional ? '?' : '';
+
+        // Format like VS Code TypeScript hover: (property) name?: type
         const hoverLines: string[] = [];
-        hoverLines.push(`**${word}** - Template Data Property`);
-        hoverLines.push('');
-        if (typeName) {
-          hoverLines.push(`From type: \`${typeName}\``);
+
+        // First line: property signature
+        hoverLines.push(`\`\`\`typescript`);
+        hoverLines.push(`(property) ${word}${optionalMarker}: ${adjustedType || 'any'}`);
+        hoverLines.push(`\`\`\``);
+
+        // Add JSDoc documentation if available
+        if (jsDoc) {
           hoverLines.push('');
+          hoverLines.push(jsDoc);
         }
-        if (adjustedType) {
-          hoverLines.push(`Type: \`${adjustedType}\``);
-          if (elementType) {
-            hoverLines.push(`Element type: \`${elementType}\``);
-          }
-          hoverLines.push('');
-        }
-        hoverLines.push(`**Template:** ${currentTemplateName}`);
-        hoverLines.push('');
-        hoverLines.push(`**Template File:** ${templateFileName}`);
-        hoverLines.push('');
-        hoverLines.push(`**Usage:** \`{{${word}}}\``);
 
         return {
           contents: {
@@ -1011,17 +1008,28 @@ function findTsConfigForMeteorProject(startPath: string, fs: any, path: any): an
         try {
           const tsconfigContent = fs.readFileSync(tsconfigPath, 'utf8');
 
-          // Try parsing as-is first (in case it's valid JSON without comments)
+          // Try multiple parsing strategies
+          // Strategy 1: Parse as-is (valid JSON without comments)
           try {
             return JSON.parse(tsconfigContent);
           } catch {
-            // If that fails, try safer comment removal
-            const cleanContent = safelyRemoveJsonComments(tsconfigContent);
-            return JSON.parse(cleanContent);
+            // Strategy 2: Remove comments and try again
+            try {
+              const cleanContent = safelyRemoveJsonComments(tsconfigContent);
+              return JSON.parse(cleanContent);
+            } catch {
+              // Strategy 3: Remove comments AND trailing commas
+              try {
+                let cleaned = safelyRemoveJsonComments(tsconfigContent);
+                cleaned = cleaned.replace(/,(\s*[}\]])/g, '$1');
+                return JSON.parse(cleaned);
+              } catch {
+                // Silently fail - tsconfig is not critical
+                return null;
+              }
+            }
           }
-        } catch (e) {
-          console.error('Error parsing tsconfig.json:', e);
-          console.error('File path:', tsconfigPath);
+        } catch {
           return null;
         }
       }
@@ -1039,14 +1047,15 @@ function safelyRemoveJsonComments(content: string): string {
   let inString = false;
   let inLineComment = false;
   let inBlockComment = false;
+  let escapeNext = false;
   let i = 0;
 
   while (i < content.length) {
     const char = content[i];
     const nextChar = i + 1 < content.length ? content[i + 1] : '';
 
-    // Handle block comments
-    if (inBlockComment) {
+    // Handle block comments (not inside strings)
+    if (!inString && inBlockComment) {
       if (char === '*' && nextChar === '/') {
         inBlockComment = false;
         i += 2; // Skip the */
@@ -1056,8 +1065,8 @@ function safelyRemoveJsonComments(content: string): string {
       continue;
     }
 
-    // Handle line comments
-    if (inLineComment) {
+    // Handle line comments (not inside strings)
+    if (!inString && inLineComment) {
       if (char === '\n') {
         inLineComment = false;
         result.push(char); // Keep the newline
@@ -1066,8 +1075,24 @@ function safelyRemoveJsonComments(content: string): string {
       continue;
     }
 
-    // Handle strings (don't process comments inside strings)
-    if (char === '"' && (i === 0 || content[i - 1] !== '\\')) {
+    // Handle escape sequences in strings
+    if (inString && escapeNext) {
+      result.push(char);
+      escapeNext = false;
+      i++;
+      continue;
+    }
+
+    // Check for escape character in strings
+    if (inString && char === '\\') {
+      result.push(char);
+      escapeNext = true;
+      i++;
+      continue;
+    }
+
+    // Handle string delimiters
+    if (char === '"') {
       inString = !inString;
       result.push(char);
       i++;
@@ -1213,12 +1238,89 @@ function findImportedTemplateFile(
   }
 }
 
+// Helper function to get hover info for parent template properties/helpers
+function getParentTemplatePropertyHover(
+  word: string,
+  parentTemplateName: string,
+  currentDir: string,
+  config: CurrentConnectionConfig
+): string | null {
+  const path = require('path');
+
+  // Look for this word in parent template's helpers and data properties
+  const dirLookupKeys = [
+    `${currentDir}/${parentTemplateName}`,
+    `${currentDir}/${path.basename(currentDir)}`
+  ].filter(Boolean);
+
+  for (const key of dirLookupKeys) {
+    // Check if it's a helper
+    const helperDetails = config.fileAnalysis.helperDetails.get(key as string);
+    const helperInfo = helperDetails?.find(h => h.name === word);
+
+    if (helperInfo) {
+      const hoverLines: string[] = [];
+
+      // Format like VS Code TypeScript hover
+      hoverLines.push(`\`\`\`typescript`);
+      if (helperInfo.signature) {
+        hoverLines.push(`(helper) ${helperInfo.signature}`);
+      } else {
+        const returnType = helperInfo.returnType || 'any';
+        hoverLines.push(`(helper) ${word}(): ${returnType}`);
+      }
+      hoverLines.push(`\`\`\``);
+
+      // Add JSDoc description if available
+      if (helperInfo.jsdoc) {
+        hoverLines.push('');
+        hoverLines.push(helperInfo.jsdoc);
+      }
+
+      return hoverLines.join('\n');
+    }
+
+    // Check if it's a data property
+    const dataProps = config.fileAnalysis.dataProperties?.get(key as string) || [];
+    const typeMap = config.fileAnalysis.dataPropertyTypesByKey?.get(key as string) || {};
+    const jsDocMap = config.fileAnalysis.dataPropertyJsDocsByKey?.get(key as string) || {};
+
+    if (dataProps.includes(word)) {
+      const propType = typeMap[word];
+      const jsDoc = jsDocMap[word];
+
+      // Check if property is optional
+      const isOptional = propType?.includes('undefined') || propType?.includes('| null');
+      const optionalMarker = isOptional ? '?' : '';
+
+      const hoverLines: string[] = [];
+
+      // Format like VS Code TypeScript hover
+      hoverLines.push(`\`\`\`typescript`);
+      hoverLines.push(`(property) ${word}${optionalMarker}: ${propType || 'any'}`);
+      hoverLines.push(`\`\`\``);
+
+      // Add JSDoc documentation if available
+      if (jsDoc) {
+        hoverLines.push('');
+        hoverLines.push(jsDoc);
+      }
+
+      return hoverLines.join('\n');
+    }
+  }
+
+  return null;
+}
+
 // Helper function to provide hover information for template parameters
 async function getTemplateParameterHover(
   text: string,
   offset: number,
   word: string,
-  currentDir: string
+  currentDir: string,
+  currentTemplateName: string | null,
+  config: CurrentConnectionConfig
 ): Promise<string | null> {
   const fs = require('fs');
   const path = require('path');
@@ -1287,6 +1389,31 @@ async function getTemplateParameterHover(
       return null;
     }
 
+    // Determine if we're on the left or right side of the '=' sign
+    // Look at the immediate context around the word
+    const contextBefore = text.substring(Math.max(0, offset - 50), offset);
+    const contextAfter = text.substring(offset, Math.min(text.length, offset + 50));
+
+    // Find the position of '=' relative to the word
+    // Check if there's an '=' immediately after the word (we're on the left)
+    const afterWordMatch = contextAfter.match(/^[a-zA-Z0-9_]*\s*=/);
+    const isLeftSide = !!afterWordMatch;
+
+    // Check if there's an '=' immediately before the word (we're on the right)
+    const beforeWordMatch = contextBefore.match(/=\s*[a-zA-Z0-9_]*$/);
+    const isRightSide = !!beforeWordMatch && !isLeftSide;
+
+    // If we're on the right side of '=', show info from the parent template
+    if (isRightSide && currentTemplateName) {
+      return getParentTemplatePropertyHover(
+        word,
+        currentTemplateName,
+        currentDir,
+        config
+      );
+    }
+
+    // If we're on the left side of '=', or no '=' context, show info from the child template
     // Find the associated JS/TS file for the current template to parse imports
     const currentBaseName = path.basename(currentDir);
     const associatedFile = findAssociatedJSFileForHover(currentDir, currentBaseName, fs, path);
@@ -1397,10 +1524,14 @@ async function getTemplateParameterHover(
 
           for (let i = 0; i < lines.length; i++) {
             const line = lines[i];
-            const propertyMatch = line.match(new RegExp(`^\\s*(${word})\\s*:\\s*([^;]+);?`));
+            // Match property with optional '?' for optional properties
+            const propertyMatch = line.match(
+              new RegExp(`^\\s*(${word})\\s*(\\?)?(\\s*:\\s*([^;]+))?;?`)
+            );
 
             if (propertyMatch) {
-              const propertyType = propertyMatch[2].trim();
+              const isOptional = !!propertyMatch[2];
+              const propertyType = propertyMatch[4]?.trim() || 'any';
 
               // Look for JSDoc comment above this property
               let documentation = '';
@@ -1430,15 +1561,19 @@ async function getTemplateParameterHover(
                 }
               }
 
-              const hoverContent = [
-                `**${word}** - Template Parameter`,
-                '',
-                `**Template:** ${templateName}`,
-                `**Type:** \`${propertyType}\``
-              ];
+              // Format like VS Code TypeScript hover: (property) name?: type
+              const optionalMarker = isOptional ? '?' : '';
+              const hoverContent = [];
 
+              // First line: property signature
+              hoverContent.push(`\`\`\`typescript`);
+              hoverContent.push(`(property) ${word}${optionalMarker}: ${propertyType}`);
+              hoverContent.push(`\`\`\``);
+
+              // Add documentation if available
               if (documentation) {
-                hoverContent.splice(2, 0, `**Description:** ${documentation}`, '');
+                hoverContent.push('');
+                hoverContent.push(documentation);
               }
 
               return hoverContent.join('\n');
@@ -1450,10 +1585,9 @@ async function getTemplateParameterHover(
 
     // If no TypeScript information found, provide basic parameter info
     return [
-      `**${word}** - Template Parameter`,
-      '',
-      `**Template:** ${templateName}`,
-      `**Type:** \`any\``,
+      `\`\`\`typescript`,
+      `(property) ${word}: any`,
+      `\`\`\``,
       '',
       `Parameter passed to the \`${templateName}\` template.`
     ].join('\n');

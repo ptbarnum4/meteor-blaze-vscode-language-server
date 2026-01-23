@@ -73,11 +73,16 @@ export const analyzeNeighboringFiles = (fileAnalysis: FileAnalysis, document: Te
             if (!fileAnalysis.dataPropertyTypesByKey) {
               fileAnalysis.dataPropertyTypesByKey = new Map();
             }
+            if (!fileAnalysis.dataPropertyJsDocsByKey) {
+              fileAnalysis.dataPropertyJsDocsByKey = new Map();
+            }
             // If only one type was present, attempt to store its prop types
             const firstTypeName = Object.keys(dataAnalysis.typePropertyTypes)[0];
             if (firstTypeName) {
               fileAnalysis.dataPropertyTypesByKey.set(dirKey, dataAnalysis.typePropertyTypes[firstTypeName] || {});
               fileAnalysis.dataPropertyTypesByKey.set(dirFileKey, dataAnalysis.typePropertyTypes[firstTypeName] || {});
+              fileAnalysis.dataPropertyJsDocsByKey.set(dirKey, dataAnalysis.typePropertyJsDocs[firstTypeName] || {});
+              fileAnalysis.dataPropertyJsDocsByKey.set(dirFileKey, dataAnalysis.typePropertyJsDocs[firstTypeName] || {});
             }
           }
 
@@ -95,9 +100,9 @@ export const analyzeNeighboringFiles = (fileAnalysis: FileAnalysis, document: Te
                 fileAnalysis.dataTypeByKey = new Map();
               }
               fileAnalysis.dataTypeByKey.set(dirTemplateKey, mappedType);
-            } else if (allTypeProps.length) {
-              propsForTemplate = allTypeProps;
             }
+            // Only add data properties if we found the specific type for this template
+            // Don't fall back to allTypeProps as that would include properties from all types in the file
             if (propsForTemplate.length) {
               if (!fileAnalysis.dataProperties) {
                 fileAnalysis.dataProperties = new Map();
@@ -106,8 +111,12 @@ export const analyzeNeighboringFiles = (fileAnalysis: FileAnalysis, document: Te
               if (!fileAnalysis.dataPropertyTypesByKey) {
                 fileAnalysis.dataPropertyTypesByKey = new Map();
               }
+              if (!fileAnalysis.dataPropertyJsDocsByKey) {
+                fileAnalysis.dataPropertyJsDocsByKey = new Map();
+              }
               if (mappedType && dataAnalysis.typePropertyTypes[mappedType]) {
                 fileAnalysis.dataPropertyTypesByKey.set(dirTemplateKey, dataAnalysis.typePropertyTypes[mappedType]);
+                fileAnalysis.dataPropertyJsDocsByKey.set(dirTemplateKey, dataAnalysis.typePropertyJsDocs[mappedType] || {});
               }
             }
           }
@@ -136,8 +145,12 @@ export const analyzeNeighboringFiles = (fileAnalysis: FileAnalysis, document: Te
               if (!fileAnalysis.dataPropertyTypesByKey) {
                 fileAnalysis.dataPropertyTypesByKey = new Map();
               }
+              if (!fileAnalysis.dataPropertyJsDocsByKey) {
+                fileAnalysis.dataPropertyJsDocsByKey = new Map();
+              }
               if (mappedType && dataAnalysis.typePropertyTypes[mappedType]) {
                 fileAnalysis.dataPropertyTypesByKey.set(dirTemplateKey, dataAnalysis.typePropertyTypes[mappedType]);
+                fileAnalysis.dataPropertyJsDocsByKey.set(dirTemplateKey, dataAnalysis.typePropertyJsDocs[mappedType] || {});
               }
             }
           });

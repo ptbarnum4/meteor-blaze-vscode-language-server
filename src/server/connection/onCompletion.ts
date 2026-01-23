@@ -68,24 +68,14 @@ const onCompletion = (config: CurrentConnectionConfig) => {
     const paramNameBeforeEquals = afterEqualsMatch ? afterEqualsMatch[1] : '';
     const partialValueAfterEquals = afterEqualsMatch ? afterEqualsMatch[2] : '';
 
-    // Check if we're positioned after an equals sign with only whitespace (indicating we want value suggestions)
-    // This handles cases like: title=|cursor or title=   |cursor
-    const afterEqualsWithWhitespaceMatch = textBeforeCursor.match(/=\s*$/);
-    const isAfterEqualsWithWhitespace = afterEqualsWithWhitespaceMatch !== null;
-
-    // Check if we're positioned after an equals sign with actual content (indicating we're typing a value)
-    const afterEqualsWithContentMatch = textBeforeCursor.match(/=\s*[^}\s]+$/);
-    const isAfterEqualsWithContent = afterEqualsWithContentMatch !== null;
-
     // We're in template parameter NAME context (left of =) if:
     // 1. We found a template parameter match
     // 2. We're not completing the template name itself (isTemplateInclusion is false)
-    // 3. We're either not after an equals sign, or we're after equals with only whitespace (wanting next param)
+    // 3. We're NOT after an equals sign at all
     const isTemplateParameter =
       templateParameterMatch !== null &&
       !isTemplateInclusion &&
-      !isAfterEquals &&
-      (!isAfterEqualsWithContent || isAfterEqualsWithWhitespace);
+      !isAfterEquals;
     const templateNameForParams = templateParameterMatch ? templateParameterMatch[1] : '';
 
     // We're in template parameter VALUE context (right of =) if:
@@ -541,17 +531,30 @@ function findTsConfigForMeteorProject(startPath: string): any {
         try {
           const tsconfigContent = fsSync.readFileSync(tsconfigPath, 'utf8');
 
-          // Try parsing as-is first (in case it's valid JSON without comments)
+          // Try multiple parsing strategies
+          // Strategy 1: Parse as-is (valid JSON without comments)
           try {
             return JSON.parse(tsconfigContent);
           } catch {
-            // If that fails, try safer comment removal
-            const cleanContent = safelyRemoveJsonComments(tsconfigContent);
-            return JSON.parse(cleanContent);
+            // Strategy 2: Remove comments and try again
+            try {
+              const cleanContent = safelyRemoveJsonComments(tsconfigContent);
+              return JSON.parse(cleanContent);
+            } catch {
+              // Strategy 3: Remove comments AND trailing commas
+              try {
+                let cleaned = safelyRemoveJsonComments(tsconfigContent);
+                // Remove trailing commas before ] or }
+                cleaned = cleaned.replace(/,(\s*[}\]])/g, '$1');
+                return JSON.parse(cleaned);
+              } catch {
+                // If all strategies fail, silently continue without tsconfig
+                // This is not critical for autocomplete to work
+                return null;
+              }
+            }
           }
-        } catch (e) {
-          console.error('Error parsing tsconfig.json:', e);
-          console.error('File path:', tsconfigPath);
+        } catch {
           return null;
         }
       }
@@ -569,14 +572,15 @@ function safelyRemoveJsonComments(content: string): string {
   let inString = false;
   let inLineComment = false;
   let inBlockComment = false;
+  let escapeNext = false;
   let i = 0;
 
   while (i < content.length) {
     const char = content[i];
     const nextChar = i + 1 < content.length ? content[i + 1] : '';
 
-    // Handle block comments
-    if (inBlockComment) {
+    // Handle block comments (not inside strings)
+    if (!inString && inBlockComment) {
       if (char === '*' && nextChar === '/') {
         inBlockComment = false;
         i += 2; // Skip the */
@@ -586,8 +590,8 @@ function safelyRemoveJsonComments(content: string): string {
       continue;
     }
 
-    // Handle line comments
-    if (inLineComment) {
+    // Handle line comments (not inside strings)
+    if (!inString && inLineComment) {
       if (char === '\n') {
         inLineComment = false;
         result.push(char); // Keep the newline
@@ -596,8 +600,24 @@ function safelyRemoveJsonComments(content: string): string {
       continue;
     }
 
-    // Handle strings (don't process comments inside strings)
-    if (char === '"' && (i === 0 || content[i - 1] !== '\\')) {
+    // Handle escape sequences in strings
+    if (inString && escapeNext) {
+      result.push(char);
+      escapeNext = false;
+      i++;
+      continue;
+    }
+
+    // Check for escape character in strings
+    if (inString && char === '\\') {
+      result.push(char);
+      escapeNext = true;
+      i++;
+      continue;
+    }
+
+    // Handle string delimiters
+    if (char === '"') {
       inString = !inString;
       result.push(char);
       i++;
@@ -830,14 +850,9 @@ async function getTemplateParameterCompletions(
   currentDocument: TextDocument,
   textBeforeCursor: string
 ): Promise<CompletionItem[]> {
-  const { connection } = config;
   const completions: CompletionItem[] = [];
 
   try {
-    const currentFilePath = currentDocument.uri.replace('file://', '');
-    const currentDir = path.dirname(currentFilePath);
-    const currentBaseName = path.basename(currentFilePath, path.extname(currentFilePath));
-
     // Parse already used parameters from the current template inclusion
     const usedParameters = parseUsedParameters(textBeforeCursor, templateName);
 
@@ -846,89 +861,41 @@ async function getTemplateParameterCompletions(
 
     // Search through all analyzed files for the child template's data properties
     for (const [key, dataProps] of config.fileAnalysis.dataProperties?.entries() || []) {
+
       // Check if this key is for the child template we're looking for
-      if (key.endsWith(`/${templateName}`)) {
+      // The key format is: /full/path/to/dir/templateName
+      // Extract the template name from the key (everything after the last /)
+      const keyTemplateName = key.substring(key.lastIndexOf('/') + 1);
+
+      if (keyTemplateName === templateName) {
         childTemplateDataProps = dataProps;
         break;
       }
     }
 
-    // Find associated JS/TS file
-    const associatedFile = findAssociatedJSFile(currentDir, currentBaseName);
+    // Create a set of all property names from workspace analysis only
+    const allPropertyNames = new Set<string>(childTemplateDataProps);
 
-    let templateFile: string | null = null;
-    if (associatedFile) {
-      // Parse imports from the associated file to find the template
-      const importedTemplates = parseTemplateImports(associatedFile);
-
-      if (importedTemplates.includes(templateName)) {
-        // Find the template file to analyze its data usage
-        templateFile = findImportedTemplateFile(associatedFile, templateName, connection);
-      }
-    }
-
-    let templateDataProperties: string[] = [];
-    if (templateFile) {
-      // Read and analyze the template file for data properties
-      const templateContent = fsSync.readFileSync(templateFile, 'utf8');
-      templateDataProperties = extractDataPropertiesFromTemplate(templateContent, templateName);
-    }
-
-    // Also analyze the associated TypeScript file for type definitions
-    // We need to find the actual template's TypeScript file, not the importing file
-    const templateTsFile = associatedFile ? findTemplateTypeScriptFile(associatedFile, templateName, connection) : null;
-    let typeDataProperties: Array<{ name: string; type?: string; documentation?: string }> = [];
-
-    if (templateTsFile) {
-      typeDataProperties = extractDataPropertiesFromTypes(templateTsFile, templateName);
-    }
-
-    // Extract helper function names from the TypeScript file to exclude them from parameters
-    const helperNames = templateTsFile ? extractHelperNames(templateTsFile, templateName) : [];
-
-    // Combine all sources of data properties
-    const allPropertyNames = new Set<string>([
-      ...childTemplateDataProps,
-      ...templateDataProperties,
-      ...typeDataProperties.map(p => p.name)
-    ]);
-
-    // Create a map of TypeScript properties for easy lookup
-    const typePropsMap = new Map(typeDataProperties.map(prop => [prop.name, prop]));
+    // Filter out already used parameters
+    const filteredProperties = Array.from(allPropertyNames)
+      .filter(propName => !usedParameters.includes(propName))
+      .sort();
 
     // Build completions for each property
-    const allDataProperties: Array<{ name: string; type?: string; documentation?: string }> = [];
+    const allDataProperties: Array<{ name: string; type?: string; documentation?: string }> =
+      filteredProperties.map(propName => ({ name: propName, type: 'any' }));
 
-    for (const propName of allPropertyNames) {
-      // Skip helper functions and already used parameters
-      if (helperNames.includes(propName) || usedParameters.includes(propName)) {
-        continue;
-      }
-
-      const typeInfo = typePropsMap.get(propName);
-      allDataProperties.push(typeInfo || { name: propName, type: 'any' });
-    }
-
-    // Sort by name
-    allDataProperties.sort((a, b) => a.name.localeCompare(b.name));
-
-    // Create completions for each available data property
-    allDataProperties.forEach(property => {
-      const completion = {
-        label: property.name,
+    // Create completion items
+    for (const prop of allDataProperties) {
+      const completion: CompletionItem = {
+        label: prop.name,
         kind: CompletionItemKind.Property,
-        detail: `Template parameter: ${property.type || 'any'}`,
-        documentation: {
-          kind: MarkupKind.Markdown,
-          value: property.documentation
-            ? `${property.documentation}\n\nUsage: \`{{> ${templateName} ${property.name}=value}}\``
-            : `Data property that can be passed to the \`${templateName}\` template.\n\nUsage: \`{{> ${templateName} ${property.name}=value}}\`.\n\nNote: This property is not declared in the TypeScript types, but is being used in the template, so it defaults to 'any'.`
-        },
-        insertText: `${property.name}=`,
-        filterText: property.name
+        detail: prop.type ? `Type: ${prop.type}` : undefined,
+        documentation: prop.documentation,
+        insertText: `${prop.name}=`
       };
       completions.push(completion);
-    });
+    }
   } catch {
     // Silently handle errors
   }
@@ -1086,543 +1053,5 @@ function parseUsedParameters(textBeforeCursor: string, templateName: string): st
   return usedParams;
 }
 
-// Helper function to find the template file for a given template name
-function findImportedTemplateFile(
-  jsFilePath: string,
-  templateName: string,
-  _connection: any
-): string | null {
-  try {
-    const jsFileContent = fsSync.readFileSync(jsFilePath, 'utf8');
-    const dir = path.dirname(jsFilePath);
-
-    // Parse import statements to find where this template comes from
-    const importLines = jsFileContent
-      .split('\n')
-      .filter((line: string) => line.trim().startsWith('import') && line.includes(templateName));
-
-    for (const importLine of importLines) {
-      // Extract import path from import statement
-      // Handle both: import './path' and import something from './path'
-      const importMatch =
-        importLine.match(/from\s+['"]([^'"]+)['"]/) ||
-        importLine.match(/import\s+['"]([^'"]+)['"]/);
-
-      if (importMatch) {
-        const importPath = importMatch[1];
-
-        let fullImportPath: string;
-
-        if (importPath.startsWith('./') || importPath.startsWith('../')) {
-          // Relative import
-          fullImportPath = path.resolve(dir, importPath);
-        } else if (importPath.startsWith('/')) {
-          // Absolute import - handle with TypeScript path resolution
-          const tsconfig = findTsConfigForMeteorProject(dir);
-
-          if (tsconfig) {
-            // Find project root (directory containing .meteor)
-            let currentDir = dir;
-            let projectRoot = currentDir;
-
-            while (currentDir !== path.dirname(currentDir)) {
-              if (fsSync.existsSync(path.join(currentDir, '.meteor'))) {
-                projectRoot = currentDir;
-                break;
-              }
-              currentDir = path.dirname(currentDir);
-            }
-
-            // Try TypeScript path resolution
-            const tsResolvedPath = resolveTsPath(importPath, tsconfig, projectRoot);
-            if (tsResolvedPath) {
-              fullImportPath = tsResolvedPath;
-            } else {
-              // Fallback to simple resolution
-              fullImportPath = path.join(projectRoot, importPath.substring(1)); // Remove leading /
-            }
-          } else {
-            // No tsconfig, use simple resolution
-            // Find the project root by looking for package.json or .meteor
-            let currentDir = dir;
-            let projectRoot = currentDir;
-
-            while (currentDir !== path.dirname(currentDir)) {
-              if (
-                fsSync.existsSync(path.join(currentDir, 'package.json')) ||
-                fsSync.existsSync(path.join(currentDir, '.meteor'))
-              ) {
-                projectRoot = currentDir;
-                break;
-              }
-              currentDir = path.dirname(currentDir);
-            }
-
-            fullImportPath = path.join(projectRoot, importPath.substring(1)); // Remove leading /
-          }
-        } else {
-          continue; // Skip other types of imports (like node_modules)
-        }
-
-        // For imports like './nestedTemplate/nestedTemplate' or '/imports/ui/template2/nestedTemplate2/nestedTemplate2'
-        // we need to check the parent directory
-        // Extract the directory part of the import path
-        const importDir = path.dirname(fullImportPath);
-
-        // Look for template.html in the import directory
-        const templateHtmlPath = path.join(importDir, 'template.html');
-
-        if (fsSync.existsSync(templateHtmlPath)) {
-          return templateHtmlPath;
-        }
-
-        // Also check in the full import path directory (original logic)
-        const templateHtmlPathFull = path.join(fullImportPath, 'template.html');
-
-        if (fsSync.existsSync(templateHtmlPathFull)) {
-          return templateHtmlPathFull;
-        }
-
-        // Also try templateName.html
-        const templateNamePath = path.join(path.dirname(fullImportPath), `${templateName}.html`);
-
-        if (fsSync.existsSync(templateNamePath)) {
-          return templateNamePath;
-        }
-      }
-    }
-
-    return null;
-  } catch (error) {
-    console.error(`Error finding template file for ${templateName}:`, error);
-    return null;
-  }
-}
-
-// Helper function to find the TypeScript file for a given template name
-function findTemplateTypeScriptFile(
-  jsFilePath: string,
-  templateName: string,
-  _connection: any
-): string | null {
-  try {
-    const jsFileContent = fsSync.readFileSync(jsFilePath, 'utf8');
-    const dir = path.dirname(jsFilePath);
-
-    // Parse import statements to find where this template comes from
-    const importLines = jsFileContent
-      .split('\n')
-      .filter((line: string) => line.trim().startsWith('import') && line.includes(templateName));
-
-    for (const importLine of importLines) {
-      // Extract import path from import statement
-      const importMatch =
-        importLine.match(/from\s+['"]([^'"]+)['"]/) ||
-        importLine.match(/import\s+['"]([^'"]+)['"]/);
-
-      if (importMatch) {
-        const importPath = importMatch[1];
-
-        let fullImportPath: string;
-
-        if (importPath.startsWith('./') || importPath.startsWith('../')) {
-          // Relative import
-          fullImportPath = path.resolve(dir, importPath);
-        } else if (importPath.startsWith('/')) {
-          // Absolute import - handle with TypeScript path resolution
-          const tsconfig = findTsConfigForMeteorProject(dir);
-
-          if (tsconfig) {
-            // Find project root (directory containing .meteor)
-            let currentDir = dir;
-            let projectRoot = currentDir;
-
-            while (currentDir !== path.dirname(currentDir)) {
-              if (fsSync.existsSync(path.join(currentDir, '.meteor'))) {
-                projectRoot = currentDir;
-                break;
-              }
-              currentDir = path.dirname(currentDir);
-            }
-
-            // Try TypeScript path resolution
-            const tsResolvedPath = resolveTsPath(importPath, tsconfig, projectRoot);
-            if (tsResolvedPath) {
-              fullImportPath = tsResolvedPath;
-            } else {
-              // Fallback to simple resolution
-              fullImportPath = path.join(projectRoot, importPath.substring(1)); // Remove leading /
-            }
-          } else {
-            // No tsconfig, use simple resolution
-            // Find the project root by looking for package.json or .meteor
-            let currentDir = dir;
-            let projectRoot = currentDir;
-
-            while (currentDir !== path.dirname(currentDir)) {
-              if (
-                fsSync.existsSync(path.join(currentDir, 'package.json')) ||
-                fsSync.existsSync(path.join(currentDir, '.meteor'))
-              ) {
-                projectRoot = currentDir;
-                break;
-              }
-              currentDir = path.dirname(currentDir);
-            }
-
-            fullImportPath = path.join(projectRoot, importPath.substring(1)); // Remove leading /
-          }
-        } else {
-          continue; // Skip other types of imports (like node_modules)
-        }
-
-        // For imports like './nestedTemplate/nestedTemplate' or '/imports/ui/template2/nestedTemplate2/nestedTemplate2'
-        // look for the .ts file
-        const templateTsPath = `${fullImportPath}.ts`;
-
-        if (fsSync.existsSync(templateTsPath)) {
-          return templateTsPath;
-        }
-
-        // Also try the directory approach - look in the import directory
-        const importDir = path.dirname(fullImportPath);
-        const templateTsInDir = path.join(importDir, `${templateName}.ts`);
-
-        if (fsSync.existsSync(templateTsInDir)) {
-          return templateTsInDir;
-        }
-      }
-    }
-
-    return null;
-  } catch (error) {
-    console.error(`Error finding TypeScript file for ${templateName}:`, error);
-    return null;
-  }
-}
-
-// Helper function to extract data properties from template content
-function extractDataPropertiesFromTemplate(
-  templateContent: string,
-  templateName: string
-): string[] {
-  const properties = new Set<string>();
-
-  // Find the specific template block
-  const templatePattern = new RegExp(
-    `<template\\s+name=["']${templateName}["'][^>]*>([\\s\\S]*?)<\\/template>`,
-    'i'
-  );
-  const templateMatch = templateContent.match(templatePattern);
-
-  if (!templateMatch) {
-    return [];
-  }
-
-  const templateBody = templateMatch[1];
-
-  // Extract properties from handlebars expressions
-  // Match patterns like {{property}}, {{#if property}}, {{property.subprop}}, etc.
-  const handlebarsPattern = /\{\{[^{}]*?\}\}/g;
-  const matches = templateBody.match(handlebarsPattern) || [];
-
-  matches.forEach(match => {
-    // Clean up the match - remove {{ }} and any # or / prefixes
-    const content = match
-      .replace(/^\{\{[#/]?/, '')
-      .replace(/\}\}$/, '')
-      .trim();
-
-    // Skip built-in helpers and control structures
-    if (
-      content.startsWith('if ') ||
-      content.startsWith('each ') ||
-      content.startsWith('unless ') ||
-      content.startsWith('with ') ||
-      content === 'else' ||
-      content.startsWith('@') ||
-      content === 'this' ||
-      content.includes('(')
-    ) {
-      return;
-    }
-
-    // Extract the root property name (before any dots or spaces)
-    const propertyMatch = content.match(/^([a-zA-Z_$][a-zA-Z0-9_$]*)/);
-    if (propertyMatch) {
-      const property = propertyMatch[1];
-      // Skip common template helpers that aren't data properties
-      if (!['if', 'each', 'unless', 'with', 'let'].includes(property)) {
-        properties.add(property);
-      }
-    }
-  });
-
-  const result = Array.from(properties).sort();
-
-  return result;
-}
-
-// Helper function to extract data properties from TypeScript type definitions
-function extractDataPropertiesFromTypes(
-  tsFilePath: string,
-  templateName: string
-): Array<{ name: string; type?: string; documentation?: string }> {
-  const properties: Array<{ name: string; type?: string; documentation?: string }> = [];
-
-  try {
-    const tsFileContent = fsSync.readFileSync(tsFilePath, 'utf8');
-
-    // Look for type definitions like: type TemplateNameData = { ... }
-    // Convert templateName to PascalCase for type name matching
-    const pascalTemplateName = templateName.charAt(0).toUpperCase() + templateName.slice(1);
-    const typeNames = [
-      `${pascalTemplateName}Data`,
-      `${templateName}Data`,
-      `${pascalTemplateName}TemplateData`,
-      `${templateName}TemplateData`
-    ];
-
-    for (const typeName of typeNames) {
-      // Match type definitions: type TypeName = { ... }
-      const typePattern = new RegExp(`type\\s+${typeName}\\s*=\\s*\\{([\\s\\S]*?)\\}\\s*;`, 'i');
-      const typeMatch = tsFileContent.match(typePattern);
-
-      if (typeMatch) {
-        const typeBody = typeMatch[1];
-
-        // Extract property names from the type body
-        // Split by lines and process each line to avoid nested objects
-        const lines = typeBody.split('\n');
-        let braceDepth = 0;
-        let currentJSDocComment = '';
-
-        for (let i = 0; i < lines.length; i++) {
-          const line = lines[i];
-          const trimmedLine = line.trim();
-
-          // Check for JSDoc comment blocks (/** ... */)
-          if (trimmedLine.startsWith('/**')) {
-            currentJSDocComment = '';
-            let j = i;
-            while (j < lines.length) {
-              const commentLine = lines[j].trim();
-              if (commentLine.includes('*/')) {
-                // Extract content before */
-                const endContent = commentLine.substring(0, commentLine.indexOf('*/'));
-                if (endContent.replace(/^\s*\*?\s*/, '').length > 0) {
-                  currentJSDocComment += endContent.replace(/^\s*\*?\s*/, '');
-                }
-                i = j; // Skip to end of comment block
-                break;
-              } else if (j > i) {
-                // Extract content from comment lines, removing * prefix
-                const content = commentLine.replace(/^\s*\*?\s*/, '');
-                if (content.length > 0) {
-                  if (currentJSDocComment) {
-                    currentJSDocComment += ' ';
-                  }
-                  currentJSDocComment += content;
-                }
-              }
-              j++;
-            }
-            continue;
-          }
-
-          // Check for single-line JSDoc comments
-          if (trimmedLine.startsWith('//')) {
-            currentJSDocComment = trimmedLine.replace(/^\/\/\s*/, '');
-            continue;
-          }
-
-          // Check if this line contains a property at the current level (before counting braces)
-          if (braceDepth === 0 && trimmedLine.match(/^\s*(\w+)\s*:\s*[^;{]+[;}]/)) {
-            const propertyMatch = trimmedLine.match(/^\s*(\w+)\s*:\s*([^;{]+)[;}]/);
-            if (propertyMatch) {
-              const propertyName = propertyMatch[1];
-              const propertyType = propertyMatch[2].trim();
-              // Skip comments and TypeScript keywords
-              if (
-                !propertyName.startsWith('//') &&
-                !['readonly', 'public', 'private', 'protected'].includes(propertyName)
-              ) {
-                const propertyInfo: { name: string; type?: string; documentation?: string } = {
-                  name: propertyName,
-                  type: propertyType
-                };
-
-                if (currentJSDocComment) {
-                  propertyInfo.documentation = currentJSDocComment;
-                }
-
-                properties.push(propertyInfo);
-              }
-            }
-          }
-
-          // Reset comment after processing property or if we encounter other content
-          if (
-            !trimmedLine.startsWith('//') &&
-            !trimmedLine.startsWith('/**') &&
-            trimmedLine.length > 0
-          ) {
-            currentJSDocComment = '';
-          }
-
-          // Count braces to update depth for next iteration
-          for (const char of trimmedLine) {
-            if (char === '{') {
-              braceDepth++;
-            } else if (char === '}') {
-              braceDepth--;
-            }
-          }
-        }
-        break; // Found the type, no need to check others
-      }
-    }
-
-    // Also look for interface definitions: interface TemplateNameData { ... }
-    for (const typeName of typeNames) {
-      const interfacePattern = new RegExp(`interface\\s+${typeName}\\s*\\{([\\s\\S]*?)\\}`, 'i');
-      const interfaceMatch = tsFileContent.match(interfacePattern);
-
-      if (interfaceMatch) {
-        const interfaceBody = interfaceMatch[1];
-
-        // Split by lines and process each line to avoid nested objects
-        const lines = interfaceBody.split('\n');
-        let braceDepth = 0;
-        let currentJSDocComment = '';
-
-        for (let i = 0; i < lines.length; i++) {
-          const line = lines[i];
-          const trimmedLine = line.trim();
-
-          // Check for JSDoc comment blocks (/** ... */)
-          if (trimmedLine.startsWith('/**')) {
-            currentJSDocComment = '';
-            let j = i;
-            while (j < lines.length) {
-              const commentLine = lines[j].trim();
-              if (commentLine.includes('*/')) {
-                // Extract content before */
-                const endContent = commentLine.substring(0, commentLine.indexOf('*/'));
-                if (endContent.replace(/^\s*\*?\s*/, '').length > 0) {
-                  currentJSDocComment += endContent.replace(/^\s*\*?\s*/, '');
-                }
-                i = j; // Skip to end of comment block
-                break;
-              } else if (j > i) {
-                // Extract content from comment lines, removing * prefix
-                const content = commentLine.replace(/^\s*\*?\s*/, '');
-                if (content.length > 0) {
-                  if (currentJSDocComment) {
-                    currentJSDocComment += ' ';
-                  }
-                  currentJSDocComment += content;
-                }
-              }
-              j++;
-            }
-            continue;
-          }
-
-          // Check for single-line JSDoc comments
-          if (trimmedLine.startsWith('//')) {
-            currentJSDocComment = trimmedLine.replace(/^\/\/\s*/, '');
-            continue;
-          }
-
-          // Check if this line contains a property at the current level (before counting braces)
-          if (braceDepth === 0 && trimmedLine.match(/^\s*(\w+)\s*:\s*[^;{]+[;}]/)) {
-            const propertyMatch = trimmedLine.match(/^\s*(\w+)\s*:\s*([^;{]+)[;}]/);
-            if (propertyMatch) {
-              const propertyName = propertyMatch[1];
-              const propertyType = propertyMatch[2].trim();
-              if (
-                !propertyName.startsWith('//') &&
-                !['readonly', 'public', 'private', 'protected'].includes(propertyName)
-              ) {
-                const propertyInfo: { name: string; type?: string; documentation?: string } = {
-                  name: propertyName,
-                  type: propertyType
-                };
-
-                if (currentJSDocComment) {
-                  propertyInfo.documentation = currentJSDocComment;
-                }
-
-                properties.push(propertyInfo);
-              }
-            }
-          }
-
-          // Reset comment after processing property or if we encounter other content
-          if (
-            !trimmedLine.startsWith('//') &&
-            !trimmedLine.startsWith('/**') &&
-            trimmedLine.length > 0
-          ) {
-            currentJSDocComment = '';
-          }
-
-          // Count braces to update depth for next iteration
-          for (const char of trimmedLine) {
-            if (char === '{') {
-              braceDepth++;
-            } else if (char === '}') {
-              braceDepth--;
-            }
-          }
-        }
-        break;
-      }
-    }
-  } catch (error) {
-    console.error(`Error extracting types from ${tsFilePath}:`, error);
-  }
-
-  return properties;
-}
-
-// Helper function to extract helper function names from TypeScript template files
-function extractHelperNames(tsFilePath: string, templateName: string): string[] {
-  const helperNames: string[] = [];
-
-  try {
-    const tsFileContent = fsSync.readFileSync(tsFilePath, 'utf8');
-
-    // Look for Template.templateName.helpers({ ... }) block
-    const helpersPattern = new RegExp(
-      `Template\\.${templateName}\\.helpers\\s*\\(\\s*\\{([\\s\\S]*?)\\}\\s*\\)`,
-      'i'
-    );
-    const helpersMatch = tsFileContent.match(helpersPattern);
-
-    if (helpersMatch) {
-      const helpersBody = helpersMatch[1];
-
-      // Extract function names from the helpers object
-      // Match patterns like: functionName(): type { or functionName() {
-      const functionPattern = /(\w+)\s*\([^)]*\)\s*:?\s*[^{]*\{/g;
-      let match;
-
-      while ((match = functionPattern.exec(helpersBody)) !== null) {
-        const functionName = match[1];
-        if (functionName) {
-          if (!helperNames.includes(functionName)) {
-            helperNames.push(functionName);
-          }
-        }
-      }
-    }
-  } catch (error) {
-    console.error(`Error extracting helper names from ${tsFilePath}:`, error);
-  }
-
-  return helperNames;
-}
-
 export default onCompletion;
+

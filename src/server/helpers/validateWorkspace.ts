@@ -3,6 +3,7 @@ import * as path from 'path';
 import { TextDocument } from 'vscode-languageserver-textdocument';
 
 import { CurrentConnectionConfig } from '../../types';
+import { analyzeNeighboringFiles } from './analyzeNeighboringFiles';
 import { validateTextDocument } from './validateTextDocument';
 
 /**
@@ -88,6 +89,9 @@ export async function validateWorkspace(config: CurrentConnectionConfig): Promis
             1,
             content
           );
+
+          // Analyze neighboring files to populate dataProperties Map
+          analyzeNeighboringFiles(config.fileAnalysis, document);
 
           // Validate the document
           await validateTextDocument(config, document);

@@ -37,3 +37,29 @@
     <span>{{param3}}</span>
   </div>
 </template>
+{{! Test same-named parameters with different types in parent vs child }}
+<template name="parentTemplate">
+  <div class="pagination-test">
+    {{!
+      Hover behavior test:
+      - Hovering on "page" (left of =) should show PaginatorData.page type/docs
+      - Hovering on "page" (right of =) should show ParentTemplateData.page or page() helper type/docs
+      - Same for perPage, total, etc.
+    }}
+    {{> paginatorTemplate
+      page=page
+      perPage=perPage
+      total=totalResults
+      disabled=isLoading
+      fixed=true
+    }}
+  </div>
+</template>
+
+<template name="paginatorTemplate">
+  <div class="paginator">
+    <button disabled="{{disabled}}">Previous</button>
+    <span>Page {{page}} of {{total}}</span>
+    <button disabled="{{disabled}}">Next</button>
+  </div>
+</template>

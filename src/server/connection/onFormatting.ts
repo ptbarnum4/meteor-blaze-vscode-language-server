@@ -160,14 +160,18 @@ function findTemplateInvocations(text: string): TemplateInvocation[] {
       while (i < paramsText.length && /\s/.test(paramsText[i])) {
         i++;
       }
-      if (i >= paramsText.length) {break;}
+      if (i >= paramsText.length) {
+        break;
+      }
 
       // Parse parameter name
       const nameStart = i;
       while (i < paramsText.length && /[a-zA-Z_$0-9]/.test(paramsText[i])) {
         i++;
       }
-      if (i === nameStart) {break;} // No valid name found
+      if (i === nameStart) {
+        break;
+      } // No valid name found
       const name = paramsText.substring(nameStart, i);
 
       // Skip whitespace after name
@@ -200,7 +204,9 @@ function findTemplateInvocations(text: string): TemplateInvocation[] {
                 i++;
               }
             }
-            if (i < paramsText.length) {i++;} // Skip closing quote
+            if (i < paramsText.length) {
+              i++;
+            } // Skip closing quote
             value = paramsText.substring(valueStart, i);
           } else if (paramsText[i] === "'") {
             // Single-quoted string
@@ -212,7 +218,9 @@ function findTemplateInvocations(text: string): TemplateInvocation[] {
                 i++;
               }
             }
-            if (i < paramsText.length) {i++;} // Skip closing quote
+            if (i < paramsText.length) {
+              i++;
+            } // Skip closing quote
             value = paramsText.substring(valueStart, i);
           } else if (paramsText[i] === '(') {
             // Helper expression with parentheses - need to track nesting
@@ -224,7 +232,9 @@ function findTemplateInvocations(text: string): TemplateInvocation[] {
               } else if (paramsText[i] === ')') {
                 parenDepth--;
                 i++;
-                if (parenDepth === 0) {break;}
+                if (parenDepth === 0) {
+                  break;
+                }
               } else {
                 i++;
               }
@@ -338,13 +348,40 @@ export const onDocumentFormatting = (config: CurrentConnectionConfig) => {
     // If base formatter is specified, request the client to apply it first
     if (baseFormatter) {
       try {
-        connection.console.log(`Requesting base formatter '${baseFormatter}' for ${params.textDocument.uri}`);
+        connection.console.info(
+          `Requesting base formatter '${baseFormatter}' for ${params.textDocument.uri}`
+        );
+        const folders = await connection.workspace.getWorkspaceFolders();
+        const projectRoot = (folders && folders.length > 0 ? folders[0].uri : '').replace(
+          'file://',
+          ''
+        );
+        const relativePath = document.uri.replace(projectRoot, '');
 
-        const result = await connection.sendRequest<TextEdit[] | null>('meteor/applyBaseFormatter', {
-          uri: params.textDocument.uri,
-          formatterId: baseFormatter,
-          options: params.options
-        });
+        const formatterName = 'ptbarnum4.meteor-blaze-vscode-language-server';
+        const filename = document.uri.split('/').pop() || '';
+        const options = {
+          '⓵ Formatter 1 (Runs 1st)': baseFormatter,
+          '⓶ Formatter 2 (Runs 2nd)': formatterName,
+          '📄 Filename' : filename,
+          '📁 Relative Path': relativePath,
+          ...params.options
+        };
+
+        connection.console.info(
+          `Formatting file: ${filename}\nOptions:\n${Object.entries(options)
+            .map(([k, v]) => `  - ${k}: ${v}`)
+            .join('\n')}`
+        );
+
+        const result = await connection.sendRequest<TextEdit[] | null>(
+          'meteor/applyBaseFormatter',
+          {
+            uri: params.textDocument.uri,
+            formatterId: baseFormatter,
+            options: params.options
+          }
+        );
 
         if (result && Array.isArray(result)) {
           baseEdits = result;
@@ -392,7 +429,10 @@ export const onDocumentFormatting = (config: CurrentConnectionConfig) => {
         {
           range: {
             start: { line: 0, character: 0 },
-            end: { line: originalLines.length - 1, character: originalLines[originalLines.length - 1].length }
+            end: {
+              line: originalLines.length - 1,
+              character: originalLines[originalLines.length - 1].length
+            }
           },
           newText: finalText
         }
