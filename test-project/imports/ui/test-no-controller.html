@@ -24,10 +24,19 @@
     {{#each image in images}}
       <img src="{{image.url}}"
         alt="{{image.altText}}" />
+      {{firstName}} - {{image.name}}
+    {{/each}}
+
+    {{#each thing}}
+      <div class="thing-item">
+        <h3>{{thing.title}}</h3>
+        <p>{{thing.description}}</p>
+      </div>
     {{/each}}
 
     {{#with address}}
       <div class="address">
+        {{firstName}}
         <p>{{street}}, {{city}}, {{state}} {{zip}}</p>
       </div>
     {{/with}}

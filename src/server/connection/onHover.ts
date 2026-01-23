@@ -786,7 +786,7 @@ async function getTemplateInclusionHover(
       // Add extracted parameters that aren't already typed
       for (const param of extractedParams) {
         if (!allParams.has(param.name)) {
-          allParams.set(param.name, { type: 'any' });
+          allParams.set(param.name, { type: param.inferredType || 'string' });
         }
       }
 
@@ -916,7 +916,7 @@ async function getTemplateInclusionHover(
       // Add extracted parameters that aren't already typed
       for (const param of extractedParams) {
         if (!allParams.has(param.name)) {
-          allParams.set(param.name, { type: 'any', inferred: true });
+          allParams.set(param.name, { type: param.inferredType || 'string', inferred: true });
         }
       }
 

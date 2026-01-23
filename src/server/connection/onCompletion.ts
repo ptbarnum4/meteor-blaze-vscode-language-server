@@ -953,9 +953,13 @@ async function getTemplateParameterCompletions(
     const allDataProperties: Array<{ name: string; type?: string; documentation?: string }> =
       filteredProperties.map(propName => {
         const typedInfo = typedParams.get(propName);
+        // Find the extracted param to get its inferred type
+        const extractedParam = extractedParams.find(p => p.name === propName);
+        const inferredType = extractedParam?.inferredType || 'string';
+
         return {
           name: propName,
-          type: typedInfo?.type || 'any',
+          type: typedInfo?.type || inferredType,
           documentation: typedInfo?.doc
         };
       });
