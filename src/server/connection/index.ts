@@ -21,6 +21,11 @@ import onDefinition from './onDefinition';
 import onDidChangeConfiguration from './onDidChangeConfiguration';
 import onDidChangeContent from './onDidChangeContent';
 import onDidClose from './onDidClose';
+import {
+    onDocumentFormatting,
+    onDocumentOnTypeFormatting,
+    onDocumentRangeFormatting
+} from './onFormatting';
 import onHover from './onHover';
 import onInitialize from './onInitialize';
 import onInitialized from './onInitialized';
@@ -69,6 +74,11 @@ connection.onCompletion(onCompletion(config));
 connection.onCompletionResolve(onCompletionResolve(config));
 connection.onHover(onHover(config));
 connection.onDefinition(onDefinition(config));
+
+// Register formatting handlers
+connection.onDocumentFormatting(onDocumentFormatting(config));
+connection.onDocumentRangeFormatting(onDocumentRangeFormatting(config));
+connection.onDocumentOnTypeFormatting(onDocumentOnTypeFormatting(config));
 
 // Register document event handlers
 documents.onDidClose(onDidClose(config));

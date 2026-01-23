@@ -1,0 +1,40 @@
+{
+  // Meteor/Blaze Language Server - Formatting Example Settings
+
+  // === Option 1: Use both HTML Language Features and Meteor formatting ===
+  // This will first apply HTML formatting, then apply Meteor template invocation formatting
+  "meteorLanguageServer.formatting": {
+    "enabled": true,
+    "baseFormatter": "vscode.html-language-features",
+    "indentSize": 2
+  },
+
+  // === Option 2: Use only Meteor formatting (no base formatter) ===
+  // Uncomment to use only Meteor-specific template invocation formatting
+  // "meteorLanguageServer.formatting": {
+  //   "enabled": true,
+  //   "baseFormatter": null,
+  //   "indentSize": 2
+  // },
+
+  // === Option 3: Use Prettier as base formatter + Meteor formatting ===
+  // Requires Prettier extension to be installed
+  // "meteorLanguageServer.formatting": {
+  //   "enabled": true,
+  //   "baseFormatter": "esbenp.prettier-vscode",
+  //   "indentSize": 2
+  // },
+
+  // === Option 4: Disable Meteor formatting entirely ===
+  // Use this if you only want HTML Language Features or another formatter
+  // "meteorLanguageServer.formatting": {
+  //   "enabled": false
+  // },
+
+  // === Related Settings ===
+  // You may also want to configure format on save
+  "[html]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "ptbarnum4.meteor-blaze-vscode-language-server"
+  }
+}

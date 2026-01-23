@@ -4,6 +4,47 @@ All notable changes to the "meteor-blaze-vscode-language-server" extension will 
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [Unreleased] - 2026-01-22
+
+### ✨ New Features
+
+#### Template Parameter Completion & Indentation (Issue #62)
+
+**Template Parameter Completion:**
+- **Parameter Name Suggestions** (left of `=`): When typing template invocation parameters, automatically suggests available parameters based on TypeScript type definitions and template usage patterns
+- **Value Suggestions** (right of `=`): After typing `=`, suggests helpers, data properties, and context values from the current template
+- **Smart Filtering**: Already-used parameters are automatically excluded from suggestions
+- **Type Information**: Displays parameter types from TypeScript definitions in completion details
+- **Documentation Support**: Shows JSDoc comments for parameters when available
+
+**Template Invocation Formatting:**
+- **Format on Save**: Automatically formats multi-line template invocations with proper indentation
+- **Format on Type**: Smart formatting triggers when pressing Enter or typing closing `}}`
+- **Proper Indentation**: Each parameter on its own line with consistent indentation
+- **Bracket Alignment**: Closing `}}` automatically aligns with opening `{{>`
+- **Configurable**: Respects VS Code editor settings (spaces vs tabs, indent size)
+- **Smart Behavior**: Only formats multi-line invocations, preserves single-line when appropriate
+
+**New Configuration Options:**
+```json
+{
+  "meteorLanguageServer.formatting": {
+    "enabled": true,
+    "indentSize": 2
+  },
+  "meteorLanguageServer.completion": {
+    "suggestTemplateParams": true,
+    "suggestTemplateValues": true,
+    "parameterInferenceMinUsage": 2
+  }
+}
+```
+
+### 🎯 Enhancements
+- Enhanced completion system with context-aware suggestions for template invocations
+- Improved formatting provider with support for document, range, and on-type formatting
+- Better TypeScript type extraction for template parameter schemas
+
 ## [0.0.11] - 2026-01-13
 
 ### 🐛 Bug Fixes

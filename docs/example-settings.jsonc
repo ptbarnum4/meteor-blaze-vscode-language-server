@@ -21,5 +21,18 @@
     "extend": [
       { "name": "#myHelper", "doc": "My custom helper for Blaze templates" }
     ]
+  },
+
+  // Formatting settings
+  "meteorLanguageServer.formatting": {
+    "enabled": true,
+    "baseFormatter": "vscode.html-language-features", // Chain with HTML formatter
+    "indentSize": 2
+  },
+
+  // Format on save (optional)
+  "[html]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "ptbarnum4.meteor-blaze-vscode-language-server"
   }
 }

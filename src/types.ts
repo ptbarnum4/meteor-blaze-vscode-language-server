@@ -121,6 +121,15 @@ export type LanguageServerSettings = {
       doc: string;
     }>;
   };
+  /** Settings for formatting. */
+  formatting?: {
+    /** Whether formatting is enabled. */
+    enabled?: boolean;
+    /** Base formatter to chain with (e.g., 'vscode.html-language-features'). */
+    baseFormatter?: string | null;
+    /** Indent size for formatting. */
+    indentSize?: number;
+  };
 };
 
 /**

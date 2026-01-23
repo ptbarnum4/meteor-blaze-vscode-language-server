@@ -1,7 +1,7 @@
 import {
-  InitializeParams,
-  InitializeResult,
-  TextDocumentSyncKind
+    InitializeParams,
+    InitializeResult,
+    TextDocumentSyncKind
 } from 'vscode-languageserver/node';
 
 import { CurrentConnectionConfig } from '/types';
@@ -30,7 +30,13 @@ const onInitialize = (config: CurrentConnectionConfig) => {
           triggerCharacters: ['{', '"', "'", '.', ' ', '}']
         },
         hoverProvider: true,
-        definitionProvider: true
+        definitionProvider: true,
+        documentFormattingProvider: true,
+        documentRangeFormattingProvider: true,
+        documentOnTypeFormattingProvider: {
+          firstTriggerCharacter: '\n',
+          moreTriggerCharacter: ['}']
+        }
       }
     };
 

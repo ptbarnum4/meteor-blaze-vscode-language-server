@@ -11,6 +11,8 @@ A VS Code extension that provides intelligent language support for Meteor/Blaze 
 - **🎯 Smart Template Detection** - Automatically activates for HTML files containing `<template name="...">` tags
 - **🎨 Syntax Highlighting** - Full Blaze templating syntax support (`{{helper}}`, `{{#if}}`, etc.)
 - **💡 Intelligent Code Completion** - Template helpers, CSS classes, built-in Blaze helpers, and template inclusions
+- **📐 Template Parameter Completion** - Smart suggestions for template parameters and values during template invocations
+- **🎨 Auto-Formatting** - Automatically formats multi-line template invocations with proper indentation
 - **✨ Auto-Insert End Tags** - Automatically completes Blaze block tags (`{{#if}}` → `{{/if}}`)
 - **🔍 Cross-file Intelligence** - Analyzes neighboring TypeScript/JavaScript and CSS files for completions
 - **📋 Rich Hover Information** - Shows helper definitions, file locations, and documentation

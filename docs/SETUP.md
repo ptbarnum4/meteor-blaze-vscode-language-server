@@ -9,6 +9,8 @@ The following example configuration files are available in this directory for re
 - **[example-settings.jsonc](./example-settings.jsonc)** - Basic language server configuration with block conditions and custom helpers
 - **[example-settings-auto-insert.jsonc](./example-settings-auto-insert.jsonc)** - Auto-insert end tags configuration examples
 - **[example-settings-blazeHelpers-colors.jsonc](./example-settings-blazeHelpers-colors.jsonc)** - Custom colors for Blaze helper tokens
+- **[example-settings-formatting.jsonc](./example-settings-formatting.jsonc)** - Formatting configuration with base formatter chaining examples
+- **[example-settings-globalHelpers.jsonc](./example-settings-globalHelpers.jsonc)** - Global helpers with rich documentation examples
 - **[example-blaze-token-theme.jsonc](./example-blaze-token-theme.jsonc)** - TextMate token color customization examples
 
 You can copy settings from these files into your VS Code `settings.json` file.
@@ -48,6 +50,22 @@ Add this to your `settings.json`:
   "meteorLanguageServer.maxNumberOfProblems": 50
 }
 ```
+
+### `meteorLanguageServer.validateWorkspaceOnStartup`
+- **Type**: `boolean`
+- **Default**: `true`
+- **Scope**: `window`
+- **Description**: Automatically validate all template files in the workspace when the language server starts. This helps detect errors across your entire project without opening each file.
+
+```json
+{
+  "meteorLanguageServer.validateWorkspaceOnStartup": true
+}
+```
+
+**Use cases:**
+- `true`: Validate all templates on startup (recommended for catching project-wide errors)
+- `false`: Only validate templates when they're opened (better for large projects)
 
 ### `meteorLanguageServer.trace.server`
 - **Type**: `string`
@@ -249,6 +267,175 @@ Simple helper configuration with name and doc only. For more advanced documentat
 }
 ```
 
+## Formatting Configuration
+
+### `meteorLanguageServer.formatting`
+Configure automatic formatting for Meteor template invocations with support for chaining with other formatters.
+
+#### Basic Configuration
+```json
+{
+  "meteorLanguageServer.formatting": {
+    "enabled": true,
+    "indentSize": 2,
+    "baseFormatter": null
+  }
+}
+```
+
+#### Configuration Fields
+
+**`enabled`** (boolean, default: `true`)
+- Enable or disable the Meteor template invocation formatter
+- Set to `false` to use only other formatters (e.g., HTML Language Features)
+
+**`indentSize`** (number, default: `2`)
+- Number of spaces for indentation in multi-line template invocations
+- Only applies when using spaces (not tabs)
+
+**`baseFormatter`** (string | null, default: `null`)
+- Specify a base formatter to chain with before applying Meteor-specific formatting
+- The base formatter will run first, then Meteor formatting applies
+- Common values:
+  - `"vscode.html-language-features"` - Built-in VS Code HTML formatter
+  - `"esbenp.prettier-vscode"` - Prettier formatter (requires extension)
+  - `null` - No base formatter, only Meteor formatting
+
+#### Formatter Chaining Examples
+
+**Chain with HTML Language Features:**
+```json
+{
+  "meteorLanguageServer.formatting": {
+    "enabled": true,
+    "baseFormatter": "vscode.html-language-features",
+    "indentSize": 2
+  },
+  "[html]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "ptbarnum4.meteor-blaze-vscode-language-server"
+  }
+}
+```
+
+**Chain with Prettier:**
+```json
+{
+  "meteorLanguageServer.formatting": {
+    "enabled": true,
+    "baseFormatter": "esbenp.prettier-vscode",
+    "indentSize": 2
+  }
+}
+```
+
+**Meteor Formatting Only:**
+```json
+{
+  "meteorLanguageServer.formatting": {
+    "enabled": true,
+    "baseFormatter": null,
+    "indentSize": 2
+  }
+}
+```
+
+**Disable Meteor Formatting:**
+```json
+{
+  "meteorLanguageServer.formatting": {
+    "enabled": false
+  },
+  "[html]": {
+    "editor.defaultFormatter": "vscode.html-language-features"
+  }
+}
+```
+
+#### What Gets Formatted
+
+The Meteor formatter specifically handles template invocations:
+
+**Before formatting:**
+```html
+{{> myTemplate param1="value1" param2="value2" param3="value3" }}
+```
+
+**After formatting:**
+```html
+{{> myTemplate
+  param1="value1"
+  param2="value2"
+  param3="value3"
+}}
+```
+
+**Formatting rules:**
+- 0-1 parameters: Keeps inline
+- 2+ parameters: Formats to multi-line with proper indentation
+- Preserves parameter values and quoted strings
+
+See [example-settings-formatting.jsonc](./example-settings-formatting.jsonc) for more examples.
+
+## Completion Configuration
+
+### `meteorLanguageServer.completion`
+Configure template parameter and value completion suggestions.
+
+```json
+{
+  "meteorLanguageServer.completion": {
+    "suggestTemplateParams": true,
+    "suggestTemplateValues": true,
+    "parameterInferenceMinUsage": 2
+  }
+}
+```
+
+#### Configuration Fields
+
+**`suggestTemplateParams`** (boolean, default: `true`)
+- Enable parameter name suggestions when typing inside template invocations (left side of `=`)
+- Suggests parameters from template data context and common usage patterns
+
+**`suggestTemplateValues`** (boolean, default: `true`)
+- Enable value suggestions when typing after `=` in template invocations
+- Suggests template helpers, data properties, and contextual values
+
+**`parameterInferenceMinUsage`** (number, default: `2`)
+- Minimum usage count required to suggest parameters inferred from template usage patterns
+- Higher values = fewer suggestions but higher confidence
+- Lower values = more suggestions including less common patterns
+
+#### Examples
+
+**Strict inference (only common patterns):**
+```json
+{
+  "meteorLanguageServer.completion": {
+    "parameterInferenceMinUsage": 5
+  }
+}
+```
+
+**Permissive inference (include rare patterns):**
+```json
+{
+  "meteorLanguageServer.completion": {
+    "parameterInferenceMinUsage": 1
+  }
+}
+```
+
+**Disable parameter suggestions:**
+```json
+{
+  "meteorLanguageServer.completion": {
+    "suggestTemplateParams": false
+  }
+}
+```
+
 ## Token Color Customization
 
 ### Semantic Token Colors
@@ -277,6 +464,7 @@ These settings provide better visual integration with most VS Code themes.
 ```json
 {
   "meteorLanguageServer.maxNumberOfProblems": 100,
+  "meteorLanguageServer.validateWorkspaceOnStartup": true,
   "meteorLanguageServer.trace.server": "off",
   "meteorLanguageServer.blockConditions": {
     "enabled": true,
@@ -300,6 +488,33 @@ These settings provide better visual integration with most VS Code themes.
         "doc": "Custom block helper with documentation"
       }
     ]
+  },
+  "meteorLanguageServer.globalHelpers": {
+    "extend": [
+      {
+        "name": "formatDate",
+        "doc": "Format a date string",
+        "params": [
+          { "name": "date", "type": "string" },
+          { "name": "format", "type": "string", "optional": true }
+        ],
+        "return": { "type": "string" }
+      }
+    ]
+  },
+  "meteorLanguageServer.formatting": {
+    "enabled": true,
+    "baseFormatter": "vscode.html-language-features",
+    "indentSize": 2
+  },
+  "meteorLanguageServer.completion": {
+    "suggestTemplateParams": true,
+    "suggestTemplateValues": true,
+    "parameterInferenceMinUsage": 2
+  },
+  "[html]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "ptbarnum4.meteor-blaze-vscode-language-server"
   },
   "editor.semanticTokenColorCustomizations": {
     "rules": {

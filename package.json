@@ -499,6 +499,62 @@
               }
             }
           }
+        },
+        "meteorLanguageServer.formatting": {
+          "type": "object",
+          "default": {
+            "enabled": true,
+            "indentSize": 2,
+            "baseFormatter": null
+          },
+          "description": "Settings for automatic formatting of template invocations.",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": true,
+              "description": "Enable automatic formatting of multi-line template invocations"
+            },
+            "indentSize": {
+              "type": "number",
+              "default": 2,
+              "description": "Number of spaces for indentation in template invocations (applies when using spaces)"
+            },
+            "baseFormatter": {
+              "type": ["string", "null"],
+              "default": null,
+              "description": "Base formatter to apply before Meteor-specific formatting. Example: 'vscode.html-language-features' to chain with VS Code's built-in HTML formatter. Set to null to disable.",
+              "examples": [
+                "vscode.html-language-features",
+                "esbenp.prettier-vscode"
+              ]
+            }
+          }
+        },
+        "meteorLanguageServer.completion": {
+          "type": "object",
+          "default": {
+            "suggestTemplateParams": true,
+            "suggestTemplateValues": true,
+            "parameterInferenceMinUsage": 2
+          },
+          "description": "Settings for template parameter completion.",
+          "properties": {
+            "suggestTemplateParams": {
+              "type": "boolean",
+              "default": true,
+              "description": "Suggest template parameter names when typing inside template invocations (left of =)"
+            },
+            "suggestTemplateValues": {
+              "type": "boolean",
+              "default": true,
+              "description": "Suggest template helpers and data properties as values when typing after = in template invocations"
+            },
+            "parameterInferenceMinUsage": {
+              "type": "number",
+              "default": 2,
+              "description": "Minimum usage count to suggest parameters inferred from template usage patterns"
+            }
+          }
         }
       }
     }

@@ -1,19 +1,19 @@
 import path from 'path';
 import vscode from 'vscode';
 import {
-    LanguageClient,
-    LanguageClientOptions,
-    ServerOptions,
-    TransportKind
+  LanguageClient,
+  LanguageClientOptions,
+  ServerOptions,
+  TransportKind
 } from 'vscode-languageclient/node';
 
 import createCompletionItemProvider from './helpers/activate/createCompletionItemProvider';
 import createSemanticProvider from './helpers/activate/createSemanticProvider';
 import promptIfNoConfigsSet from './helpers/activate/promptIfNoConfigsSet';
 import {
-    createBlockConditionDecorationType,
-    updateBlockConditionDecorations,
-    updateDecorationType
+  createBlockConditionDecorationType,
+  updateBlockConditionDecorations,
+  updateDecorationType
 } from './helpers/blockConditions/decorationType';
 import { isMeteorProject } from './helpers/meteor';
 import { ExtensionConfig } from '/types';
@@ -43,6 +43,9 @@ const ACTIVATE_CONFIGS = {
     '**/*.ts'
   ]
 };
+
+// Flag to prevent recursive formatting calls
+let isApplyingBaseFormatter = false;
 
 export const createActivate = (extConfig: ExtensionConfig) => {
   return async (context: vscode.ExtensionContext) => {
@@ -150,6 +153,109 @@ export const createActivate = (extConfig: ExtensionConfig) => {
     extConfig.client.start();
     console.info('Meteor/Blaze Language Server: Language client started.');
 
+    // Set up request handler for base formatter execution
+    extConfig.client.onRequest('meteor/applyBaseFormatter', async (params: {
+      uri: string;
+      formatterId: string;
+      options: vscode.FormattingOptions;
+    }) => {
+      try {
+        // Prevent recursive formatting calls
+        if (isApplyingBaseFormatter) {
+          console.log('Prevented recursive base formatter call');
+          return null;
+        }
+        
+        isApplyingBaseFormatter = true;
+        
+        const uri = vscode.Uri.parse(params.uri);
+        
+        // Get the document
+        const document = await vscode.workspace.openTextDocument(uri);
+        if (!document) {
+          console.error(`Failed to open document for formatting: ${params.uri}`);
+          isApplyingBaseFormatter = false;
+          return null;
+        }
+        
+        // Show document in editor (required for formatting commands to work reliably)
+        await vscode.window.showTextDocument(document, { preview: false, preserveFocus: true });
+        
+        // Get editor configuration for the document
+        const config = vscode.workspace.getConfiguration('editor', document);
+        const originalFormatter = config.get<string | null>('defaultFormatter');
+        
+        // Determine the configuration target and whether it's language-specific
+        const inspection = config.inspect<string | null>('defaultFormatter');
+        let configurationTarget = vscode.ConfigurationTarget.Global;
+        let isLanguageSpecific = false;
+        
+        if (inspection) {
+          if (inspection.workspaceFolderLanguageValue !== undefined || inspection.workspaceFolderValue !== undefined) {
+            configurationTarget = vscode.ConfigurationTarget.WorkspaceFolder;
+            isLanguageSpecific = inspection.workspaceFolderLanguageValue !== undefined;
+          } else if (inspection.workspaceLanguageValue !== undefined || inspection.workspaceValue !== undefined) {
+            configurationTarget = vscode.ConfigurationTarget.Workspace;
+            isLanguageSpecific = inspection.workspaceLanguageValue !== undefined;
+          } else {
+            configurationTarget = vscode.ConfigurationTarget.Global;
+            isLanguageSpecific = inspection.globalLanguageValue !== undefined;
+          }
+        }
+        
+        try {
+          // Save the original text before formatting
+          const originalText = document.getText();
+          
+          // Update the default formatter temporarily
+          await config.update(
+            'defaultFormatter',
+            params.formatterId,
+            configurationTarget,
+            isLanguageSpecific
+          );
+          
+          // Execute format document command
+          // This respects the workspace html.format.* settings
+          await vscode.commands.executeCommand('editor.action.formatDocument');
+          
+          // Get the current document text after formatting
+          const formattedText = document.getText();
+          
+          // Check if there were any changes
+          if (formattedText === originalText) {
+            return null; // No changes
+          }
+          
+          // Return a single edit that replaces the entire document
+          const lastLine = document.lineCount - 1;
+          const lastChar = document.lineAt(lastLine).text.length;
+          
+          return [{
+            range: {
+              start: { line: 0, character: 0 },
+              end: { line: lastLine, character: lastChar }
+            },
+            newText: formattedText
+          }];
+          
+        } finally {
+          // Restore original formatter setting
+          await config.update(
+            'defaultFormatter',
+            originalFormatter,
+            configurationTarget,
+            isLanguageSpecific
+          );
+        }
+      } catch (error) {
+        console.error(`Failed to execute base formatter '${params.formatterId}':`, error);
+        return null;
+      } finally {
+        isApplyingBaseFormatter = false;
+      }
+    });
+
     // Set up document change listener for inline block-condition hints
     const disposable = vscode.workspace.onDidChangeTextDocument(event => {
       if (event.document.languageId === 'html' || event.document.languageId === 'handlebars') {
@@ -207,9 +313,39 @@ export const createActivate = (extConfig: ExtensionConfig) => {
 
     // Log activation
     console.info('Meteor/Blaze HTML Language Server is now active for Meteor project!');
-    vscode.window.showInformationMessage(
-      'Meteor/Blaze HTML Language Server activated for Meteor project!'
-    );
+
+    // Show activation message unless user has chosen to hide it for this version
+    const currentVersion = context.extension.packageJSON.version;
+    const lastShownVersion = context.globalState.get('activationMessageVersion', '');
+    const hideActivationMessage = context.globalState.get('hideActivationMessage', false);
+
+    // Reset hideActivationMessage if version has changed
+    if (lastShownVersion !== currentVersion) {
+      await context.globalState.update('hideActivationMessage', false);
+      await context.globalState.update('activationMessageVersion', currentVersion);
+    }
+
+    const shouldShowMessage = !hideActivationMessage || lastShownVersion !== currentVersion;
+
+    if (shouldShowMessage) {
+      const releaseNotesUrl = `https://github.com/ptbarnum4/meteor-blaze-vscode-language-server/releases/tag/${currentVersion}`;
+      const extensionUrl = 'https://marketplace.visualstudio.com/items?itemName=ptbarnum4.meteor-blaze-vscode-language-server&ssr=false#overview';
+
+      vscode.window.showInformationMessage(
+        `Meteor/Blaze HTML Language Server v${currentVersion} activated for Meteor project!`,
+        "Don't show again",
+        'Release Notes',
+        'Extension Page'
+      ).then(selection => {
+        if (selection === "Don't show again") {
+          context.globalState.update('hideActivationMessage', true);
+        } else if (selection === 'Release Notes') {
+          vscode.env.openExternal(vscode.Uri.parse(releaseNotesUrl));
+        } else if (selection === 'Extension Page') {
+          vscode.env.openExternal(vscode.Uri.parse(extensionUrl));
+        }
+      });
+    }
 
   };
 };

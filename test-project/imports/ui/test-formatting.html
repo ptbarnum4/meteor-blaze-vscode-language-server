@@ -1,0 +1,63 @@
+<template name="testFormatting">
+  <h1>Testing Template Invocation Formatting</h1>
+
+  <!-- Test 1: No parameters with bad formatting -->
+  {{> myTemplate
+
+    }}
+
+  <!-- Test 2: One parameter with bad formatting -->
+  {{> myTemplate
+ param1="Something"
+
+    }}
+
+  <!-- Test 3: Multiple parameters with bad formatting -->
+  <div>
+{{> myTemplate
+ param1="Something"
+   param2="Another Thing"
+         param3="Third Thing"
+         }}
+  </div>
+
+  <!-- Test 4: Nested indentation -->
+  <div>
+    <div>
+      {{> deepTemplate
+        param1="Value1"
+          param2="Value2"
+        }}
+    </div>
+  </div>
+
+  <!-- Test 5: Parameters with spaces in values -->
+  {{> template
+    title="This is a title with spaces"
+      description="Another value with spaces"
+    }}
+
+  <!-- Test 6: Mixed quote styles -->
+  {{> template
+    param1='single quotes'
+    param2="double quotes"
+    }}
+
+  <!-- Test 7: Already correctly formatted (should not change) -->
+  {{> template }}
+
+  <!-- Test 8: Already correctly formatted multi-line (should not change) -->
+  <div>
+    {{> template
+      param1="Value1"
+      param2="Value2"
+    }}
+  </div>
+
+  <!-- Test 9: Unquoted values -->
+  {{> template
+    param1=value1
+    param2=value2
+    }}
+
+</template>

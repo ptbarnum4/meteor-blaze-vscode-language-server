@@ -78,6 +78,64 @@ import './userProfile/userProfile';
 - Supports various import patterns (relative paths, standard Meteor patterns)
 - Provides hover information for template inclusions
 
+#### Template Parameter Completion
+Smart completion for template invocation parameters with context-aware suggestions:
+
+**Left Side of `=` (Parameter Names):**
+```typescript
+// childTemplate.ts
+type ChildTemplateData = {
+  childParam: string;
+  count: number;
+  isActive: boolean;
+};
+```
+
+```html
+<!-- template.html -->
+<template name="parent">
+  {{> childTemplate
+    █  <!-- Suggests: childParam=, count=, isActive= -->
+  }}
+</template>
+```
+
+**Right Side of `=` (Parameter Values):**
+```typescript
+// parent.ts
+Template.parent.helpers({
+  getUserName: () => "John",
+  getCount: () => 42,
+  isActive: () => true
+});
+```
+
+```html
+<template name="parent">
+  {{> childTemplate
+    childParam=█  <!-- Suggests: getUserName, getCount, isActive, this, true, false -->
+  }}
+</template>
+```
+
+**Features:**
+- **Parameter Name Completion**: Shows expected parameters from template TypeScript definitions and usage patterns
+- **Value Completion**: Shows helpers, data properties, and context values from the current template
+- **Smart Filtering**: Already-used parameters are excluded from suggestions
+- **Type Information**: Displays parameter types from TypeScript definitions
+- **Documentation**: Shows JSDoc comments for parameters
+
+**Configuration:**
+```json
+{
+  "meteorLanguageServer.completion": {
+    "suggestTemplateParams": true,      // Enable parameter name suggestions
+    "suggestTemplateValues": true,       // Enable value suggestions
+    "parameterInferenceMinUsage": 2     // Min usage count for inference
+  }
+}
+```
+
 ## ✨ Auto-Insert End Tags
 
 Automatically inserts closing tags for Blaze block helpers, reducing errors and speeding development.
@@ -174,7 +232,104 @@ Visual inline hints that show the condition for closing block tags.
 }
 ```
 
-## 🔍 Cross-file Intelligence
+## � Template Invocation Formatting
+
+Automatic formatting for multi-line template invocations with proper indentation and alignment.
+
+### How It Works
+
+#### Format on Save
+When you save a file, template invocations are automatically formatted:
+
+**Before:**
+```html
+<template name="myTemplate">
+  {{> childTemplate param1=value1 param2=value2 param3=value3}}
+</template>
+```
+
+**After:**
+```html
+<template name="myTemplate">
+  {{> childTemplate
+    param1=value1
+    param2=value2
+    param3=value3
+  }}
+</template>
+```
+
+#### Format on Type
+Formatting also triggers when:
+- Pressing **Enter** inside a template invocation
+- Typing the closing `}}`
+
+**Example (pressing Enter):**
+```html
+{{> myTemplate|  <!-- Press Enter here -->
+```
+
+Automatically indents the next line:
+```html
+{{> myTemplate
+  █  <!-- Cursor positioned with proper indentation -->
+```
+
+### Formatting Rules
+
+1. **Multi-line Detection**: Automatically formats invocations with multiple parameters
+2. **Proper Indentation**: Each parameter on its own line with consistent indentation
+3. **Bracket Alignment**: Closing `}}` aligns with opening `{{>`
+4. **Respects Settings**: Uses your VS Code indentation settings (spaces vs tabs, indent size)
+
+### Examples
+
+**Nested in HTML:**
+```html
+<div class="container">
+  {{> userCard
+    name=userName
+    email=userEmail
+    active=isActive
+  }}
+</div>
+```
+
+**Complex Parameters:**
+```html
+{{> templateName
+  simpleParam=value
+  helperParam=(getHelper)
+  subexpressionParam=(add 1 2)
+  stringParam="text value"
+}}
+```
+
+### Configuration
+
+```json
+{
+  "meteorLanguageServer.formatting": {
+    "enabled": true,      // Enable automatic formatting
+    "indentSize": 2       // Spaces for indentation (when using spaces)
+  }
+}
+```
+
+**VS Code Settings:**
+Your editor's formatting settings are also respected:
+- `editor.tabSize` - Indent size
+- `editor.insertSpaces` - Use spaces vs tabs
+- `editor.formatOnSave` - Format when saving
+
+### Smart Behavior
+- ✅ Only formats multi-line invocations
+- ✅ Preserves single-line invocations when appropriate
+- ✅ Handles nested template invocations correctly
+- ✅ Skips formatting inside comments
+- ✅ Works with existing indentation levels
+
+## �🔍 Cross-file Intelligence
 
 Analyzes neighboring files in the same directory for comprehensive language support:
 

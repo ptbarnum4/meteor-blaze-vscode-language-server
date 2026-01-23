@@ -9,7 +9,7 @@ import {
     TextDocumentPositionParams
 } from 'vscode-languageserver/node';
 
-import { CurrentConnectionConfig } from '../../types';
+import { CurrentConnectionConfig, HelperInfo } from '../../types';
 import { analyzeGlobalHelpers, mergeConfiguredHelpers } from '../helpers/analyzeGlobalHelpers';
 import { createBlockCompletions, shouldProvideBlockCompletion } from '../helpers/autoInsertEndTags';
 import { containsMeteorTemplates } from '../helpers/containsMeteorTemplates';
@@ -61,24 +61,38 @@ const onCompletion = (config: CurrentConnectionConfig) => {
     // Look for the most recent {{> templateName that hasn't been closed yet
     const templateParameterMatch = textBeforeCursor.match(/\{\{\s*>\s*([a-zA-Z0-9_]+)(?:[^{}])*$/);
 
-    // Check if we're positioned after an equals sign with only whitespace (indicating we want parameter suggestions, not values)
-    // This handles cases like: title=   |cursor  where user wants to see next parameter options
+    // Check if we're positioned after an equals sign (for value completion)
+    // Match: paramName=|cursor or paramName=partial|cursor
+    const afterEqualsMatch = textBeforeCursor.match(/([a-zA-Z_$][a-zA-Z0-9_$]*)\s*=\s*([a-zA-Z0-9_$]*)$/);
+    const isAfterEquals = afterEqualsMatch !== null;
+    const paramNameBeforeEquals = afterEqualsMatch ? afterEqualsMatch[1] : '';
+    const partialValueAfterEquals = afterEqualsMatch ? afterEqualsMatch[2] : '';
+
+    // Check if we're positioned after an equals sign with only whitespace (indicating we want value suggestions)
+    // This handles cases like: title=|cursor or title=   |cursor
     const afterEqualsWithWhitespaceMatch = textBeforeCursor.match(/=\s*$/);
     const isAfterEqualsWithWhitespace = afterEqualsWithWhitespaceMatch !== null;
 
-    // Check if we're positioned after an equals sign with actual content (indicating we're providing a value)
+    // Check if we're positioned after an equals sign with actual content (indicating we're typing a value)
     const afterEqualsWithContentMatch = textBeforeCursor.match(/=\s*[^}\s]+$/);
     const isAfterEqualsWithContent = afterEqualsWithContentMatch !== null;
 
-    // We're in template parameter context if:
+    // We're in template parameter NAME context (left of =) if:
     // 1. We found a template parameter match
     // 2. We're not completing the template name itself (isTemplateInclusion is false)
-    // 3. We're either not after an equals sign, or we're after equals with only whitespace
+    // 3. We're either not after an equals sign, or we're after equals with only whitespace (wanting next param)
     const isTemplateParameter =
       templateParameterMatch !== null &&
       !isTemplateInclusion &&
+      !isAfterEquals &&
       (!isAfterEqualsWithContent || isAfterEqualsWithWhitespace);
     const templateNameForParams = templateParameterMatch ? templateParameterMatch[1] : '';
+
+    // We're in template parameter VALUE context (right of =) if:
+    // 1. We're inside a template invocation
+    // 2. We're positioned after an equals sign
+    const isTemplateParameterValue =
+      templateParameterMatch !== null && !isTemplateInclusion && isAfterEquals;
 
     // If we're in a template inclusion context, provide template name completions
     if (isTemplateInclusion) {
@@ -99,6 +113,18 @@ const onCompletion = (config: CurrentConnectionConfig) => {
         textBeforeCursor
       );
       return parameterCompletions;
+    }
+
+    // If we're in template parameter VALUE context (right of =), provide value completions from current template
+    if (isTemplateParameterValue) {
+      const valueCompletions = await getTemplateParameterValueCompletions(
+        config,
+        document,
+        textBeforeCursor,
+        paramNameBeforeEquals,
+        partialValueAfterEquals
+      );
+      return valueCompletions;
     }
 
     // Only continue with regular completion if we're within handlebars and not in template contexts
@@ -896,6 +922,126 @@ async function getTemplateParameterCompletions(
     });
   } catch {
     // Silently handle errors
+  }
+
+  return completions;
+}
+
+// Function to get template parameter VALUE completions (right side of =)
+// This provides completions from the CURRENT template's context (helpers, properties)
+async function getTemplateParameterValueCompletions(
+  config: CurrentConnectionConfig,
+  currentDocument: TextDocument,
+  textBeforeCursor: string,
+  paramName: string,
+  _partialValue: string
+): Promise<CompletionItem[]> {
+  const completions: CompletionItem[] = [];
+
+  try {
+    const currentFilePath = currentDocument.uri.replace('file://', '');
+    const currentDir = path.dirname(currentFilePath);
+    const currentBaseName = path.basename(currentFilePath, path.extname(currentFilePath));
+
+    // Find the current template we're in
+    const templateMatch = textBeforeCursor.match(
+      /<template\s+name=["']([^"']+)["'][^>]*>(?:(?!<\/template>)[\s\S])*$/
+    );
+    const currentTemplateName = templateMatch ? templateMatch[1] : null;
+
+    if (!currentTemplateName) {
+      return completions;
+    }
+
+    // Get helpers and data properties from the current template's context
+    const dirLookupKeys = [`${currentDir}/${currentTemplateName}`, `${currentDir}/${currentBaseName}`];
+
+    // Collect helpers from the current template
+    const helpers = new Set<string>();
+    dirLookupKeys.forEach(key => {
+      const templateHelpers = config.fileAnalysis.jsHelpers.get(key);
+      if (templateHelpers) {
+        templateHelpers.forEach(helper => helpers.add(helper));
+      }
+    });
+
+    // Collect data properties from the current template
+    const dataProps = new Set<string>();
+    dirLookupKeys.forEach(key => {
+      const props = config.fileAnalysis.dataProperties?.get(key) || [];
+      props.forEach(prop => dataProps.add(prop));
+    });
+
+    // Get detailed helper information for better documentation
+    const helperDetailsMap = new Map<string, HelperInfo>();
+    dirLookupKeys.forEach(key => {
+      const details = config.fileAnalysis.helperDetails.get(key);
+      if (details) {
+        details.forEach(detail => {
+          helperDetailsMap.set(detail.name, detail);
+        });
+      }
+    });
+
+    // Add helper completions
+    helpers.forEach(helper => {
+      const helperDetail = helperDetailsMap.get(helper);
+      completions.push({
+        label: helper,
+        kind: CompletionItemKind.Function,
+        detail: helperDetail?.returnType ? `Helper: ${helperDetail.returnType}` : 'Template helper',
+        documentation: {
+          kind: MarkupKind.Markdown,
+          value:
+            helperDetail?.jsdoc ||
+            `Helper function from the current template.\n\nUsage: \`{{> ... ${paramName}=${helper}}}\``
+        },
+        insertText: helper,
+        filterText: helper,
+        sortText: `0${helper}` // Helpers sort first
+      });
+    });
+
+    // Add data property completions
+    dataProps.forEach(prop => {
+      completions.push({
+        label: prop,
+        kind: CompletionItemKind.Field,
+        detail: 'Template data property',
+        documentation: {
+          kind: MarkupKind.Markdown,
+          value: `Data property from the current template.\n\nUsage: \`{{> ... ${paramName}=${prop}}}\``
+        },
+        insertText: prop,
+        filterText: prop,
+        sortText: `1${prop}` // Data properties sort after helpers
+      });
+    });
+
+    // Add common Blaze/Meteor context properties
+    const contextProperties = [
+      { name: 'this', detail: 'Current template data context' },
+      { name: 'true', detail: 'Boolean true value' },
+      { name: 'false', detail: 'Boolean false value' }
+    ];
+
+    contextProperties.forEach(({ name, detail }) => {
+      completions.push({
+        label: name,
+        kind: CompletionItemKind.Constant,
+        detail,
+        documentation: {
+          kind: MarkupKind.Markdown,
+          value: `${detail}\n\nUsage: \`{{> ... ${paramName}=${name}}}\``
+        },
+        insertText: name,
+        filterText: name,
+        sortText: `2${name}` // Context properties sort last
+      });
+    });
+  } catch (error) {
+    // Silently handle errors
+    console.error('Error getting template parameter value completions:', error);
   }
 
   return completions;
