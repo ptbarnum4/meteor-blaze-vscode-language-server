@@ -1,5 +1,6 @@
-import * as fs from 'fs';
-import * as path from 'path';
+import fs from 'fs';
+import path from 'path';
+
 import { TextDocument } from 'vscode-languageserver-textdocument';
 
 import { analyzeNeighboringFiles } from './analyzeNeighboringFiles';
@@ -66,32 +67,87 @@ export async function validateWorkspace(
 
     if (!workspaceFolders || workspaceFolders.length === 0) {
       config.connection.console.info(
-        'No workspace folders found for validation'
+        '❌ NO WORKSPACE FOLDERS FOUND FOR VALIDATION.'
       );
       return;
     }
 
     config.connection.console.info('Starting workspace-wide validation...');
 
+    const STATUS = {
+      VALIDATING: '🔍 VALIDATING',
+      READING_FILE: '📄 READING FILE',
+      READING_DIR: '📁 READING DIR',
+      SUCCESS: '✅ SUCCESS',
+      FAILED: '❌ FAILED',
+    };
+
     let totalFiles = 0;
     let validatedFiles = 0;
+    let status = STATUS.VALIDATING;
+
+    const lbCh = '🟩';
+    const loadingBarLength = 20;
+    const startTime = Date.now();
+
+    const logDetails = (
+      message: string,
+      currentDir?: string,
+      currentFile?: string
+    ) => {
+      const now = Date.now();
+      const elapsed = ((now - startTime) / 1000).toFixed(4);
+
+      const filledLength = Math.floor(
+        (validatedFiles / totalFiles) * loadingBarLength
+      );
+      const emptyLength = loadingBarLength - filledLength;
+      const loadingBar = lbCh.repeat(filledLength) + ' '.repeat(emptyLength);
+      const progressPercent = totalFiles
+        ? ((validatedFiles / totalFiles) * 100).toFixed(1)
+        : '0.0';
+
+      const line = '⎯'.repeat(80);
+      const currentFileMsg = currentFile
+        ? [`📄 Current File: ${currentFile}`]
+        : [];
+      const currentDirMsg = currentDir ? [`📂 Current Dir: ${currentDir}`] : [];
+
+      const clearTop = '\n'.repeat(20);
+      const logs = [
+        clearTop,
+        `\n${line}`,
+        `🛠️ [Workspace Validation] ${status} - ${message}`,
+        `🟰 Total Files: ${totalFiles}`,
+        `🫧 Validated Files: ${validatedFiles}`,
+        `🟩 Progress: ${loadingBar} ${progressPercent}%`,
+        ...currentDirMsg,
+        ...currentFileMsg,
+        `⏱️ Elapsed Time: ${elapsed}s`,
+        `${line}\n`,
+      ];
+
+      config.connection.console.info(logs.join('\n'));
+    };
 
     for (const folder of workspaceFolders) {
       // Convert URI to file path
       const folderPath = folder.uri.replace('file://', '');
-
-      config.connection.console.info(`Scanning folder: ${folderPath}`);
+      status = STATUS.READING_DIR;
+      logDetails(`Scanning folder: ${folder.name}`, folderPath);
 
       // Find all template files
       const templateFiles = findTemplateFiles(folderPath);
       totalFiles += templateFiles.length;
 
-      config.connection.console.info(
-        `Found ${templateFiles.length} template files in ${folder.name}`
-      );
-
       // Validate each file
       for (const filePath of templateFiles) {
+        status = STATUS.READING_FILE;
+        logDetails(
+          `Validating file: ${path.basename(filePath)}`,
+          folderPath,
+          filePath
+        );
         try {
           const content = fs.readFileSync(filePath, 'utf-8');
           const uri = `file://${filePath}`;
@@ -106,16 +162,20 @@ export async function validateWorkspace(
           await validateTextDocument(config, document);
           validatedFiles++;
         } catch (err) {
+          logDetails(
+            `Error reading/validating file: ${path.basename(filePath)}`,
+            folderPath,
+            filePath
+          );
           config.connection.console.error(
-            `Error validating ${filePath}: ${err}`
+            `Error reading/validating file ${filePath}: ${err}`
           );
         }
       }
     }
 
-    config.connection.console.info(
-      `Workspace validation complete: ${validatedFiles}/${totalFiles} files validated`
-    );
+    status = STATUS.SUCCESS;
+    logDetails('Workspace-wide validation completed.');
   } catch (err) {
     config.connection.console.error(
       `Error during workspace validation: ${err}`

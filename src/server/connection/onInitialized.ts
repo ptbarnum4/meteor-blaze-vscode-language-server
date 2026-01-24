@@ -31,7 +31,6 @@ const onInitialized = (config: CurrentConnectionConfig) => {
           settings?.validateWorkspaceOnStartup !== false; // Default to true
 
         if (validateOnStartup) {
-          connection.console.info('Performing initial workspace validation...');
           await validateWorkspace(config);
         } else {
           connection.console.info(
