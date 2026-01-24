@@ -182,7 +182,7 @@ export const createActivate = (extConfig: ExtensionConfig) => {
         try {
           // Prevent recursive formatting calls
           if (isApplyingBaseFormatter) {
-            console.log('Prevented recursive base formatter call');
+            console.warn('Prevented recursive base formatter call');
             return null;
           }
 

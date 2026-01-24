@@ -10,7 +10,7 @@ export default defineConfig(
   prettier,
   {
     files: ['src/**/*.ts', './.prettierc.ts'],
-    ignores: ['dist/**', 'node_modules/**'],
+    ignores: ['dist/**', 'node_modules/**', 'test-project/**'],
     languageOptions: {
       ecmaVersion: 2022,
       // sourceType: 'module',

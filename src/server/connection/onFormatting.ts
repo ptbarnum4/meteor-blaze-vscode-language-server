@@ -354,23 +354,23 @@ export const onDocumentFormatting = (config: CurrentConnectionConfig) => {
           `Requesting base formatter '${baseFormatter}' for ${params.textDocument.uri}`
         );
         const folders = await connection.workspace.getWorkspaceFolders();
-        const projectRoot = (
-          folders && folders.length > 0 ? folders[0].uri : ''
-        ).replace('file://', '');
+        const projectRoot = folders && folders.length > 0 ? folders[0].uri : '';
         const relativePath = document.uri.replace(projectRoot, '');
 
         const formatterName = 'ptbarnum4.meteor-blaze-vscode-language-server';
         const filename = document.uri.split('/').pop() || '';
         const options = {
-          '⓵ Formatter 1 (Runs 1st)': baseFormatter,
-          '⓶ Formatter 2 (Runs 2nd)': formatterName,
-          '📄 Filename': filename,
-          '📁 Relative Path': relativePath,
+          '1️⃣ Formatter 1 (Runs 1st)': baseFormatter,
+          '2️⃣ Formatter 2 (Runs 2nd)': formatterName,
+          '📁 Filename': filename,
+          '🗃️ Relative Path': relativePath,
           ...params.options,
         };
 
         connection.console.info(
-          `Formatting file: ${filename}\nOptions:\n${Object.entries(options)
+          `\n🫧 Formatting file 📁 ${filename}\n⚙️ Options:\n${Object.entries(
+            options
+          )
             .map(([k, v]) => `  - ${k}: ${v}`)
             .join('\n')}`
         );

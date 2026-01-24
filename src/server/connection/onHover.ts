@@ -785,13 +785,6 @@ async function getTemplateInclusionHover(
       path.extname(currentFilePath)
     );
 
-    console.log('Getting hover for template inclusion:', {
-      templateName,
-      currentFilePath,
-      currentDir,
-      currentBaseName,
-    });
-
     // FIRST: Check if the template exists in the current file (same file)
     const content = currentDocument.getText();
     const templateBlockRegex = new RegExp(
@@ -2266,6 +2259,8 @@ function formatParametersAsTypeScriptObject(
 
   const paramLines: string[] = [];
 
+  // TODO: Only wrap at 2 or more params
+
   for (const [name, info] of params) {
     if (info.doc) {
       // Add JSDoc comment for parameters with documentation
@@ -2274,7 +2269,19 @@ function formatParametersAsTypeScriptObject(
     paramLines.push(`  ${name}: ${info.type};`);
   }
 
-  return `{\n${paramLines.join('\n')}\n}`;
+  if (paramLines.length === 0) {
+    return 'object';
+  }
+
+  if (paramLines.length < 3) {
+    const line = paramLines
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .join(' ');
+    return `{ ${line.trim()} }`;
+  }
+
+  return `type TemplateData = {\n${paramLines.join('\n')}\n}`;
 }
 
 export default onHover;
