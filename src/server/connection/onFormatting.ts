@@ -402,7 +402,8 @@ export const onDocumentFormatting = (config: CurrentConnectionConfig) => {
       }
     }
 
-    const indentSize = params.options.tabSize || 2;
+    const indentSize =
+      settings?.formatting?.indentSize ?? params.options.tabSize ?? 2;
     const useTabs = params.options.insertSpaces === false;
 
     // Find all template invocations in the (potentially updated) text
@@ -489,7 +490,8 @@ export const onDocumentRangeFormatting = (config: CurrentConnectionConfig) => {
       return [];
     }
 
-    const indentSize = params.options.tabSize || 2;
+    const indentSize =
+      settings?.formatting?.indentSize ?? params.options.tabSize ?? 2;
     const useTabs = params.options.insertSpaces === false;
 
     const text = document.getText();
@@ -558,7 +560,8 @@ export const onDocumentOnTypeFormatting = (config: CurrentConnectionConfig) => {
       return [];
     }
 
-    const indentSize = params.options.tabSize || 2;
+    const indentSize =
+      settings?.formatting?.indentSize ?? params.options.tabSize ?? 2;
     const useTabs = params.options.insertSpaces === false;
 
     const text = document.getText();

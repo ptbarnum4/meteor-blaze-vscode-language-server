@@ -809,16 +809,7 @@ async function getTemplateInclusionHover(
         '📄 **Template defined in current file**',
       ];
 
-      // Extract parameters from template usage (it's in the same file)
-      const globalHelpers: string[] = [];
-      const extractedParams = extractParametersFromTemplate(
-        templateName,
-        currentDocument.uri,
-        currentDir,
-        globalHelpers
-      );
-
-      // Check if we have typed parameters from controller
+      // Check if we have typed parameters from controller (TemplateStaticTyped)
       let hasTypedParams = false;
       const typedParams = new Map<string, { type: string; doc?: string }>();
 
@@ -842,17 +833,26 @@ async function getTemplateInclusionHover(
         }
       }
 
-      // Merge typed parameters with extracted parameters
+      // If the template has TemplateStaticTyped (indicated by hasTypedParams),
+      // ONLY show those explicitly typed properties. Do NOT include extracted parameters or helpers.
       const allParams = new Map<string, { type: string; doc?: string }>();
 
-      // Add typed parameters first
-      for (const [name, info] of typedParams) {
-        allParams.set(name, { ...info });
-      }
+      if (hasTypedParams) {
+        // Only use the typed parameters from TemplateStaticTyped
+        for (const [name, info] of typedParams) {
+          allParams.set(name, { ...info });
+        }
+      } else {
+        // Fall back to extracting parameters from the template HTML
+        const globalHelpers: string[] = [];
+        const extractedParams = extractParametersFromTemplate(
+          templateName,
+          currentDocument.uri,
+          currentDir,
+          globalHelpers
+        );
 
-      // Add extracted parameters that aren't already typed
-      for (const param of extractedParams) {
-        if (!allParams.has(param.name)) {
+        for (const param of extractedParams) {
           allParams.set(param.name, { type: param.inferredType || 'string' });
         }
       }
@@ -943,19 +943,7 @@ async function getTemplateInclusionHover(
         '✅ **Template imported** in associated file',
       ];
 
-      // Try to extract parameters from template usage
-      const globalHelpers: string[] = [];
-      // We could analyze global helpers here, but for now, use a basic list
-      // of common helpers to exclude from parameter extraction
-
-      const extractedParams = extractParametersFromTemplate(
-        templateName,
-        `file://${templateInfo.file}`,
-        path.dirname(templateInfo.file),
-        globalHelpers
-      );
-
-      // Check if we have typed parameters from controller
+      // Check if we have typed parameters from controller (TemplateStaticTyped)
       let hasTypedParams = false;
       const typedParams = new Map<string, { type: string; doc?: string }>();
 
@@ -979,20 +967,29 @@ async function getTemplateInclusionHover(
         }
       }
 
-      // Merge typed parameters with extracted parameters
+      // If the template has TemplateStaticTyped (indicated by hasTypedParams),
+      // ONLY show those explicitly typed properties. Do NOT include extracted parameters or helpers.
       const allParams = new Map<
         string,
         { type: string; doc?: string; inferred: boolean }
       >();
 
-      // Add typed parameters first
-      for (const [name, info] of typedParams) {
-        allParams.set(name, { ...info, inferred: false });
-      }
+      if (hasTypedParams) {
+        // Only use the typed parameters from TemplateStaticTyped
+        for (const [name, info] of typedParams) {
+          allParams.set(name, { ...info, inferred: false });
+        }
+      } else {
+        // Fall back to extracting parameters from the template HTML
+        const globalHelpers: string[] = [];
+        const extractedParams = extractParametersFromTemplate(
+          templateName,
+          `file://${templateInfo.file}`,
+          path.dirname(templateInfo.file),
+          globalHelpers
+        );
 
-      // Add extracted parameters that aren't already typed
-      for (const param of extractedParams) {
-        if (!allParams.has(param.name)) {
+        for (const param of extractedParams) {
           allParams.set(param.name, {
             type: param.inferredType || 'string',
             inferred: true,
@@ -1073,37 +1070,60 @@ async function createTemplateNotFoundHover(
       '📄 **Template defined in current file**',
     ];
 
-    // Extract parameters from template usage
-    const globalHelpers: string[] = [];
-    const extractedParams = extractParametersFromTemplate(
-      templateName,
-      currentDocument.uri,
-      path.dirname(currentFilePath),
-      globalHelpers
-    );
-
-    // Check if we have typed parameters from controller
+    // Check if we have typed parameters from controller (TemplateStaticTyped)
     let hasTypedParams = false;
+    const typedParams = new Map<string, { type: string; doc?: string }>();
+
     for (const [key] of _config.fileAnalysis.dataProperties?.entries() || []) {
       if (key.endsWith(`/${templateName}`)) {
         hasTypedParams = true;
+        const dataProps = _config.fileAnalysis.dataProperties?.get(key) || [];
+        const typeMap =
+          _config.fileAnalysis.dataPropertyTypesByKey?.get(key) || {};
+        const jsDocMap =
+          _config.fileAnalysis.dataPropertyJsDocsByKey?.get(key) || {};
+
+        for (const prop of dataProps) {
+          typedParams.set(prop, {
+            type: typeMap[prop] || 'any',
+            doc: jsDocMap[prop],
+          });
+        }
         break;
       }
     }
 
+    // If the template has TemplateStaticTyped (indicated by hasTypedParams),
+    // ONLY show those explicitly typed properties. Do NOT include extracted parameters or helpers.
+    const paramsMap = new Map<string, { type: string; doc?: string }>();
+
+    if (hasTypedParams) {
+      // Only use the typed parameters from TemplateStaticTyped
+      for (const [name, info] of typedParams) {
+        paramsMap.set(name, { ...info });
+      }
+    } else {
+      // Fall back to extracting parameters from the template HTML
+      const globalHelpers: string[] = [];
+      const extractedParams = extractParametersFromTemplate(
+        templateName,
+        currentDocument.uri,
+        path.dirname(currentFilePath),
+        globalHelpers
+      );
+
+      for (const param of extractedParams) {
+        paramsMap.set(param.name, { type: param.inferredType || 'string' });
+      }
+    }
+
     // Show parameters if available
-    if (extractedParams.length > 0) {
+    if (paramsMap.size > 0) {
       hoverContent.push('');
       if (hasTypedParams) {
         hoverContent.push('**Parameters:**');
       } else {
         hoverContent.push('**Parameters (inferred from usage):**');
-      }
-
-      // Convert extracted params to Map format for formatting
-      const paramsMap = new Map<string, { type: string; doc?: string }>();
-      for (const param of extractedParams) {
-        paramsMap.set(param.name, { type: param.inferredType || 'string' });
       }
 
       hoverContent.push('```typescript');

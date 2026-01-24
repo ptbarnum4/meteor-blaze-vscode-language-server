@@ -118,11 +118,12 @@ export async function validateWorkspace(
         ? [`${LOG_KEY} 📂 Current Dir: ${currentDir}`]
         : [];
 
-      const clearTop = '\n'.repeat(20);
+      const clearTop = '\n'.repeat(12); // Clear previous logs (kinda)
 
       const logs = [
         clearTop,
-        `\n${topLine}`,
+
+        `\n${topLine}\n`,
         `${LOG_KEY} 🛠️ ${status} - ${message}`,
         `${LOG_KEY} 🟰 Total Files: ${totalFiles}`,
         `${LOG_KEY} 🫧 Validated Files: ${validatedFiles}`,
@@ -130,7 +131,7 @@ export async function validateWorkspace(
         ...currentDirMsg,
         ...currentFileMsg,
         `${LOG_KEY} ⏱️ Elapsed Time: ${elapsed}s`,
-        `${bottomLine}\n`,
+        `\n${bottomLine}\n`,
       ];
 
       config.connection.console.info(logs.join('\n'));

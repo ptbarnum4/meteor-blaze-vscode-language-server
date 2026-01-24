@@ -1021,19 +1021,24 @@ async function getTemplateParameterCompletions(
       }
     }
 
-    const extractedParams = extractParametersFromTemplate(
-      templateName,
-      childTemplateFileUri,
-      childTemplateDir,
-      globalHelpers
-    );
+    // If the template has TemplateStaticTyped (indicated by having typed data properties),
+    // ONLY show those explicitly typed properties. Do NOT include extracted parameters or helpers.
+    // This ensures that only the data type properties from TemplateStaticTyped are shown.
+    const hasTypedDataProperties = childTemplateDataProps.length > 0;
 
-    // Merge typed parameters with extracted parameters
-    const allPropertyNames = new Set<string>(childTemplateDataProps);
-
-    // Add extracted parameters that aren't already typed
-    for (const param of extractedParams) {
-      allPropertyNames.add(param.name);
+    let allPropertyNames: Set<string>;
+    if (hasTypedDataProperties) {
+      // Only use the typed parameters from TemplateStaticTyped
+      allPropertyNames = new Set<string>(childTemplateDataProps);
+    } else {
+      // Fall back to extracting parameters from the template HTML
+      const extractedParams = extractParametersFromTemplate(
+        templateName,
+        childTemplateFileUri,
+        childTemplateDir,
+        globalHelpers
+      );
+      allPropertyNames = new Set<string>(extractedParams.map((p) => p.name));
     }
 
     // Filter out already used parameters
@@ -1048,13 +1053,10 @@ async function getTemplateParameterCompletions(
       documentation?: string;
     }> = filteredProperties.map((propName) => {
       const typedInfo = typedParams.get(propName);
-      // Find the extracted param to get its inferred type
-      const extractedParam = extractedParams.find((p) => p.name === propName);
-      const inferredType = extractedParam?.inferredType || 'string';
 
       return {
         name: propName,
-        type: typedInfo?.type || inferredType,
+        type: typedInfo?.type,
         documentation: typedInfo?.doc,
       };
     });
