@@ -1,8 +1,8 @@
 import fs from 'fs';
 import path from 'path';
 import * as ts from 'typescript';
+import { TsConfig } from '../../types';
 import { safeParse } from './strings.js';
-import { TsConfig } from '/types';
 
 export type TemplateDataAnalysis = {
   types: Record<string, string[]>; // TS type or interface name -> properties

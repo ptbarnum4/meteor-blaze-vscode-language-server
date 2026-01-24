@@ -9,6 +9,13 @@ import {
 } from 'vscode-languageserver/node.js';
 
 import {
+  BlazeHelperConfig,
+  BlazeHelperInfo,
+  CurrentConnectionConfig,
+  PathModule,
+  TsConfig,
+} from '../../types';
+import {
   analyzeGlobalHelpers,
   mergeConfiguredHelpers,
 } from '../helpers/analyzeGlobalHelpers.js';
@@ -24,13 +31,6 @@ import {
   trimLanguageDocumentation,
   trimUsageDocumentation,
 } from '../helpers/trimUsageDocumentation.js';
-import {
-  BlazeHelperConfig,
-  BlazeHelperInfo,
-  CurrentConnectionConfig,
-  PathModule,
-  TsConfig,
-} from '/types';
 
 const onHover = (config: CurrentConnectionConfig) => {
   const { connection, documents } = config;

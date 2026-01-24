@@ -3,7 +3,7 @@ import path from 'path';
 
 import { TextDocument } from 'vscode-languageserver-textdocument';
 
-import { FileAnalysis } from '/types';
+import { FileAnalysis } from '../../types';
 
 import { initializeMapOnObjectKeys } from '../../utils/map.js';
 import { analyzeCSSFile } from './analyzeCSSFile.js';

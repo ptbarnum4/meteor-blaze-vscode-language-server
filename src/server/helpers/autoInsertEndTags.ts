@@ -3,7 +3,7 @@ import {
   CompletionItemKind,
   InsertTextFormat,
 } from 'vscode-languageserver/node.js';
-import { CurrentConnectionConfig, LanguageServerSettings } from '/types';
+import { CurrentConnectionConfig, LanguageServerSettings } from '../../types';
 
 /**
  * Creates completion items for Blaze block tags with automatic end tag insertion

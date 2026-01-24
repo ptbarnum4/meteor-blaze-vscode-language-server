@@ -11,6 +11,7 @@ import {
   CurrentConnectionConfig,
   LanguageServerSettings,
 } from '../../../types/index.js';
+import Logger from '../../../utils/logger.js';
 
 /**
  * Test suite for onDidChangeConfiguration connection handler
@@ -46,6 +47,7 @@ describe('connection/onDidChangeConfiguration', () => {
   const createMockConfig = (
     overrides?: Partial<CurrentConnectionConfig>
   ): CurrentConnectionConfig => ({
+    logger: new Logger(createMockConnection() as any),
     globalSettings: mockSettings,
     documentSettings: new Map(),
     fileAnalysis: {

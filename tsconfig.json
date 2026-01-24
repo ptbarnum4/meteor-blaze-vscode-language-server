@@ -5,9 +5,9 @@
     // "sourceMap": true,
     "rootDir": "src",
     "outDir": "out",
-    "paths": {
-      "/*": ["./src/*"]
-    },
+    // "paths": {
+    //   "/*": ["./src/*"]
+    // },
     // "allowJs": true,
     "skipLibCheck": true,
     "esModuleInterop": true,

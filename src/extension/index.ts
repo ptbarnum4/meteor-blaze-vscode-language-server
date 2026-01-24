@@ -1,6 +1,6 @@
+import { ExtensionConfig } from '../types';
 import { createActivate } from './activate';
 import { createDeactivate } from './deactivate';
-import { ExtensionConfig } from '/types';
 
 /**
  * extConfig holds the configuration for the extension, including the language client and decoration type.

@@ -6,8 +6,8 @@ import {
   TextEdit,
 } from 'vscode-languageserver/node.js';
 
+import { CurrentConnectionConfig } from '../../types';
 import { containsMeteorTemplates } from '../helpers/containsMeteorTemplates.js';
-import { CurrentConnectionConfig } from '/types';
 
 /**
  * Applies text edits to a document text and returns the modified text

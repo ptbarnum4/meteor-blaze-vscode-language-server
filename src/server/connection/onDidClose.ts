@@ -1,7 +1,7 @@
 import { TextDocument } from 'vscode-languageserver-textdocument';
 import { TextDocumentChangeEvent } from 'vscode-languageserver/node.js';
 
-import { CurrentConnectionConfig } from '/types';
+import { CurrentConnectionConfig } from '../../types';
 
 const onDidClose = (config: CurrentConnectionConfig) => {
   return (event: TextDocumentChangeEvent<TextDocument>) => {

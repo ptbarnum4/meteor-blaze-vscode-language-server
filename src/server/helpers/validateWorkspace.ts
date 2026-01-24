@@ -3,9 +3,9 @@ import path from 'path';
 
 import { TextDocument } from 'vscode-languageserver-textdocument';
 
+import { CurrentConnectionConfig } from '../../types';
 import { analyzeNeighboringFiles } from './analyzeNeighboringFiles.js';
 import { validateTextDocument } from './validateTextDocument.js';
-import { CurrentConnectionConfig } from '/types';
 
 /**
  * Recursively finds all HTML/Meteor template files in a directory
@@ -74,6 +74,7 @@ export async function validateWorkspace(
 
     config.connection.console.info('Starting workspace-wide validation...');
 
+    const LOG_KEY = '[WORKSPACE VALIDATION]';
     const STATUS = {
       VALIDATING: '🔍 VALIDATING',
       READING_FILE: '📄 READING FILE',
@@ -107,24 +108,29 @@ export async function validateWorkspace(
         ? ((validatedFiles / totalFiles) * 100).toFixed(1)
         : '0.0';
 
-      const line = '⎯'.repeat(80);
+      const topLine = `${'⎯'.repeat(24)} ${LOG_KEY} ${'⎯'.repeat(24)}`;
+      const bottomLine = `${'⎯'.repeat(24)}${'⎯'.repeat(LOG_KEY.length + 2)}${'⎯'.repeat(24)}`;
+
       const currentFileMsg = currentFile
-        ? [`📄 Current File: ${currentFile}`]
+        ? [`${LOG_KEY} 📄 Current File: ${currentFile}`]
         : [];
-      const currentDirMsg = currentDir ? [`📂 Current Dir: ${currentDir}`] : [];
+      const currentDirMsg = currentDir
+        ? [`${LOG_KEY} 📂 Current Dir: ${currentDir}`]
+        : [];
 
       const clearTop = '\n'.repeat(20);
+
       const logs = [
         clearTop,
-        `\n${line}`,
-        `🛠️ [Workspace Validation] ${status} - ${message}`,
-        `🟰 Total Files: ${totalFiles}`,
-        `🫧 Validated Files: ${validatedFiles}`,
-        `🟩 Progress: ${loadingBar} ${progressPercent}%`,
+        `\n${topLine}`,
+        `${LOG_KEY} 🛠️ ${status} - ${message}`,
+        `${LOG_KEY} 🟰 Total Files: ${totalFiles}`,
+        `${LOG_KEY} 🫧 Validated Files: ${validatedFiles}`,
+        `${LOG_KEY} 🟩 Progress: ${loadingBar} ${progressPercent}%`,
         ...currentDirMsg,
         ...currentFileMsg,
-        `⏱️ Elapsed Time: ${elapsed}s`,
-        `${line}\n`,
+        `${LOG_KEY} ⏱️ Elapsed Time: ${elapsed}s`,
+        `${bottomLine}\n`,
       ];
 
       config.connection.console.info(logs.join('\n'));

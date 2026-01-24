@@ -3,9 +3,12 @@ import path from 'path';
 
 import { Location } from 'vscode-languageserver/node.js';
 
+import {
+  CurrentConnectionConfig,
+  VSCodeServerConnection,
+} from '../../../types';
 import findParameterInTemplateHtml from './findParameterInTemplateHtml.js';
 import findTemplateDefinition from './findTemplateDefinition.js';
-import { CurrentConnectionConfig, VSCodeServerConnection } from '/types';
 
 // Helper function to find parameter definition in TypeScript file
 

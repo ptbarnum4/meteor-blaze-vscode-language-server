@@ -2,6 +2,7 @@ import vscode from 'vscode';
 import { LanguageClient } from 'vscode-languageclient/node';
 import { TextDocument } from 'vscode-languageserver-textdocument';
 import { _Connection, TextDocuments } from 'vscode-languageserver/node';
+import Logger from '../utils/logger';
 /**
  * Represents information about a Meteor template.
  */
@@ -199,6 +200,7 @@ export type VSCodeServerConnection = _Connection<
  * Represents the configuration for the current connection.
  */
 export type CurrentConnectionConfig = {
+  logger: Logger;
   /** Global settings for the language server. */
   globalSettings: LanguageServerSettings;
   /** Map of document-specific settings. */

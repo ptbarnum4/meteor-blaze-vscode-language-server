@@ -1,6 +1,6 @@
 import vscode from 'vscode';
 
-import { ExtensionConfig } from '/types';
+import { ExtensionConfig } from '../../../types';
 
 import { isWithinComment } from '../activate/isWithinComment';
 import { containsMeteorTemplates } from '../meteor';

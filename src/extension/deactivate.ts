@@ -1,4 +1,4 @@
-import { ExtensionConfig } from '/types';
+import { ExtensionConfig } from '../types';
 
 /**
  * Deactivates the extension by stopping the language client and disposing of resources.

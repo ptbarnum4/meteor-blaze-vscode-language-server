@@ -5,7 +5,7 @@ import {
   GlobalHelperConfig,
   GlobalHelperInfo,
   LanguageServerSettings,
-} from '/types';
+} from '../../types';
 
 // Function to extract JSDoc comment from lines above a target line
 const extractJSDocComment = (

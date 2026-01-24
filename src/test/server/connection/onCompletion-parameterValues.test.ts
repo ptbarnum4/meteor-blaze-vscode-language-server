@@ -9,6 +9,7 @@ import {
   HelperInfo,
   LanguageServerSettings,
 } from '../../../types/index.js';
+import Logger from '../../../utils/logger.js';
 
 /**
  * Test suite for template parameter value completion (Issue #62)
@@ -41,6 +42,7 @@ describe('connection/onCompletion - Parameter Value Completion', () => {
   const createMockConfig = (
     overrides?: Partial<CurrentConnectionConfig>
   ): CurrentConnectionConfig => ({
+    logger: new Logger(createMockConnection() as any),
     globalSettings: mockSettings,
     documentSettings: new Map(),
     fileAnalysis: {

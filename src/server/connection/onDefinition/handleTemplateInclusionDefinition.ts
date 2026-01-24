@@ -1,7 +1,7 @@
 import { Location } from 'vscode-languageserver/node.js';
+import { CurrentConnectionConfig } from '../../../types';
 import findParameterDefinition from './findParameterDefinition.js';
 import findTemplateDefinition from './findTemplateDefinition.js';
-import { CurrentConnectionConfig } from '/types';
 
 // Helper function to handle template inclusion navigation
 const handleTemplateInclusionDefinition = async (

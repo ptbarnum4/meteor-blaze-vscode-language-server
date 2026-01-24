@@ -15,9 +15,10 @@ import {
 } from 'vscode-languageserver/node.js';
 
 // Shared types/state used across handlers
-import { CurrentConnectionConfig } from '/types';
+import { CurrentConnectionConfig } from '../../types';
 
 // Request/notification handlers
+import Logger from '../../utils/logger.js';
 import { validateWorkspace } from '../helpers/validateWorkspace.js';
 import onCompletion from './onCompletion.js';
 import onCompletionResolve from './onCompletionResolve.js';
@@ -52,6 +53,7 @@ const documents: TextDocuments<TextDocument> = new TextDocuments(TextDocument);
  * can read and update these fields to maintain server state.
  */
 const config: CurrentConnectionConfig = {
+  logger: new Logger(connection),
   globalSettings: { maxNumberOfProblems: 1000 },
   documentSettings: new Map(),
   fileAnalysis: {

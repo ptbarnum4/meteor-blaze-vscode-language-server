@@ -1,7 +1,7 @@
 import { DidChangeConfigurationParams } from 'vscode-languageserver/node.js';
 
+import { CurrentConnectionConfig, LanguageServerSettings } from '../../types';
 import { validateTextDocument } from '../helpers/validateTextDocument.js';
-import { CurrentConnectionConfig, LanguageServerSettings } from '/types';
 
 const onDidChangeConfiguration = (config: CurrentConnectionConfig) => {
   return (change: DidChangeConfigurationParams) => {

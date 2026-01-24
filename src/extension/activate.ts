@@ -7,6 +7,7 @@ import {
   TransportKind,
 } from 'vscode-languageclient/node';
 
+import { ExtensionConfig } from '../types';
 import createCompletionItemProvider from './helpers/activate/createCompletionItemProvider';
 import createSemanticProvider from './helpers/activate/createSemanticProvider';
 import promptIfNoConfigsSet from './helpers/activate/promptIfNoConfigsSet';
@@ -16,7 +17,6 @@ import {
   updateDecorationType,
 } from './helpers/blockConditions/decorationType';
 import { isMeteorProject } from './helpers/meteor';
-import { ExtensionConfig } from '/types';
 
 const ACTIVATE_CONFIGS = {
   LEGEND: [

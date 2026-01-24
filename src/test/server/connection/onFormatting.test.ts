@@ -15,6 +15,7 @@ import {
   CurrentConnectionConfig,
   LanguageServerSettings,
 } from '../../../types/index.js';
+import Logger from '../../../utils/logger.js';
 
 /**
  * Test suite for onFormatting connection handlers
@@ -41,6 +42,7 @@ describe('connection/onFormatting', () => {
   const createMockConfig = (
     overrides?: Partial<CurrentConnectionConfig>
   ): CurrentConnectionConfig => ({
+    logger: new Logger(createMockConnection() as any),
     globalSettings: mockSettings,
     documentSettings: new Map(),
     fileAnalysis: {

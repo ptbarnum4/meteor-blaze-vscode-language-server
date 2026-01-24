@@ -8,6 +8,7 @@ import {
   CurrentConnectionConfig,
   LanguageServerSettings,
 } from '../../../types/index.js';
+import Logger from '../../../utils/logger.js';
 
 /**
  * Test suite for getDocumentSettings helper function
@@ -20,6 +21,7 @@ describe('getDocumentSettings', () => {
     hasConfigurationCapability: boolean,
     connection?: any
   ): CurrentConnectionConfig => ({
+    logger: new Logger(connection),
     hasConfigurationCapability,
     globalSettings: defaultSettings,
     documentSettings: new Map(),

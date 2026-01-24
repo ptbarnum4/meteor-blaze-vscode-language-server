@@ -2,6 +2,7 @@ import path from 'path';
 
 import { DefinitionParams, Location } from 'vscode-languageserver/node.js';
 
+import { CurrentConnectionConfig } from '../../../types';
 import {
   analyzeGlobalHelpers,
   mergeConfiguredHelpers,
@@ -13,7 +14,6 @@ import { getWordRangeAtPosition } from '../../helpers/getWordRangeAtPosition.js'
 import { isWithinComment } from '../../helpers/isWithinComment.js';
 import { isWithinHandlebarsExpression } from '../../helpers/isWithinHandlebarsExpression.js';
 import handleTemplateInclusionDefinition from './handleTemplateInclusionDefinition.js';
-import { CurrentConnectionConfig } from '/types';
 
 const onDefinition = (config: CurrentConnectionConfig) => {
   const { connection, documents } = config;

@@ -3,8 +3,8 @@ import {
   InitializedParams,
 } from 'vscode-languageserver/node.js';
 
+import { CurrentConnectionConfig } from '../../types';
 import { validateWorkspace } from '../helpers/validateWorkspace.js';
-import { CurrentConnectionConfig } from '/types';
 
 const onInitialized = (config: CurrentConnectionConfig) => {
   return async (_params: InitializedParams) => {

@@ -1,6 +1,6 @@
 import fs from 'fs';
 
-import { HelperInfo } from '/types';
+import { HelperInfo } from '../../types';
 
 type MethodBlock = {
   name: string;

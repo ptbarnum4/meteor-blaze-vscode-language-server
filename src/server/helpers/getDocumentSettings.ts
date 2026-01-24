@@ -1,4 +1,4 @@
-import { CurrentConnectionConfig, LanguageServerSettings } from '/types';
+import { CurrentConnectionConfig, LanguageServerSettings } from '../../types';
 
 const getDocumentSettings = (
   config: CurrentConnectionConfig,

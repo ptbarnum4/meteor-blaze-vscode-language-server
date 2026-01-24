@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { Location } from 'vscode-languageserver/node.js';
-import { TsConfig, VSCodeServerConnection } from '/types';
+import { TsConfig, VSCodeServerConnection } from '../../../types';
 
 // Helper function to find template definition (template.html file)
 const findTemplateDefinition = (

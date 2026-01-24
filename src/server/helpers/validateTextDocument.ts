@@ -5,10 +5,10 @@ import {
   Range,
 } from 'vscode-languageserver/node.js';
 
+import { CurrentConnectionConfig, LanguageServerSettings } from '../../types';
 import { containsMeteorTemplates } from './containsMeteorTemplates.js';
 import getDocumentSettings from './getDocumentSettings.js';
 import { isWithinComment } from './isWithinComment.js';
-import { CurrentConnectionConfig, LanguageServerSettings } from '/types';
 
 /**
  * Finds unmatched Blaze block opening tags that don't have corresponding closing tags

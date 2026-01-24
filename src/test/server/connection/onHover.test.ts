@@ -12,6 +12,7 @@ import {
   CurrentConnectionConfig,
   LanguageServerSettings,
 } from '../../../types/index.js';
+import Logger from '../../../utils/logger.js';
 
 /**
  * Test suite for onHover connection handler
@@ -28,6 +29,7 @@ describe('connection/onHover', () => {
   const createMockConfig = (
     overrides?: Partial<CurrentConnectionConfig>
   ): CurrentConnectionConfig => ({
+    logger: new Logger(createMockConnection() as any),
     globalSettings: mockSettings,
     documentSettings: new Map(),
     fileAnalysis: {
