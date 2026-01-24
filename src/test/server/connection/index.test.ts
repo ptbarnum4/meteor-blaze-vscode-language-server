@@ -17,6 +17,9 @@ describe('connection/index', () => {
     // Test that the expected exports would be available
     // In practice, this would test the actual exported structure
     const expectedExports = ['connection', 'documents'];
-    assert.ok(expectedExports.length > 0, 'Should export connection and documents');
+    assert.ok(
+      expectedExports.length > 0,
+      'Should export connection and documents'
+    );
   });
 });

@@ -64,7 +64,8 @@
     "check-types": "tsc --noEmit",
     "lint": "eslint src",
     "test": "node --test out/test/server/**/*.test.js",
-    "test-manual": "node out/test/runTest.js"
+    "test-manual": "node out/test/runTest.js",
+    "prettier:check": "prettier --check \"src/**/*.ts\" \"src/test/**/*.ts\" \"*.json\""
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",

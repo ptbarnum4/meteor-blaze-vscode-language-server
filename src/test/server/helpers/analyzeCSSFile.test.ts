@@ -4,13 +4,18 @@ import { describe, it } from 'node:test';
 import os from 'os';
 import path from 'path';
 
-import { analyzeCSSFile } from '../../../server/helpers/analyzeCSSFile';
+import { analyzeCSSFile } from '/server/helpers/analyzeCSSFile';
 
 /**
  * Helper function to create a temporary test file
  */
-function createTestFile(content: string): { filePath: string; cleanup: () => void } {
-  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'meteor-lang-server-test-'));
+function createTestFile(content: string): {
+  filePath: string;
+  cleanup: () => void;
+} {
+  const tempDir = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'meteor-lang-server-test-')
+  );
   const filePath = path.join(tempDir, 'test.css');
   fs.writeFileSync(filePath, content);
 
@@ -73,7 +78,9 @@ describe('analyzeCSSFile', () => {
   });
 
   it('should handle non-existent files gracefully', () => {
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'meteor-lang-server-test-'));
+    const tempDir = fs.mkdtempSync(
+      path.join(os.tmpdir(), 'meteor-lang-server-test-')
+    );
     const nonExistentPath = path.join(tempDir, 'non-existent.css');
 
     try {

@@ -18,7 +18,6 @@ const createSemanticProvider = (
       const tokensBuilder = new vscode.SemanticTokensBuilder(legend);
       const text = document.getText();
 
-
       // Only highlight Blaze expressions and block helper syntax
       const blazeRegex = /\{\{[#/]?\w+.*?\}\}/g;
       let match;
@@ -33,7 +32,6 @@ const createSemanticProvider = (
           continue; // Skip semantic tokens for content inside comments
         }
 
-
         // Only highlight Blaze expressions and block helper syntax
         const startPos = document.positionAt(start);
         const length = end - start;
@@ -45,15 +43,17 @@ const createSemanticProvider = (
           parseBlockExpressions(tokensBuilder, startPos, match);
         }
         // If inside a block, we don't need to highlight the delimiter again
-        tokensBuilder.push(startPos.line, startPos.character + length - 2, 2, 0); // delimiter
+        tokensBuilder.push(
+          startPos.line,
+          startPos.character + length - 2,
+          2,
+          0
+        ); // delimiter
       }
       // No tokens for any text outside of {{...}} blocks, including inside nested block helpers
       return tokensBuilder.build();
-    }
+    },
   };
 };
 
 export default createSemanticProvider;
-
-
-

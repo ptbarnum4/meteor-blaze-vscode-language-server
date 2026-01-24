@@ -8,7 +8,7 @@ import { ExtensionConfig } from '/types';
  */
 const extConfig: ExtensionConfig = {
   client: null,
-  blockConditionDecorationType: null
+  blockConditionDecorationType: null,
 };
 
 /**

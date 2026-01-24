@@ -8,7 +8,6 @@ import {
   TextDocumentPositionParams,
 } from 'vscode-languageserver/node';
 
-import { CurrentConnectionConfig } from '../../types';
 import {
   analyzeGlobalHelpers,
   mergeConfiguredHelpers,
@@ -25,6 +24,13 @@ import {
   trimLanguageDocumentation,
   trimUsageDocumentation,
 } from '../helpers/trimUsageDocumentation';
+import {
+  BlazeHelperConfig,
+  BlazeHelperInfo,
+  CurrentConnectionConfig,
+  PathModule,
+  TsConfig,
+} from '/types';
 
 const onHover = (config: CurrentConnectionConfig) => {
   const { connection, documents } = config;
@@ -328,7 +334,7 @@ const onHover = (config: CurrentConnectionConfig) => {
       );
 
       const globalHelper = globalHelpersResult.helperDetails.find(
-        (helper: any) => helper.name === word
+        (helper) => helper.name === word
       );
       if (globalHelper) {
         return createGlobalTemplateHelperDocs(globalHelper, word, wordRange);
@@ -701,10 +707,10 @@ const onHover = (config: CurrentConnectionConfig) => {
         nameColor = workspaceConfig.blazeHelpers.nameColor;
       }
       // Merge extended blazeHelpers from config
-      let extendedHelpers = [];
+      let extendedHelpers: BlazeHelperInfo[] = [];
       if (Array.isArray(workspaceConfig?.blazeHelpers?.extend)) {
         extendedHelpers = workspaceConfig.blazeHelpers.extend
-          .map((h: any) => {
+          .map((h: BlazeHelperConfig): BlazeHelperInfo | null => {
             if (typeof h === 'string') {
               return { name: h, doc: '', usage: `{{${h}}}` };
             } else if (
@@ -816,8 +822,6 @@ async function getTemplateInclusionHover(
         templateName,
         currentDocument.uri,
         currentDir,
-        fs,
-        path,
         globalHelpers
       );
 
@@ -888,9 +892,7 @@ async function getTemplateInclusionHover(
     // Second: Check if template is imported from another file
     const associatedFile = findAssociatedJSFileForHover(
       currentDir,
-      currentBaseName,
-      fs,
-      path
+      currentBaseName
     );
 
     if (!associatedFile) {
@@ -902,11 +904,7 @@ async function getTemplateInclusionHover(
     }
 
     // Parse imports to see if this template is imported
-    const importedTemplates = parseTemplateImportsForHover(
-      associatedFile,
-      fs,
-      path
-    );
+    const importedTemplates = parseTemplateImportsForHover(associatedFile);
 
     if (!importedTemplates.includes(templateName)) {
       return {
@@ -929,12 +927,7 @@ async function getTemplateInclusionHover(
     }
 
     // Find the actual template file to show content preview
-    const templateInfo = findImportedTemplateFile(
-      templateName,
-      associatedFile,
-      fs,
-      path
-    );
+    const templateInfo = findImportedTemplateFile(templateName, associatedFile);
 
     if (templateInfo) {
       const relativePath = path.relative(process.cwd(), templateInfo.file);
@@ -966,8 +959,6 @@ async function getTemplateInclusionHover(
         templateName,
         `file://${templateInfo.file}`,
         path.dirname(templateInfo.file),
-        fs,
-        path,
         globalHelpers
       );
 
@@ -1095,8 +1086,6 @@ async function createTemplateNotFoundHover(
       templateName,
       currentDocument.uri,
       path.dirname(currentFilePath),
-      fs,
-      path,
       globalHelpers
     );
 
@@ -1164,9 +1153,7 @@ async function createTemplateNotFoundHover(
 // Helper function to find the associated JS/TS file for hover
 function findAssociatedJSFileForHover(
   currentDir: string,
-  baseName: string,
-  fs: any,
-  path: any
+  baseName: string
 ): string | null {
   const possibleExtensions = ['.ts', '.js'];
 
@@ -1221,21 +1208,13 @@ function findAssociatedJSFileForHover(
 }
 
 // Helper function to parse template imports for hover
-function parseTemplateImportsForHover(
-  filePath: string,
-  fs: any,
-  path: any
-): string[] {
+function parseTemplateImportsForHover(filePath: string): string[] {
   try {
     const content = fs.readFileSync(filePath, 'utf8');
     const templates: string[] = [];
 
     // Find tsconfig.json for this Meteor project (same as autocomplete)
-    const tsconfig = findTsConfigForMeteorProject(
-      path.dirname(filePath),
-      fs,
-      path
-    );
+    const tsconfig = findTsConfigForMeteorProject(path.dirname(filePath));
 
     // Find all import statements (both named and unnamed, including absolute paths)
     const importPattern =
@@ -1365,11 +1344,7 @@ function parseTemplateImportsForHover(
 }
 
 // Helper function to find tsconfig.json in the same directory as .meteor (for hover)
-function findTsConfigForMeteorProject(
-  startPath: string,
-  fs: any,
-  path: any
-): any {
+function findTsConfigForMeteorProject(startPath: string): TsConfig | null {
   let currentDir = startPath;
 
   // Walk up the directory tree to find .meteor directory
@@ -1496,9 +1471,9 @@ function safelyRemoveJsonComments(content: string): string {
 // TypeScript path resolution function (for hover)
 function resolveTsPath(
   importPath: string,
-  tsconfig: any,
+  tsconfig: TsConfig | null,
   projectRoot: string,
-  path: any
+  path: PathModule
 ): string | null {
   if (!tsconfig?.compilerOptions?.paths) {
     return null;
@@ -1540,9 +1515,7 @@ function resolveTsPath(
 } // Helper function to find the imported template file and content
 function findImportedTemplateFile(
   templateName: string,
-  associatedFile: string,
-  fs: any,
-  path: any
+  associatedFile: string
 ): { file: string; content: string } | null {
   try {
     const content = fs.readFileSync(associatedFile, 'utf8');
@@ -1624,8 +1597,6 @@ function getParentTemplatePropertyHover(
   currentDir: string,
   config: CurrentConnectionConfig
 ): string | null {
-  const path = require('path');
-
   // Look for this word in parent template's helpers and data properties
   const dirLookupKeys = [
     `${currentDir}/${parentTemplateName}`,
@@ -1781,8 +1752,6 @@ function getChildTemplatePropertyHover(
   }
 
   // If no data properties found in TypeScript, try extracting from template HTML usage
-  const fs = require('fs');
-  const path = require('path');
 
   // Try to find the child template's HTML file
   const possibleHtmlPaths = [
@@ -1802,8 +1771,6 @@ function getChildTemplatePropertyHover(
         childTemplateName,
         `file://${htmlPath}`,
         path.dirname(htmlPath),
-        fs,
-        path,
         globalHelpers
       );
 
@@ -1846,9 +1813,6 @@ async function getTemplateParameterHover(
   currentTemplateName: string | null,
   config: CurrentConnectionConfig
 ): Promise<string | null> {
-  const fs = require('fs');
-  const path = require('path');
-
   try {
     // Get text around the cursor to determine context
     // Increase the window size to handle longer template inclusions
@@ -2006,9 +1970,7 @@ async function getTemplateParameterHover(
     const currentBaseName = path.basename(currentDir);
     const associatedFile = findAssociatedJSFileForHover(
       currentDir,
-      currentBaseName,
-      fs,
-      path
+      currentBaseName
     );
 
     if (!associatedFile) {
@@ -2027,11 +1989,7 @@ async function getTemplateParameterHover(
     }
 
     // Parse imports to see if this template is imported
-    const importedTemplates = parseTemplateImportsForHover(
-      associatedFile,
-      fs,
-      path
-    );
+    const importedTemplates = parseTemplateImportsForHover(associatedFile);
 
     if (!importedTemplates.includes(templateName)) {
       // If we're on left side, return a basic message instead of null
@@ -2051,9 +2009,7 @@ async function getTemplateParameterHover(
     // Find the actual template's TypeScript file using import resolution
     const templateTsFile = findTemplateTypeScriptFileForHover(
       associatedFile,
-      templateName,
-      fs,
-      path
+      templateName
     );
 
     if (templateTsFile) {
@@ -2229,9 +2185,7 @@ async function getTemplateParameterHover(
 // Helper function to find the TypeScript file for a template using import resolution (for hover)
 function findTemplateTypeScriptFileForHover(
   associatedFile: string,
-  templateName: string,
-  fs: any,
-  path: any
+  templateName: string
 ): string | null {
   try {
     const content = fs.readFileSync(associatedFile, 'utf8');

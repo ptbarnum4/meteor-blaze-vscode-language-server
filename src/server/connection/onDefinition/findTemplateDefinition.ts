@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { Location } from 'vscode-languageserver/node';
-import { VSCodeServerConnection } from '/types';
+import { TsConfig, VSCodeServerConnection } from '/types';
 
 // Helper function to find template definition (template.html file)
 const findTemplateDefinition = (
@@ -41,27 +41,18 @@ const findTemplateDefinition = (
     }
 
     // Second, try to find the template through import analysis (same approach as hover)
-    const associatedFile = findAssociatedJSFileForDefinition(
-      currentDir,
-      fs,
-      path
-    );
+    const associatedFile = findAssociatedJSFileForDefinition(currentDir);
 
     if (associatedFile) {
       // Parse imports to see if this template is imported
-      const importedTemplates = parseTemplateImportsForDefinition(
-        associatedFile,
-        fs,
-        path
-      );
+      const importedTemplates =
+        parseTemplateImportsForDefinition(associatedFile);
 
       if (importedTemplates.includes(templateName)) {
         // Find the actual template file using import resolution
         const templateInfo = findImportedTemplateFileForDefinition(
           templateName,
-          associatedFile,
-          fs,
-          path
+          associatedFile
         );
 
         if (templateInfo) {
@@ -142,11 +133,7 @@ const findTemplateDefinition = (
 };
 
 // Helper function to find the associated JS/TS file for definition
-function findAssociatedJSFileForDefinition(
-  currentDir: string,
-  fs: any,
-  path: any
-): string | null {
+function findAssociatedJSFileForDefinition(currentDir: string): string | null {
   const baseName = path.basename(currentDir);
   const possibleExtensions = ['.ts', '.js'];
 
@@ -201,21 +188,13 @@ function findAssociatedJSFileForDefinition(
 }
 
 // Helper function to parse template imports for definition
-function parseTemplateImportsForDefinition(
-  filePath: string,
-  fs: any,
-  path: any
-): string[] {
+function parseTemplateImportsForDefinition(filePath: string): string[] {
   try {
     const content = fs.readFileSync(filePath, 'utf8');
     const templates: string[] = [];
 
     // Find tsconfig.json for this Meteor project (same as hover)
-    const tsconfig = findTsConfigForMeteorProject(
-      path.dirname(filePath),
-      fs,
-      path
-    );
+    const tsconfig = findTsConfigForMeteorProject(path.dirname(filePath));
 
     // Find all import statements (both named and unnamed, including absolute paths)
     const importPattern =
@@ -245,8 +224,7 @@ function parseTemplateImportsForDefinition(
           const tsResolvedPath = resolveTsPath(
             importPath,
             tsconfig,
-            projectRoot,
-            path
+            projectRoot
           );
 
           if (tsResolvedPath) {
@@ -347,9 +325,7 @@ function parseTemplateImportsForDefinition(
 // Helper function to find the imported template file for definition
 function findImportedTemplateFileForDefinition(
   templateName: string,
-  associatedFile: string,
-  fs: any,
-  path: any
+  associatedFile: string
 ): { file: string; content: string } | null {
   try {
     const content = fs.readFileSync(associatedFile, 'utf8');
@@ -425,11 +401,7 @@ function findImportedTemplateFileForDefinition(
 }
 
 // Helper function to find tsconfig.json in the same directory as .meteor (for definition)
-function findTsConfigForMeteorProject(
-  startPath: string,
-  fs: any,
-  path: any
-): any {
+function findTsConfigForMeteorProject(startPath: string): TsConfig | null {
   let currentDir = startPath;
 
   // Walk up the directory tree to find .meteor directory
@@ -556,9 +528,8 @@ function safelyRemoveJsonComments(content: string): string {
 // TypeScript path resolution function (for definition)
 function resolveTsPath(
   importPath: string,
-  tsconfig: any,
-  projectRoot: string,
-  path: any
+  tsconfig: TsConfig,
+  projectRoot: string
 ): string | null {
   if (!tsconfig?.compilerOptions?.paths) {
     return null;

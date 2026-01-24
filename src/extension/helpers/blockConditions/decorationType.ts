@@ -95,7 +95,10 @@ export const updateBlockConditionDecorations = (
     'meteorLanguageServer.blazeHelpers'
   );
 
-  let nameColor = blazeConfig.get<string>('nameColor', '');
+  let nameColor: string | vscode.ThemeColor = blazeConfig.get<string>(
+    'nameColor',
+    ''
+  );
   // Fallback to Blaze theme default if not provided
   if (!nameColor) {
     nameColor = '#f07dff'; // Blaze default for blazeBlockName
@@ -108,7 +111,7 @@ export const updateBlockConditionDecorations = (
     if (configColor) {
       return configColor;
     }
-    return new vscode.ThemeColor(scope) as any;
+    return new vscode.ThemeColor(scope);
   }
 
   nameColor = getThemeOrConfigColor(
@@ -264,11 +267,7 @@ export const createBlockConditionDecorationType =
     }
 
     return vscode.window.createTextEditorDecorationType({
-      after: {
-        color: color,
-        fontStyle: fontStyle as any,
-        margin: margin,
-      },
+      after: { color, fontStyle, margin },
     });
   };
 

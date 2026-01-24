@@ -15,17 +15,21 @@ export const smartTrim = (lines?: string): string => {
     return line.trim() !== '';
   });
 
-  const allIndents = docLines.map(line => {
+  const allIndents = docLines.map((line) => {
     const match = line.match(/^\s*/);
     return match ? match[0].length : 0;
   });
-  if (allIndents.length > 1 && !allIndents[0] && allIndents[allIndents.length - 1]) {
+  if (
+    allIndents.length > 1 &&
+    !allIndents[0] &&
+    allIndents[allIndents.length - 1]
+  ) {
     // If the first line is empty and the last line is not, we can safely ignore the first line
     allIndents.shift();
   }
   const shortestIndent = Math.max(Math.min(...allIndents), 0);
 
-  const trimmedLines = docLines.map(line => {
+  const trimmedLines = docLines.map((line) => {
     const match = line.match(/^\s*/);
     if (match) {
       const indent = match[0].length;
@@ -37,7 +41,10 @@ export const smartTrim = (lines?: string): string => {
   return trimmedLines.join('\n').trim();
 };
 
-export const trimUsageDocumentation = (name: string, usageDoc?: string): string => {
+export const trimUsageDocumentation = (
+  name: string,
+  usageDoc?: string
+): string => {
   if (!usageDoc) {
     return `{{${name}}}`;
   }
@@ -57,7 +64,7 @@ export const trimUsageDocumentation = (name: string, usageDoc?: string): string 
 
   const shortestIndent = Math.max(
     Math.min(
-      ...docLines.map(line => {
+      ...docLines.map((line) => {
         const match = line.match(/^\s*/);
         return match ? match[0].length : 0;
       })
@@ -65,7 +72,7 @@ export const trimUsageDocumentation = (name: string, usageDoc?: string): string 
     0
   );
 
-  const trimmedLines = docLines.map(line => {
+  const trimmedLines = docLines.map((line) => {
     const match = line.match(/^\s*/);
     if (match) {
       const indent = match[0].length;

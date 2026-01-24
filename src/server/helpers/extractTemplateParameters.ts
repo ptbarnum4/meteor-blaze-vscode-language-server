@@ -1,3 +1,6 @@
+import fs from 'fs';
+import path from 'path';
+
 /**
  * Extract parameters used within a template HTML content.
  * This function scans for Handlebars expressions like:
@@ -381,8 +384,7 @@ export function extractTemplateParameters(
  */
 export function findTemplateContent(
   filePath: string,
-  templateName: string,
-  fs: any
+  templateName: string
 ): string | null {
   try {
     if (!fs.existsSync(filePath)) {
@@ -633,8 +635,6 @@ export function extractParametersFromTemplate(
   templateName: string,
   currentFileUri: string,
   currentDir: string,
-  fs: any,
-  path: any,
   globalHelpers: string[] = []
 ): ExtractedParameter[] {
   const currentFilePath = currentFileUri.replace('file://', '');
@@ -650,7 +650,7 @@ export function extractParametersFromTemplate(
   ];
 
   for (const filePath of possiblePaths) {
-    const templateContent = findTemplateContent(filePath, templateName, fs);
+    const templateContent = findTemplateContent(filePath, templateName);
 
     if (templateContent) {
       return extractTemplateParameters(templateContent, globalHelpers);

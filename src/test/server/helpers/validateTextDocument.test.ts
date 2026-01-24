@@ -3,8 +3,8 @@ import { describe, it } from 'node:test';
 import { TextDocument } from 'vscode-languageserver-textdocument';
 import { TextDocuments } from 'vscode-languageserver/node';
 
-import { validateTextDocument } from '../../../server/helpers/validateTextDocument';
-import { CurrentConnectionConfig, LanguageServerSettings } from '../../../types';
+import { validateTextDocument } from '/server/helpers/validateTextDocument';
+import { CurrentConnectionConfig, LanguageServerSettings } from '/types';
 
 /**
  * Test suite for validateTextDocument helper function
@@ -16,8 +16,8 @@ describe('validateTextDocument', () => {
   const createMockConnection = () => ({
     sendDiagnostics: () => {}, // Mock implementation that does nothing
     workspace: {
-      getConfiguration: () => Promise.resolve(mockSettings)
-    }
+      getConfiguration: () => Promise.resolve(mockSettings),
+    },
   });
 
   const createMockConfig = (
@@ -29,14 +29,14 @@ describe('validateTextDocument', () => {
       jsHelpers: new Map(),
       helperDetails: new Map(),
       cssClasses: new Map(),
-      templates: new Map()
+      templates: new Map(),
     },
     documents: new TextDocuments(TextDocument),
     connection: createMockConnection() as any,
     hasConfigurationCapability: false,
     hasWorkspaceFolderCapability: false,
     hasDiagnosticRelatedInformationCapability: false,
-    ...overrides
+    ...overrides,
   });
 
   it('should validate HTML document with template content', async () => {
@@ -46,7 +46,12 @@ describe('validateTextDocument', () => {
       </template>
     `;
 
-    const document = TextDocument.create('file:///test.html', 'html', 1, content);
+    const document = TextDocument.create(
+      'file:///test.html',
+      'html',
+      1,
+      content
+    );
     const config = createMockConfig();
 
     // This should not throw an error
@@ -65,7 +70,12 @@ describe('validateTextDocument', () => {
       });
     `;
 
-    const document = TextDocument.create('file:///test.js', 'javascript', 1, content);
+    const document = TextDocument.create(
+      'file:///test.js',
+      'javascript',
+      1,
+      content
+    );
     const config = createMockConfig();
 
     // This should not throw an error
@@ -111,9 +121,14 @@ describe('validateTextDocument', () => {
       </template>
     `;
 
-    const document = TextDocument.create('file:///test.html', 'html', 1, content);
+    const document = TextDocument.create(
+      'file:///test.html',
+      'html',
+      1,
+      content
+    );
     const configWithLimit = createMockConfig({
-      globalSettings: { maxNumberOfProblems: 5 }
+      globalSettings: { maxNumberOfProblems: 5 },
     });
 
     // This should not throw an error
@@ -125,9 +140,14 @@ describe('validateTextDocument', () => {
   it('should handle configuration capability', async () => {
     const content = `<template name="configTest"><p>Test</p></template>`;
 
-    const document = TextDocument.create('file:///config-test.html', 'html', 1, content);
+    const document = TextDocument.create(
+      'file:///config-test.html',
+      'html',
+      1,
+      content
+    );
     const configWithCapability = createMockConfig({
-      hasConfigurationCapability: true
+      hasConfigurationCapability: true,
     });
 
     // This should not throw an error
@@ -147,7 +167,12 @@ describe('validateTextDocument', () => {
       </template>
     `;
 
-    const document = TextDocument.create('file:///test.html', 'html', 1, content);
+    const document = TextDocument.create(
+      'file:///test.html',
+      'html',
+      1,
+      content
+    );
     const diagnostics: any[] = [];
 
     const mockConnection = {
@@ -155,12 +180,12 @@ describe('validateTextDocument', () => {
         diagnostics.push(...params.diagnostics);
       },
       workspace: {
-        getConfiguration: () => Promise.resolve(mockSettings)
-      }
+        getConfiguration: () => Promise.resolve(mockSettings),
+      },
     };
 
     const config = createMockConfig({
-      connection: mockConnection as any
+      connection: mockConnection as any,
     });
 
     await validateTextDocument(config, document);
@@ -168,11 +193,16 @@ describe('validateTextDocument', () => {
     // Should have at least one diagnostic for the invalid #if block
     assert.ok(diagnostics.length > 0, 'Should have diagnostics');
 
-    const invalidBlockDiagnostic = diagnostics.find(d =>
-      d.message.includes('{{#if}} blocks cannot be used within HTML element tags')
+    const invalidBlockDiagnostic = diagnostics.find((d) =>
+      d.message.includes(
+        '{{#if}} blocks cannot be used within HTML element tags'
+      )
     );
 
-    assert.ok(invalidBlockDiagnostic, 'Should have diagnostic for invalid #if in tag');
+    assert.ok(
+      invalidBlockDiagnostic,
+      'Should have diagnostic for invalid #if in tag'
+    );
   });
 
   it('should detect invalid #unless blocks within HTML element tags', async () => {
@@ -182,7 +212,12 @@ describe('validateTextDocument', () => {
       </template>
     `;
 
-    const document = TextDocument.create('file:///test.html', 'html', 1, content);
+    const document = TextDocument.create(
+      'file:///test.html',
+      'html',
+      1,
+      content
+    );
     const diagnostics: any[] = [];
 
     const mockConnection = {
@@ -190,12 +225,12 @@ describe('validateTextDocument', () => {
         diagnostics.push(...params.diagnostics);
       },
       workspace: {
-        getConfiguration: () => Promise.resolve(mockSettings)
-      }
+        getConfiguration: () => Promise.resolve(mockSettings),
+      },
     };
 
     const config = createMockConfig({
-      connection: mockConnection as any
+      connection: mockConnection as any,
     });
 
     await validateTextDocument(config, document);
@@ -203,11 +238,16 @@ describe('validateTextDocument', () => {
     // Should have at least one diagnostic for the invalid #unless block
     assert.ok(diagnostics.length > 0, 'Should have diagnostics');
 
-    const invalidBlockDiagnostic = diagnostics.find(d =>
-      d.message.includes('{{#unless}} blocks cannot be used within HTML element tags')
+    const invalidBlockDiagnostic = diagnostics.find((d) =>
+      d.message.includes(
+        '{{#unless}} blocks cannot be used within HTML element tags'
+      )
     );
 
-    assert.ok(invalidBlockDiagnostic, 'Should have diagnostic for invalid #unless in tag');
+    assert.ok(
+      invalidBlockDiagnostic,
+      'Should have diagnostic for invalid #unless in tag'
+    );
   });
 
   it('should detect multiple invalid blocks in one HTML tag', async () => {
@@ -217,7 +257,12 @@ describe('validateTextDocument', () => {
       </template>
     `;
 
-    const document = TextDocument.create('file:///test.html', 'html', 1, content);
+    const document = TextDocument.create(
+      'file:///test.html',
+      'html',
+      1,
+      content
+    );
     const diagnostics: any[] = [];
 
     const mockConnection = {
@@ -225,18 +270,18 @@ describe('validateTextDocument', () => {
         diagnostics.push(...params.diagnostics);
       },
       workspace: {
-        getConfiguration: () => Promise.resolve(mockSettings)
-      }
+        getConfiguration: () => Promise.resolve(mockSettings),
+      },
     };
 
     const config = createMockConfig({
-      connection: mockConnection as any
+      connection: mockConnection as any,
     });
 
     await validateTextDocument(config, document);
 
     // Should have diagnostics for both invalid #if blocks
-    const invalidBlockDiagnostics = diagnostics.filter(d =>
+    const invalidBlockDiagnostics = diagnostics.filter((d) =>
       d.message.includes('blocks cannot be used within HTML element tags')
     );
 
@@ -258,7 +303,12 @@ describe('validateTextDocument', () => {
       </template>
     `;
 
-    const document = TextDocument.create('file:///test.html', 'html', 1, content);
+    const document = TextDocument.create(
+      'file:///test.html',
+      'html',
+      1,
+      content
+    );
     const diagnostics: any[] = [];
 
     const mockConnection = {
@@ -266,18 +316,18 @@ describe('validateTextDocument', () => {
         diagnostics.push(...params.diagnostics);
       },
       workspace: {
-        getConfiguration: () => Promise.resolve(mockSettings)
-      }
+        getConfiguration: () => Promise.resolve(mockSettings),
+      },
     };
 
     const config = createMockConfig({
-      connection: mockConnection as any
+      connection: mockConnection as any,
     });
 
     await validateTextDocument(config, document);
 
     // Should have no diagnostics for blocks outside tags
-    const invalidBlockDiagnostics = diagnostics.filter(d =>
+    const invalidBlockDiagnostics = diagnostics.filter((d) =>
       d.message.includes('blocks cannot be used within HTML element tags')
     );
 
@@ -293,7 +343,12 @@ describe('validateTextDocument', () => {
 <input type="checkbox" {{#if something}}checked{{/if}} />
 </template>`;
 
-    const document = TextDocument.create('file:///test.html', 'html', 1, content);
+    const document = TextDocument.create(
+      'file:///test.html',
+      'html',
+      1,
+      content
+    );
     const diagnostics: any[] = [];
 
     const mockConnection = {
@@ -301,22 +356,27 @@ describe('validateTextDocument', () => {
         diagnostics.push(...params.diagnostics);
       },
       workspace: {
-        getConfiguration: () => Promise.resolve(mockSettings)
-      }
+        getConfiguration: () => Promise.resolve(mockSettings),
+      },
     };
 
     const config = createMockConfig({
-      connection: mockConnection as any
+      connection: mockConnection as any,
     });
 
     await validateTextDocument(config, document);
 
     // Should have diagnostic for the invalid block
-    const invalidBlockDiagnostic = diagnostics.find(d =>
-      d.message.includes('{{#if}} blocks cannot be used within HTML element tags')
+    const invalidBlockDiagnostic = diagnostics.find((d) =>
+      d.message.includes(
+        '{{#if}} blocks cannot be used within HTML element tags'
+      )
     );
 
-    assert.ok(invalidBlockDiagnostic, 'Should have diagnostic for invalid #if in tag');
+    assert.ok(
+      invalidBlockDiagnostic,
+      'Should have diagnostic for invalid #if in tag'
+    );
 
     // The range should span from {{#if to {{/if}}
     const text = document.getText();
@@ -325,9 +385,18 @@ describe('validateTextDocument', () => {
     const highlightedText = text.substring(startOffset, endOffset);
 
     // Should include both opening and closing tags
-    assert.ok(highlightedText.includes('{{#if something}}'), 'Should include opening {{#if}}');
-    assert.ok(highlightedText.includes('{{/if}}'), 'Should include closing {{/if}}');
-    assert.ok(highlightedText.includes('checked'), 'Should include content between tags');
+    assert.ok(
+      highlightedText.includes('{{#if something}}'),
+      'Should include opening {{#if}}'
+    );
+    assert.ok(
+      highlightedText.includes('{{/if}}'),
+      'Should include closing {{/if}}'
+    );
+    assert.ok(
+      highlightedText.includes('checked'),
+      'Should include content between tags'
+    );
   });
 
   it('should allow #if blocks within attribute string values', async () => {
@@ -335,7 +404,12 @@ describe('validateTextDocument', () => {
 <i class="fa {{#if isRangeLocked}}fa-lock{{else}}fa-unlock{{/if}}"></i>
 </template>`;
 
-    const document = TextDocument.create('file:///test.html', 'html', 1, content);
+    const document = TextDocument.create(
+      'file:///test.html',
+      'html',
+      1,
+      content
+    );
     const diagnostics: any[] = [];
 
     const mockConnection = {
@@ -343,18 +417,18 @@ describe('validateTextDocument', () => {
         diagnostics.push(...params.diagnostics);
       },
       workspace: {
-        getConfiguration: () => Promise.resolve(mockSettings)
-      }
+        getConfiguration: () => Promise.resolve(mockSettings),
+      },
     };
 
     const config = createMockConfig({
-      connection: mockConnection as any
+      connection: mockConnection as any,
     });
 
     await validateTextDocument(config, document);
 
     // Should have NO diagnostics for blocks within quoted attribute values
-    const invalidBlockDiagnostics = diagnostics.filter(d =>
+    const invalidBlockDiagnostics = diagnostics.filter((d) =>
       d.message.includes('blocks cannot be used within HTML element tags')
     );
 
@@ -370,7 +444,12 @@ describe('validateTextDocument', () => {
 <div title='{{#if active}}Active{{else}}Inactive{{/if}}'></div>
 </template>`;
 
-    const document = TextDocument.create('file:///test.html', 'html', 1, content);
+    const document = TextDocument.create(
+      'file:///test.html',
+      'html',
+      1,
+      content
+    );
     const diagnostics: any[] = [];
 
     const mockConnection = {
@@ -378,18 +457,18 @@ describe('validateTextDocument', () => {
         diagnostics.push(...params.diagnostics);
       },
       workspace: {
-        getConfiguration: () => Promise.resolve(mockSettings)
-      }
+        getConfiguration: () => Promise.resolve(mockSettings),
+      },
     };
 
     const config = createMockConfig({
-      connection: mockConnection as any
+      connection: mockConnection as any,
     });
 
     await validateTextDocument(config, document);
 
     // Should have NO diagnostics for blocks within quoted attribute values
-    const invalidBlockDiagnostics = diagnostics.filter(d =>
+    const invalidBlockDiagnostics = diagnostics.filter((d) =>
       d.message.includes('blocks cannot be used within HTML element tags')
     );
 
@@ -405,7 +484,12 @@ describe('validateTextDocument', () => {
 <div class="icon {{#if locked}}locked{{/if}}" {{#if disabled}}disabled{{/if}}></div>
 </template>`;
 
-    const document = TextDocument.create('file:///test.html', 'html', 1, content);
+    const document = TextDocument.create(
+      'file:///test.html',
+      'html',
+      1,
+      content
+    );
     const diagnostics: any[] = [];
 
     const mockConnection = {
@@ -413,18 +497,18 @@ describe('validateTextDocument', () => {
         diagnostics.push(...params.diagnostics);
       },
       workspace: {
-        getConfiguration: () => Promise.resolve(mockSettings)
-      }
+        getConfiguration: () => Promise.resolve(mockSettings),
+      },
     };
 
     const config = createMockConfig({
-      connection: mockConnection as any
+      connection: mockConnection as any,
     });
 
     await validateTextDocument(config, document);
 
     // Should have one diagnostic for the invalid block outside quotes
-    const invalidBlockDiagnostics = diagnostics.filter(d =>
+    const invalidBlockDiagnostics = diagnostics.filter((d) =>
       d.message.includes('blocks cannot be used within HTML element tags')
     );
 
@@ -436,12 +520,20 @@ describe('validateTextDocument', () => {
 
     // The diagnostic should be for the 'disabled' block, not the one inside class
     const text = document.getText();
-    const startOffset = document.offsetAt(invalidBlockDiagnostics[0].range.start);
+    const startOffset = document.offsetAt(
+      invalidBlockDiagnostics[0].range.start
+    );
     const endOffset = document.offsetAt(invalidBlockDiagnostics[0].range.end);
     const highlightedText = text.substring(startOffset, endOffset);
 
-    assert.ok(highlightedText.includes('disabled'), 'Should flag the block outside quotes');
-    assert.ok(!highlightedText.includes('locked'), 'Should not flag the block inside quotes');
+    assert.ok(
+      highlightedText.includes('disabled'),
+      'Should flag the block outside quotes'
+    );
+    assert.ok(
+      !highlightedText.includes('locked'),
+      'Should not flag the block inside quotes'
+    );
   });
 
   it('should not validate blocks within HTML comments', async () => {
@@ -450,7 +542,12 @@ describe('validateTextDocument', () => {
 <div>Valid content</div>
 </template>`;
 
-    const document = TextDocument.create('file:///test.html', 'html', 1, content);
+    const document = TextDocument.create(
+      'file:///test.html',
+      'html',
+      1,
+      content
+    );
     const diagnostics: any[] = [];
 
     const mockConnection = {
@@ -458,18 +555,18 @@ describe('validateTextDocument', () => {
         diagnostics.push(...params.diagnostics);
       },
       workspace: {
-        getConfiguration: () => Promise.resolve(mockSettings)
-      }
+        getConfiguration: () => Promise.resolve(mockSettings),
+      },
     };
 
     const config = createMockConfig({
-      connection: mockConnection as any
+      connection: mockConnection as any,
     });
 
     await validateTextDocument(config, document);
 
     // Should have no diagnostics for blocks within comments
-    const invalidBlockDiagnostics = diagnostics.filter(d =>
+    const invalidBlockDiagnostics = diagnostics.filter((d) =>
       d.message.includes('blocks cannot be used within HTML element tags')
     );
 
@@ -486,7 +583,12 @@ describe('validateTextDocument', () => {
 <div>Valid content</div>
 </template>`;
 
-    const document = TextDocument.create('file:///test.html', 'html', 1, content);
+    const document = TextDocument.create(
+      'file:///test.html',
+      'html',
+      1,
+      content
+    );
     const diagnostics: any[] = [];
 
     const mockConnection = {
@@ -494,18 +596,18 @@ describe('validateTextDocument', () => {
         diagnostics.push(...params.diagnostics);
       },
       workspace: {
-        getConfiguration: () => Promise.resolve(mockSettings)
-      }
+        getConfiguration: () => Promise.resolve(mockSettings),
+      },
     };
 
     const config = createMockConfig({
-      connection: mockConnection as any
+      connection: mockConnection as any,
     });
 
     await validateTextDocument(config, document);
 
     // Should have no diagnostics for blocks within comments
-    const invalidBlockDiagnostics = diagnostics.filter(d =>
+    const invalidBlockDiagnostics = diagnostics.filter((d) =>
       d.message.includes('blocks cannot be used within HTML element tags')
     );
 
@@ -522,7 +624,12 @@ describe('validateTextDocument', () => {
 <div>Valid content</div>
 </template>`;
 
-    const document = TextDocument.create('file:///test.html', 'html', 1, content);
+    const document = TextDocument.create(
+      'file:///test.html',
+      'html',
+      1,
+      content
+    );
     const diagnostics: any[] = [];
 
     const mockConnection = {
@@ -530,18 +637,18 @@ describe('validateTextDocument', () => {
         diagnostics.push(...params.diagnostics);
       },
       workspace: {
-        getConfiguration: () => Promise.resolve(mockSettings)
-      }
+        getConfiguration: () => Promise.resolve(mockSettings),
+      },
     };
 
     const config = createMockConfig({
-      connection: mockConnection as any
+      connection: mockConnection as any,
     });
 
     await validateTextDocument(config, document);
 
     // Should have no diagnostics for blocks within inline comments
-    const invalidBlockDiagnostics = diagnostics.filter(d =>
+    const invalidBlockDiagnostics = diagnostics.filter((d) =>
       d.message.includes('blocks cannot be used within HTML element tags')
     );
 
@@ -553,8 +660,9 @@ describe('validateTextDocument', () => {
 
     // Also check that there are no unmatched block errors
     const unmatchedBlockDiagnostics = diagnostics.filter(
-      d =>
-        d.message.includes('Missing closing tag') || d.message.includes('without matching opening')
+      (d) =>
+        d.message.includes('Missing closing tag') ||
+        d.message.includes('without matching opening')
     );
 
     assert.strictEqual(
@@ -579,7 +687,12 @@ describe('validateTextDocument', () => {
       {{/if}}
 </template>`;
 
-    const document = TextDocument.create('file:///test.html', 'html', 1, content);
+    const document = TextDocument.create(
+      'file:///test.html',
+      'html',
+      1,
+      content
+    );
     const diagnostics: any[] = [];
 
     const mockConnection = {
@@ -587,12 +700,12 @@ describe('validateTextDocument', () => {
         diagnostics.push(...params.diagnostics);
       },
       workspace: {
-        getConfiguration: () => Promise.resolve(mockSettings)
-      }
+        getConfiguration: () => Promise.resolve(mockSettings),
+      },
     };
 
     const config = createMockConfig({
-      connection: mockConnection as any
+      connection: mockConnection as any,
     });
 
     await validateTextDocument(config, document);
@@ -601,9 +714,9 @@ describe('validateTextDocument', () => {
     if (diagnostics.length > 0) {
       console.log(
         'Diagnostics found:',
-        diagnostics.map(d => ({
+        diagnostics.map((d) => ({
           message: d.message,
-          range: d.range
+          range: d.range,
         }))
       );
     }
@@ -613,7 +726,7 @@ describe('validateTextDocument', () => {
       diagnostics.length,
       0,
       `Should have no diagnostics for the user example, but got ${diagnostics.length}: ${diagnostics
-        .map(d => d.message)
+        .map((d) => d.message)
         .join(', ')}`
     );
   });
@@ -637,7 +750,12 @@ describe('validateTextDocument', () => {
   {{/if}}
 </template>`;
 
-    const document = TextDocument.create('file:///test.html', 'html', 1, content);
+    const document = TextDocument.create(
+      'file:///test.html',
+      'html',
+      1,
+      content
+    );
     const diagnostics: any[] = [];
 
     const mockConnection = {
@@ -645,12 +763,12 @@ describe('validateTextDocument', () => {
         diagnostics.push(...params.diagnostics);
       },
       workspace: {
-        getConfiguration: () => Promise.resolve(mockSettings)
-      }
+        getConfiguration: () => Promise.resolve(mockSettings),
+      },
     };
 
     const config = createMockConfig({
-      connection: mockConnection as any
+      connection: mockConnection as any,
     });
 
     await validateTextDocument(config, document);
@@ -659,15 +777,15 @@ describe('validateTextDocument', () => {
     if (diagnostics.length > 0) {
       console.log(
         'Diagnostics found:',
-        diagnostics.map(d => ({
+        diagnostics.map((d) => ({
           message: d.message,
-          range: d.range
+          range: d.range,
         }))
       );
     }
 
     // Should have no diagnostics - HTML elements inside attribute strings should be ignored
-    const invalidBlockDiagnostics = diagnostics.filter(d =>
+    const invalidBlockDiagnostics = diagnostics.filter((d) =>
       d.message.includes('blocks cannot be used within HTML element tags')
     );
 
@@ -676,7 +794,7 @@ describe('validateTextDocument', () => {
       0,
       `Should have no diagnostics for HTML elements within attribute strings, but got ${
         invalidBlockDiagnostics.length
-      }: ${invalidBlockDiagnostics.map(d => d.message).join(', ')}`
+      }: ${invalidBlockDiagnostics.map((d) => d.message).join(', ')}`
     );
   });
 
@@ -694,7 +812,12 @@ describe('validateTextDocument', () => {
   {{/if}}
 </template>`;
 
-    const document = TextDocument.create('file:///test.html', 'html', 1, content);
+    const document = TextDocument.create(
+      'file:///test.html',
+      'html',
+      1,
+      content
+    );
     const diagnostics: any[] = [];
 
     const mockConnection = {
@@ -702,12 +825,12 @@ describe('validateTextDocument', () => {
         diagnostics.push(...params.diagnostics);
       },
       workspace: {
-        getConfiguration: () => Promise.resolve(mockSettings)
-      }
+        getConfiguration: () => Promise.resolve(mockSettings),
+      },
     };
 
     const config = createMockConfig({
-      connection: mockConnection as any
+      connection: mockConnection as any,
     });
 
     await validateTextDocument(config, document);
@@ -717,7 +840,7 @@ describe('validateTextDocument', () => {
       diagnostics.length,
       0,
       `Should have no diagnostics for single quotes in Handlebars, but got ${diagnostics.length}: ${diagnostics
-        .map(d => d.message)
+        .map((d) => d.message)
         .join(', ')}`
     );
   });
@@ -733,7 +856,12 @@ describe('validateTextDocument', () => {
   {{/if}}
 </template>`;
 
-    const document = TextDocument.create('file:///test.html', 'html', 1, content);
+    const document = TextDocument.create(
+      'file:///test.html',
+      'html',
+      1,
+      content
+    );
     const diagnostics: any[] = [];
 
     const mockConnection = {
@@ -741,12 +869,12 @@ describe('validateTextDocument', () => {
         diagnostics.push(...params.diagnostics);
       },
       workspace: {
-        getConfiguration: () => Promise.resolve(mockSettings)
-      }
+        getConfiguration: () => Promise.resolve(mockSettings),
+      },
     };
 
     const config = createMockConfig({
-      connection: mockConnection as any
+      connection: mockConnection as any,
     });
 
     await validateTextDocument(config, document);
@@ -756,7 +884,7 @@ describe('validateTextDocument', () => {
       diagnostics.length,
       0,
       `Should have no diagnostics for HTML in {{else}} blocks, but got ${diagnostics.length}: ${diagnostics
-        .map(d => d.message)
+        .map((d) => d.message)
         .join(', ')}`
     );
   });
@@ -787,7 +915,12 @@ describe('validateTextDocument', () => {
   </div>
 </template>`;
 
-    const document = TextDocument.create('file:///test.html', 'html', 1, content);
+    const document = TextDocument.create(
+      'file:///test.html',
+      'html',
+      1,
+      content
+    );
     const diagnostics: any[] = [];
 
     const mockConnection = {
@@ -795,12 +928,12 @@ describe('validateTextDocument', () => {
         diagnostics.push(...params.diagnostics);
       },
       workspace: {
-        getConfiguration: () => Promise.resolve(mockSettings)
-      }
+        getConfiguration: () => Promise.resolve(mockSettings),
+      },
     };
 
     const config = createMockConfig({
-      connection: mockConnection as any
+      connection: mockConnection as any,
     });
 
     await validateTextDocument(config, document);
@@ -810,7 +943,7 @@ describe('validateTextDocument', () => {
       diagnostics.length,
       0,
       `Should have no diagnostics for multiple {{#if}} blocks, but got ${diagnostics.length}: ${diagnostics
-        .map(d => `Line ${d.range.start.line + 1}: ${d.message}`)
+        .map((d) => `Line ${d.range.start.line + 1}: ${d.message}`)
         .join(', ')}`
     );
   });
@@ -828,7 +961,12 @@ describe('validateTextDocument', () => {
   {{/if}}
 </template>`;
 
-    const document = TextDocument.create('file:///test.html', 'html', 1, content);
+    const document = TextDocument.create(
+      'file:///test.html',
+      'html',
+      1,
+      content
+    );
     const diagnostics: any[] = [];
 
     const mockConnection = {
@@ -836,12 +974,12 @@ describe('validateTextDocument', () => {
         diagnostics.push(...params.diagnostics);
       },
       workspace: {
-        getConfiguration: () => Promise.resolve(mockSettings)
-      }
+        getConfiguration: () => Promise.resolve(mockSettings),
+      },
     };
 
     const config = createMockConfig({
-      connection: mockConnection as any
+      connection: mockConnection as any,
     });
 
     await validateTextDocument(config, document);
@@ -851,7 +989,7 @@ describe('validateTextDocument', () => {
       diagnostics.length,
       0,
       `Should have no diagnostics for nested {{#if}} in {{else}}, but got ${diagnostics.length}: ${diagnostics
-        .map(d => `Line ${d.range.start.line + 1}: ${d.message}`)
+        .map((d) => `Line ${d.range.start.line + 1}: ${d.message}`)
         .join(', ')}`
     );
   });
@@ -868,7 +1006,12 @@ describe('validateTextDocument', () => {
   </div>
 </template>`;
 
-    const document = TextDocument.create('file:///test.html', 'html', 1, content);
+    const document = TextDocument.create(
+      'file:///test.html',
+      'html',
+      1,
+      content
+    );
     const diagnostics: any[] = [];
 
     const mockConnection = {
@@ -876,12 +1019,12 @@ describe('validateTextDocument', () => {
         diagnostics.push(...params.diagnostics);
       },
       workspace: {
-        getConfiguration: () => Promise.resolve(mockSettings)
-      }
+        getConfiguration: () => Promise.resolve(mockSettings),
+      },
     };
 
     const config = createMockConfig({
-      connection: mockConnection as any
+      connection: mockConnection as any,
     });
 
     await validateTextDocument(config, document);
@@ -891,7 +1034,7 @@ describe('validateTextDocument', () => {
       diagnostics.length,
       0,
       `Should have no diagnostics for multi-line <p> in {{#if}}, but got ${diagnostics.length}: ${diagnostics
-        .map(d => `Line ${d.range.start.line + 1}: ${d.message}`)
+        .map((d) => `Line ${d.range.start.line + 1}: ${d.message}`)
         .join('\n  ')}`
     );
   });

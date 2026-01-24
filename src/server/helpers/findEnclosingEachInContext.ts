@@ -7,15 +7,24 @@ export type EachInContext = {
 // Find the nearest enclosing `{{#each alias in source}}` block for a given cursor offset.
 // This function looks for each-in blocks that contain the cursor position, accounting for
 // the fact that the cursor might be inside the opening tag itself.
-export function findEnclosingEachInContext(text: string, cursorOffset: number): EachInContext | null {
+export function findEnclosingEachInContext(
+  text: string,
+  cursorOffset: number
+): EachInContext | null {
   if (cursorOffset <= 0) {
     return null;
   }
 
   // Look for all each-in blocks in the entire text
-  const openRe = /\{\{\s*#each\s+([A-Za-z_$][\w$]*)\s+in\s+([A-Za-z_$][\w$]*)[^}]*\}\}/g;
+  const openRe =
+    /\{\{\s*#each\s+([A-Za-z_$][\w$]*)\s+in\s+([A-Za-z_$][\w$]*)[^}]*\}\}/g;
   let m: RegExpExecArray | null;
-  const candidates: { alias: string; source: string; openIndex: number; openEnd: number }[] = [];
+  const candidates: {
+    alias: string;
+    source: string;
+    openIndex: number;
+    openEnd: number;
+  }[] = [];
 
   while ((m = openRe.exec(text)) !== null) {
     const openStart = m.index;
@@ -24,7 +33,7 @@ export function findEnclosingEachInContext(text: string, cursorOffset: number): 
       alias: m[1],
       source: m[2],
       openIndex: openStart,
-      openEnd: openEnd
+      openEnd: openEnd,
     });
   }
 
@@ -35,7 +44,7 @@ export function findEnclosingEachInContext(text: string, cursorOffset: number): 
   // Find candidates where the cursor is either:
   // 1. Inside the opening tag (between openIndex and openEnd)
   // 2. After the opening tag but before the corresponding closing tag
-  const validCandidates = candidates.filter(c => {
+  const validCandidates = candidates.filter((c) => {
     // If cursor is inside the opening tag itself
     if (cursorOffset >= c.openIndex && cursorOffset <= c.openEnd) {
       return true;
@@ -75,7 +84,7 @@ export function findEnclosingEachInContext(text: string, cursorOffset: number): 
     return {
       alias: result.alias,
       source: result.source,
-      openIndex: result.openIndex
+      openIndex: result.openIndex,
     };
   }
 

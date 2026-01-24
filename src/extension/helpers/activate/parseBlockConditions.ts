@@ -24,7 +24,10 @@ const parseBlockConditions = (
   tokensBuilder.push(startPos.line, blockNameStart, blockNameLength, 2); // blazeBlockName
 
   // Extract arguments after the block name
-  const afterBlockName = match[0].slice(2 + 1 + blockNameLength, match[0].length - 2);
+  const afterBlockName = match[0].slice(
+    2 + 1 + blockNameLength,
+    match[0].length - 2
+  );
   const argsMatch = /^\s*(.+)$/.exec(afterBlockName);
 
   if (!argsMatch || !argsMatch[1].length) {
@@ -32,7 +35,8 @@ const parseBlockConditions = (
   }
 
   // Handle arguments
-  const argsStart = blockNameStart + blockNameLength + afterBlockName.indexOf(argsMatch[1]);
+  const argsStart =
+    blockNameStart + blockNameLength + afterBlockName.indexOf(argsMatch[1]);
   const argsTokens = argsMatch[1].split(/\s+/);
 
   let offset = 0;
@@ -59,7 +63,12 @@ const parseBlockConditions = (
       tokenType = 6;
     }
     // Push the token for this argument
-    tokensBuilder.push(startPos.line, argsStart + argPos, arg.length, tokenType);
+    tokensBuilder.push(
+      startPos.line,
+      argsStart + argPos,
+      arg.length,
+      tokenType
+    );
 
     // Update the offset for the next argument
     offset = argPos + arg.length;

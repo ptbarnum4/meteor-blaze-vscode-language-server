@@ -3,10 +3,9 @@ import path from 'path';
 
 import { Location } from 'vscode-languageserver/node';
 
-import { CurrentConnectionConfig } from '../../../types';
 import findParameterInTemplateHtml from './findParameterInTemplateHtml';
 import findTemplateDefinition from './findTemplateDefinition';
-import { VSCodeServerConnection } from '/types';
+import { CurrentConnectionConfig, VSCodeServerConnection } from '/types';
 
 // Helper function to find parameter definition in TypeScript file
 
@@ -24,9 +23,7 @@ const findParameterDefinition = async (
       parameterName,
       templateName,
       currentDir,
-      currentFileUri,
-      fs,
-      path
+      currentFileUri
     );
     if (htmlResult) {
       return htmlResult;
@@ -37,7 +34,10 @@ const findParameterDefinition = async (
     let childTemplateDataFile: string | null = null;
 
     // Search through all analyzed files for the child template's data properties
-    for (const [key, dataProps] of config.fileAnalysis.dataProperties?.entries() || []) {
+    for (const [
+      key,
+      dataProps,
+    ] of config.fileAnalysis.dataProperties?.entries() || []) {
       // Check if this key is for the child template we're looking for
       if (key.endsWith(`/${templateName}`)) {
         // Check if this template has our parameter
@@ -51,12 +51,20 @@ const findParameterDefinition = async (
     }
 
     // Find where the child template HTML is defined
-    const childTemplateLocation = findTemplateDefinition(templateName, currentDir, connection, currentFileUri);
+    const childTemplateLocation = findTemplateDefinition(
+      templateName,
+      currentDir,
+      connection,
+      currentFileUri
+    );
     let childTemplateDir = currentDir;
     let childTemplateFile: string | null = null;
 
     if (childTemplateLocation && childTemplateLocation.length > 0) {
-      const childTemplatePath = childTemplateLocation[0].uri.replace('file://', '');
+      const childTemplatePath = childTemplateLocation[0].uri.replace(
+        'file://',
+        ''
+      );
       childTemplateDir = path.dirname(childTemplatePath);
       childTemplateFile = childTemplatePath;
     }
@@ -73,16 +81,19 @@ const findParameterDefinition = async (
       path.join(childTemplateDir, templateName, 'index.ts'),
       path.join(childTemplateDir, `${templateName}.ts`),
       // Check for a TypeScript file with the same base name as the HTML file
-      ...(childTemplateFile ? [
-        childTemplateFile.replace(/\.(html|htm)$/, '.ts'),
-        childTemplateFile.replace(/\.(html|htm)$/, '.js'),
-        path.join(path.dirname(childTemplateFile), 'index.ts'),
-        path.join(path.dirname(childTemplateFile), 'index.js')
-      ] : []),
+      ...(childTemplateFile
+        ? [
+            childTemplateFile.replace(/\.(html|htm)$/, '.ts'),
+            childTemplateFile.replace(/\.(html|htm)$/, '.js'),
+            path.join(path.dirname(childTemplateFile), 'index.ts'),
+            path.join(path.dirname(childTemplateFile), 'index.js'),
+          ]
+        : []),
       // Also search all TypeScript files in the directory
-      ...fs.readdirSync(childTemplateDir)
+      ...fs
+        .readdirSync(childTemplateDir)
         .filter((file: string) => /\.(ts|js)$/.test(file))
-        .map((file: string) => path.join(childTemplateDir, file))
+        .map((file: string) => path.join(childTemplateDir, file)),
     ];
 
     // Remove duplicates
@@ -105,8 +116,10 @@ const findParameterDefinition = async (
         }
 
         // First, try to find TemplateStaticTyped and extract the data type (2nd generic argument)
-        const pascalTemplateName = templateName.charAt(0).toUpperCase() + templateName.slice(1);
-        const camelTemplateName = templateName.charAt(0).toLowerCase() + templateName.slice(1);
+        const pascalTemplateName =
+          templateName.charAt(0).toUpperCase() + templateName.slice(1);
+        const camelTemplateName =
+          templateName.charAt(0).toLowerCase() + templateName.slice(1);
 
         // Look for TemplateStaticTyped<'templateName', DataType, ...>
         // This ensures we're looking at the CHILD template's type definition
@@ -144,21 +157,27 @@ const findParameterDefinition = async (
 
             // Search for the property directly in the full file content
             // This is more reliable than trying to calculate positions
-            const escapedParamName = parameterName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const escapedParamName = parameterName.replace(
+              /[.*+?^${}()|[\]\\]/g,
+              '\\$&'
+            );
             const propertyInFileRegex = new RegExp(
               `\\n(\\s*)(${escapedParamName})\\??\\s*:`,
               'g'
             );
 
             // Search starting from where the type definition begins
-            const searchStart = typeMatch.index! + typeMatch[0].indexOf(typeBody);
+            const searchStart =
+              typeMatch.index! + typeMatch[0].indexOf(typeBody);
             const searchEnd = searchStart + typeBody.length;
             const searchableContent = content.substring(0, searchEnd);
 
             let match;
             propertyInFileRegex.lastIndex = searchStart;
 
-            while ((match = propertyInFileRegex.exec(searchableContent)) !== null) {
+            while (
+              (match = propertyInFileRegex.exec(searchableContent)) !== null
+            ) {
               // Make sure this match is within our type body
               if (match.index >= searchStart && match.index < searchEnd) {
                 const propertyPosition = match.index + match[1].length + 1; // +1 for the \n
@@ -172,9 +191,12 @@ const findParameterDefinition = async (
                     uri: `file://${tsPath}`,
                     range: {
                       start: { line: lineNumber, character },
-                      end: { line: lineNumber, character: character + parameterName.length }
-                    }
-                  }
+                      end: {
+                        line: lineNumber,
+                        character: character + parameterName.length,
+                      },
+                    },
+                  },
                 ];
               }
             }
@@ -200,19 +222,26 @@ const findParameterDefinition = async (
             const beforeHelpers = content.substring(0, helpersMatch.index);
             const beforeHelper =
               beforeHelpers +
-              helpersMatch[0].substring(0, helpersMatch[0].indexOf(helpersBody)) +
+              helpersMatch[0].substring(
+                0,
+                helpersMatch[0].indexOf(helpersBody)
+              ) +
               helpersBody.substring(0, helperMatch.index);
             const lineNumber = beforeHelper.split('\n').length - 1;
-            const character = helperMatch.index + helperMatch[0].indexOf(parameterName);
+            const character =
+              helperMatch.index + helperMatch[0].indexOf(parameterName);
 
             return [
               {
                 uri: `file://${tsPath}`,
                 range: {
                   start: { line: lineNumber, character },
-                  end: { line: lineNumber, character: character + parameterName.length }
-                }
-              }
+                  end: {
+                    line: lineNumber,
+                    character: character + parameterName.length,
+                  },
+                },
+              },
             ];
           }
         }
@@ -225,15 +254,16 @@ const findParameterDefinition = async (
       parameterName,
       templateName,
       currentDir,
-      currentFileUri,
-      fs,
-      path
+      currentFileUri
     );
     if (htmlFallbackResult) {
       return htmlFallbackResult;
     }
   } catch (error) {
-    console.error(`Error finding parameter definition for ${parameterName}:`, error);
+    console.error(
+      `Error finding parameter definition for ${parameterName}:`,
+      error
+    );
   }
 
   return null;

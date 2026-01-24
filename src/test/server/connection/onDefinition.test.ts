@@ -1,10 +1,14 @@
 import assert from 'assert';
 import { describe, it } from 'node:test';
 import { TextDocument } from 'vscode-languageserver-textdocument';
-import { DefinitionParams, Position, TextDocuments } from 'vscode-languageserver/node';
+import {
+  DefinitionParams,
+  Position,
+  TextDocuments,
+} from 'vscode-languageserver/node';
 
-import onDefinition from '../../../server/connection/onDefinition';
-import { CurrentConnectionConfig, LanguageServerSettings } from '../../../types';
+import onDefinition from '/server/connection/onDefinition';
+import { CurrentConnectionConfig, LanguageServerSettings } from '/types';
 
 /**
  * Test suite for onDefinition connection handler
@@ -14,8 +18,8 @@ describe('connection/onDefinition', () => {
 
   const createMockConnection = () => ({
     console: {
-      log: () => {} // Mock console log
-    }
+      log: () => {}, // Mock console log
+    },
   });
 
   const createMockConfig = (
@@ -27,14 +31,14 @@ describe('connection/onDefinition', () => {
       jsHelpers: new Map(),
       helperDetails: new Map(),
       cssClasses: new Map(),
-      templates: new Map()
+      templates: new Map(),
     },
     documents: new TextDocuments(TextDocument),
     connection: createMockConnection() as any,
     hasConfigurationCapability: false,
     hasWorkspaceFolderCapability: false,
     hasDiagnosticRelatedInformationCapability: false,
-    ...overrides
+    ...overrides,
   });
 
   it('should return definition handler function', () => {
@@ -49,7 +53,7 @@ describe('connection/onDefinition', () => {
 
     const params: DefinitionParams = {
       textDocument: { uri: 'file:///nonexistent.html' },
-      position: Position.create(0, 0)
+      position: Position.create(0, 0),
     };
 
     const result = await handler(params);
@@ -62,14 +66,19 @@ describe('connection/onDefinition', () => {
 
     // Create a document without templates
     const content = '<div>Regular HTML content</div>';
-    const document = TextDocument.create('file:///test.html', 'html', 1, content);
+    const document = TextDocument.create(
+      'file:///test.html',
+      'html',
+      1,
+      content
+    );
     documents.get = () => document;
 
     const handler = onDefinition(config);
 
     const params: DefinitionParams = {
       textDocument: { uri: 'file:///test.html' },
-      position: Position.create(0, 5)
+      position: Position.create(0, 5),
     };
 
     const result = await handler(params);
@@ -81,15 +90,21 @@ describe('connection/onDefinition', () => {
     const documents = config.documents;
 
     // Create a document with templates but cursor outside template
-    const content = '<div>Before</div><template name="test"><div>{{helper}}</div></template>';
-    const document = TextDocument.create('file:///test.html', 'html', 1, content);
+    const content =
+      '<div>Before</div><template name="test"><div>{{helper}}</div></template>';
+    const document = TextDocument.create(
+      'file:///test.html',
+      'html',
+      1,
+      content
+    );
     documents.get = () => document;
 
     const handler = onDefinition(config);
 
     const params: DefinitionParams = {
       textDocument: { uri: 'file:///test.html' },
-      position: Position.create(0, 10) // Position in 'Before' div
+      position: Position.create(0, 10), // Position in 'Before' div
     };
 
     const result = await handler(params);
@@ -101,15 +116,21 @@ describe('connection/onDefinition', () => {
     const documents = config.documents;
 
     // Create a document with cursor outside handlebars in template
-    const content = '<template name="test"><div>regular text {{helper}}</div></template>';
-    const document = TextDocument.create('file:///test.html', 'html', 1, content);
+    const content =
+      '<template name="test"><div>regular text {{helper}}</div></template>';
+    const document = TextDocument.create(
+      'file:///test.html',
+      'html',
+      1,
+      content
+    );
     documents.get = () => document;
 
     const handler = onDefinition(config);
 
     const params: DefinitionParams = {
       textDocument: { uri: 'file:///test.html' },
-      position: Position.create(0, 30) // Position on 'regular'
+      position: Position.create(0, 30), // Position on 'regular'
     };
 
     const result = await handler(params);
@@ -122,14 +143,19 @@ describe('connection/onDefinition', () => {
 
     // Create a document with cursor on whitespace inside handlebars
     const content = '<template name="test"><div>{{ }}</div></template>';
-    const document = TextDocument.create('file:///test.html', 'html', 1, content);
+    const document = TextDocument.create(
+      'file:///test.html',
+      'html',
+      1,
+      content
+    );
     documents.get = () => document;
 
     const handler = onDefinition(config);
 
     const params: DefinitionParams = {
       textDocument: { uri: 'file:///test.html' },
-      position: Position.create(0, 28) // Position on whitespace in handlebars
+      position: Position.create(0, 28), // Position on whitespace in handlebars
     };
 
     const result = await handler(params);
@@ -141,8 +167,14 @@ describe('connection/onDefinition', () => {
     const documents = config.documents;
 
     // Create a document with helper reference
-    const content = '<template name="myTemplate"><div>{{customHelper}}</div></template>';
-    const document = TextDocument.create('file:///test.html', 'html', 1, content);
+    const content =
+      '<template name="myTemplate"><div>{{customHelper}}</div></template>';
+    const document = TextDocument.create(
+      'file:///test.html',
+      'html',
+      1,
+      content
+    );
     documents.get = () => document;
 
     // Add custom helper to file analysis that should exist
@@ -152,7 +184,7 @@ describe('connection/onDefinition', () => {
 
     const params: DefinitionParams = {
       textDocument: { uri: 'file:///test.html' },
-      position: Position.create(0, 40) // Position on 'customHelper'
+      position: Position.create(0, 40), // Position on 'customHelper'
     };
 
     const result = await handler(params);
@@ -166,8 +198,14 @@ describe('connection/onDefinition', () => {
     const documents = config.documents;
 
     // Create a document with CSS class reference in handlebars
-    const content = '<template name="test"><div class="{{btnClass}}"></div></template>';
-    const document = TextDocument.create('file:///test.html', 'html', 1, content);
+    const content =
+      '<template name="test"><div class="{{btnClass}}"></div></template>';
+    const document = TextDocument.create(
+      'file:///test.html',
+      'html',
+      1,
+      content
+    );
     documents.get = () => document;
 
     // Add CSS classes to file analysis
@@ -177,7 +215,7 @@ describe('connection/onDefinition', () => {
 
     const params: DefinitionParams = {
       textDocument: { uri: 'file:///test.html' },
-      position: Position.create(0, 42) // Position on 'btnClass'
+      position: Position.create(0, 42), // Position on 'btnClass'
     };
 
     const result = await handler(params);
@@ -191,8 +229,14 @@ describe('connection/onDefinition', () => {
     const documents = config.documents;
 
     // Create a document with template-specific helper
-    const content = '<template name="specificTemplate"><div>{{templateHelper}}</div></template>';
-    const document = TextDocument.create('file:///test.html', 'html', 1, content);
+    const content =
+      '<template name="specificTemplate"><div>{{templateHelper}}</div></template>';
+    const document = TextDocument.create(
+      'file:///test.html',
+      'html',
+      1,
+      content
+    );
     documents.get = () => document;
 
     // Add template-specific helper
@@ -202,7 +246,7 @@ describe('connection/onDefinition', () => {
 
     const params: DefinitionParams = {
       textDocument: { uri: 'file:///test.html' },
-      position: Position.create(0, 50) // Position on 'templateHelper'
+      position: Position.create(0, 50), // Position on 'templateHelper'
     };
 
     const result = await handler(params);
@@ -216,8 +260,14 @@ describe('connection/onDefinition', () => {
     const documents = config.documents;
 
     // Create a document with helper that might be in base file
-    const content = '<template name="test"><div>{{baseHelper}}</div></template>';
-    const document = TextDocument.create('file:///test.html', 'html', 1, content);
+    const content =
+      '<template name="test"><div>{{baseHelper}}</div></template>';
+    const document = TextDocument.create(
+      'file:///test.html',
+      'html',
+      1,
+      content
+    );
     documents.get = () => document;
 
     // Add helper to base file analysis (filename without template name)
@@ -227,7 +277,7 @@ describe('connection/onDefinition', () => {
 
     const params: DefinitionParams = {
       textDocument: { uri: 'file:///test.html' },
-      position: Position.create(0, 30) // Position on 'baseHelper'
+      position: Position.create(0, 30), // Position on 'baseHelper'
     };
 
     const result = await handler(params);
@@ -241,15 +291,21 @@ describe('connection/onDefinition', () => {
     const documents = config.documents;
 
     // Create a document with helper that has special characters
-    const content = '<template name="test"><div>{{#if condition}}</div></template>';
-    const document = TextDocument.create('file:///test.html', 'html', 1, content);
+    const content =
+      '<template name="test"><div>{{#if condition}}</div></template>';
+    const document = TextDocument.create(
+      'file:///test.html',
+      'html',
+      1,
+      content
+    );
     documents.get = () => document;
 
     const handler = onDefinition(config);
 
     const params: DefinitionParams = {
       textDocument: { uri: 'file:///test.html' },
-      position: Position.create(0, 29) // Position on '#if'
+      position: Position.create(0, 29), // Position on '#if'
     };
 
     const result = await handler(params);
@@ -263,8 +319,14 @@ describe('connection/onDefinition', () => {
     const documents = config.documents;
 
     // Create a document with template inclusion
-    const content = '<template name="test"><div>{{> nestedTemplate title="Hello"}}</div></template>';
-    const document = TextDocument.create('file:///test.html', 'html', 1, content);
+    const content =
+      '<template name="test"><div>{{> nestedTemplate title="Hello"}}</div></template>';
+    const document = TextDocument.create(
+      'file:///test.html',
+      'html',
+      1,
+      content
+    );
     documents.get = () => document;
 
     const handler = onDefinition(config);
@@ -272,7 +334,7 @@ describe('connection/onDefinition', () => {
     // Test clicking on template name "nestedTemplate"
     const templateNameParams: DefinitionParams = {
       textDocument: { uri: 'file:///test.html' },
-      position: Position.create(0, 40) // Position on 'nestedTemplate'
+      position: Position.create(0, 40), // Position on 'nestedTemplate'
     };
 
     const templateResult = await handler(templateNameParams);
@@ -283,7 +345,7 @@ describe('connection/onDefinition', () => {
     // Test clicking on parameter name "title"
     const paramParams: DefinitionParams = {
       textDocument: { uri: 'file:///test.html' },
-      position: Position.create(0, 55) // Position on 'title'
+      position: Position.create(0, 55), // Position on 'title'
     };
 
     const paramResult = await handler(paramParams);

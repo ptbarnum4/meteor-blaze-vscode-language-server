@@ -47,7 +47,9 @@ export const isMeteorProject = async (): Promise<boolean> => {
  * @param document The VS Code document to check.
  * @returns True if the document contains Meteor templates, false otherwise.
  */
-export const containsMeteorTemplates = (document: vscode.TextDocument): boolean => {
+export const containsMeteorTemplates = (
+  document: vscode.TextDocument
+): boolean => {
   const text = document.getText();
   return /<template\s+name=["'][^"']+["'][^>]*>/.test(text);
 };

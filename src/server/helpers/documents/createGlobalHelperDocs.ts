@@ -15,7 +15,9 @@ const createGlobalTemplateHelperDocs = (
   // Add markdown description if available
   if (globalHelper.jsdoc) {
     hoverContent.push(
-      '```ts\n/**\n * ' + globalHelper.jsdoc.split('\n').join('\n * ') + '\n*/\n```'
+      '```ts\n/**\n * ' +
+        globalHelper.jsdoc.split('\n').join('\n * ') +
+        '\n*/\n```'
     );
     hoverContent.push(``);
   }
@@ -47,18 +49,20 @@ const createGlobalTemplateHelperDocs = (
 
   const paramNames = (globalHelper.parameters ?? '')
     .split(',')
-    .map(p => p.split(':')?.[0].trim())
+    .map((p) => p.split(':')?.[0].trim())
     .filter(Boolean)
     .join(' ');
 
-  hoverContent.push(`**Usage:** \`{{${word}${paramNames ? ` ${paramNames}` : ''}}}\``);
+  hoverContent.push(
+    `**Usage:** \`{{${word}${paramNames ? ` ${paramNames}` : ''}}}\``
+  );
 
   return {
     contents: {
       kind: MarkupKind.Markdown,
-      value: hoverContent.join('\n')
+      value: hoverContent.join('\n'),
     },
-    range: wordRange
+    range: wordRange,
   };
 };
 

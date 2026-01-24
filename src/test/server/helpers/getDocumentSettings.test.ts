@@ -3,8 +3,8 @@ import { describe, it } from 'node:test';
 import { TextDocument } from 'vscode-languageserver-textdocument';
 import { TextDocuments } from 'vscode-languageserver/node';
 
-import getDocumentSettings from '../../../server/helpers/getDocumentSettings';
-import { CurrentConnectionConfig, LanguageServerSettings } from '../../../types';
+import getDocumentSettings from '/server/helpers/getDocumentSettings';
+import { CurrentConnectionConfig, LanguageServerSettings } from '/types';
 
 /**
  * Test suite for getDocumentSettings helper function
@@ -13,7 +13,10 @@ describe('getDocumentSettings', () => {
   const defaultSettings: LanguageServerSettings = { maxNumberOfProblems: 1000 };
 
   // Helper function to create a mock config
-  const createMockConfig = (hasConfigurationCapability: boolean, connection?: any): CurrentConnectionConfig => ({
+  const createMockConfig = (
+    hasConfigurationCapability: boolean,
+    connection?: any
+  ): CurrentConnectionConfig => ({
     hasConfigurationCapability,
     globalSettings: defaultSettings,
     documentSettings: new Map(),
@@ -22,11 +25,11 @@ describe('getDocumentSettings', () => {
       jsHelpers: new Map(),
       helperDetails: new Map(),
       cssClasses: new Map(),
-      templates: new Map()
+      templates: new Map(),
     },
     documents: new TextDocuments(TextDocument),
     hasWorkspaceFolderCapability: false,
-    hasDiagnosticRelatedInformationCapability: false
+    hasDiagnosticRelatedInformationCapability: false,
   });
 
   it('should return global settings when configuration capability is disabled', async () => {
@@ -38,12 +41,14 @@ describe('getDocumentSettings', () => {
   });
 
   it('should fetch settings from connection when configuration capability is enabled', async () => {
-    const expectedSettings: LanguageServerSettings = { maxNumberOfProblems: 500 };
+    const expectedSettings: LanguageServerSettings = {
+      maxNumberOfProblems: 500,
+    };
 
     const mockConnection = {
       workspace: {
-        getConfiguration: () => Promise.resolve(expectedSettings)
-      }
+        getConfiguration: () => Promise.resolve(expectedSettings),
+      },
     };
 
     const mockConfig = createMockConfig(true, mockConnection);
@@ -54,7 +59,9 @@ describe('getDocumentSettings', () => {
   });
 
   it('should cache document settings', async () => {
-    const expectedSettings: LanguageServerSettings = { maxNumberOfProblems: 300 };
+    const expectedSettings: LanguageServerSettings = {
+      maxNumberOfProblems: 300,
+    };
 
     let callCount = 0;
     const mockConnection = {
@@ -62,19 +69,25 @@ describe('getDocumentSettings', () => {
         getConfiguration: () => {
           callCount++;
           return Promise.resolve(expectedSettings);
-        }
-      }
+        },
+      },
     };
 
     const mockConfig = createMockConfig(true, mockConnection);
 
     // First call should fetch from connection
-    const result = await getDocumentSettings(mockConfig, 'file:///new-test.html');
+    const result = await getDocumentSettings(
+      mockConfig,
+      'file:///new-test.html'
+    );
     assert.deepStrictEqual(result, expectedSettings);
     assert.strictEqual(callCount, 1);
 
     // Second call should use cached result
-    const cachedResult = await getDocumentSettings(mockConfig, 'file:///new-test.html');
+    const cachedResult = await getDocumentSettings(
+      mockConfig,
+      'file:///new-test.html'
+    );
     assert.deepStrictEqual(cachedResult, expectedSettings);
     assert.strictEqual(callCount, 1); // Should not increment
   });
@@ -90,8 +103,8 @@ describe('getDocumentSettings', () => {
           configCallCount++;
           // Return different settings based on call count
           return Promise.resolve(configCallCount === 1 ? settings1 : settings2);
-        }
-      }
+        },
+      },
     };
 
     const mockConfig = createMockConfig(true, mockConnection);

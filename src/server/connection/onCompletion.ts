@@ -9,22 +9,27 @@ import {
   TextDocumentPositionParams,
 } from 'vscode-languageserver/node';
 
-import { CurrentConnectionConfig, HelperInfo } from '../../types';
 import {
   analyzeGlobalHelpers,
   mergeConfiguredHelpers,
-} from '../helpers/analyzeGlobalHelpers';
+} from '/server/helpers/analyzeGlobalHelpers';
 import {
   createBlockCompletions,
   shouldProvideBlockCompletion,
-} from '../helpers/autoInsertEndTags';
-import { containsMeteorTemplates } from '../helpers/containsMeteorTemplates';
-import { extractParametersFromTemplate } from '../helpers/extractTemplateParameters';
-import { findEnclosingEachInContext } from '../helpers/findEnclosingEachInContext';
-import { findEnclosingIfOrUnlessBlock } from '../helpers/findEnclosingIfOrUnlessBlock';
-import getDocumentSettings from '../helpers/getDocumentSettings';
-import { isWithinComment } from '../helpers/isWithinComment';
-import { isWithinHandlebarsExpression } from '../helpers/isWithinHandlebarsExpression';
+} from '/server/helpers/autoInsertEndTags';
+import { containsMeteorTemplates } from '/server/helpers/containsMeteorTemplates';
+import { extractParametersFromTemplate } from '/server/helpers/extractTemplateParameters';
+import { findEnclosingEachInContext } from '/server/helpers/findEnclosingEachInContext';
+import { findEnclosingIfOrUnlessBlock } from '/server/helpers/findEnclosingIfOrUnlessBlock';
+import getDocumentSettings from '/server/helpers/getDocumentSettings';
+import { isWithinComment } from '/server/helpers/isWithinComment';
+import { isWithinHandlebarsExpression } from '/server/helpers/isWithinHandlebarsExpression';
+import {
+  BlazeHelperConfig,
+  CurrentConnectionConfig,
+  HelperInfo,
+  TsConfig,
+} from '/types';
 
 const onCompletion = (config: CurrentConnectionConfig) => {
   const { connection, documents } = config;
@@ -351,10 +356,10 @@ const onCompletion = (config: CurrentConnectionConfig) => {
           nameColor = config.blazeHelpers.nameColor;
         }
         // Merge extended blazeHelpers from config
-        let extendedHelpers = [];
+        let extendedHelpers: Array<{ name: string; doc: string }> = [];
         if (Array.isArray(config?.blazeHelpers?.extend)) {
           extendedHelpers = config.blazeHelpers.extend
-            .map((h: any) => {
+            .map((h: BlazeHelperConfig) => {
               if (typeof h === 'string') {
                 return { name: h, doc: '' };
               } else if (
@@ -581,7 +586,7 @@ function findAssociatedJSFile(
 }
 
 // Helper function to find tsconfig.json in the same directory as .meteor
-function findTsConfigForMeteorProject(startPath: string): any {
+function findTsConfigForMeteorProject(startPath: string): TsConfig | null {
   let currentDir = startPath;
 
   // Walk up the directory tree to find .meteor directory
@@ -710,7 +715,7 @@ function safelyRemoveJsonComments(content: string): string {
 // Helper function to resolve TypeScript path aliases
 function resolveTsPath(
   importPath: string,
-  tsconfig: any,
+  tsconfig: TsConfig | null,
   projectRoot: string
 ): string | null {
   if (!tsconfig?.compilerOptions?.paths) {
@@ -972,10 +977,6 @@ async function getTemplateParameterCompletions(
       }
     }
 
-    // Always try extracting from template HTML to catch any additional parameters
-    const fs = await import('fs');
-    const path = await import('path');
-
     const currentFilePath = currentDocument.uri.replace('file://', '');
     const currentDir = path.dirname(currentFilePath);
     const currentBaseName = path.basename(
@@ -1003,18 +1004,14 @@ async function getTemplateParameterCompletions(
       // Find associated JS/TS file
       const associatedFile = findAssociatedJSFileForCompletion(
         currentDir,
-        currentBaseName,
-        fs,
-        path
+        currentBaseName
       );
 
       if (associatedFile) {
         // Find the imported template file
         const templateInfo = findImportedTemplateFile(
           templateName,
-          associatedFile,
-          fs,
-          path
+          associatedFile
         );
 
         if (templateInfo) {
@@ -1028,8 +1025,6 @@ async function getTemplateParameterCompletions(
       templateName,
       childTemplateFileUri,
       childTemplateDir,
-      fs,
-      path,
       globalHelpers
     );
 
@@ -1213,9 +1208,7 @@ async function getTemplateParameterValueCompletions(
 // Helper function to find associated JS/TS file for an HTML template
 function findAssociatedJSFileForCompletion(
   currentDir: string,
-  baseName: string,
-  fs: any,
-  path: any
+  baseName: string
 ): string | null {
   const possibleExtensions = ['.ts', '.js'];
 
@@ -1223,7 +1216,7 @@ function findAssociatedJSFileForCompletion(
   for (const ext of possibleExtensions) {
     const filePath = path.join(currentDir, baseName + ext);
     try {
-      if (fs.existsSync(filePath)) {
+      if (fsSync.existsSync(filePath)) {
         return filePath;
       }
     } catch {
@@ -1237,12 +1230,10 @@ function findAssociatedJSFileForCompletion(
 // Helper function to find an imported template file
 function findImportedTemplateFile(
   templateName: string,
-  jsFilePath: string,
-  fs: any,
-  path: any
+  jsFilePath: string
 ): { file: string; content: string } | null {
   try {
-    const jsContent = fs.readFileSync(jsFilePath, 'utf8');
+    const jsContent = fsSync.readFileSync(jsFilePath, 'utf8');
     const jsDir = path.dirname(jsFilePath);
 
     // Look for import statements that might import this template
@@ -1263,8 +1254,8 @@ function findImportedTemplateFile(
 
       for (const filePath of possiblePaths) {
         try {
-          if (fs.existsSync(filePath)) {
-            const content = fs.readFileSync(filePath, 'utf8');
+          if (fsSync.existsSync(filePath)) {
+            const content = fsSync.readFileSync(filePath, 'utf8');
 
             // Check if this file contains the template
             const templateRegex = new RegExp(

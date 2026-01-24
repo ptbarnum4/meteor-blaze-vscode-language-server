@@ -1,7 +1,7 @@
 import assert from 'assert';
 import { describe, it } from 'node:test';
 
-import { trimUsageDocumentation } from '../../../server/helpers/trimUsageDocumentation';
+import { trimUsageDocumentation } from '/server/helpers/trimUsageDocumentation';
 
 /**
  * Test suite for trimUsageDocumentation helper function
@@ -40,9 +40,12 @@ describe('trimUsageDocumentation', () => {
     {{/myHelper}}
     `;
     const result = trimUsageDocumentation(name, usageDoc);
-    assert.strictEqual(result, `{{#myHelper arg1}}
+    assert.strictEqual(
+      result,
+      `{{#myHelper arg1}}
   <div>Content</div>
-{{/myHelper}}`);
+{{/myHelper}}`
+    );
   });
 
   it('should remove leading and trailing empty lines', () => {
@@ -66,11 +69,14 @@ describe('trimUsageDocumentation', () => {
       {{/myHelper}}
     `;
     const result = trimUsageDocumentation(name, usageDoc);
-    assert.strictEqual(result, `{{#myHelper}}
+    assert.strictEqual(
+      result,
+      `{{#myHelper}}
   <div>
     <span>Content</span>
   </div>
-{{/myHelper}}`);
+{{/myHelper}}`
+    );
   });
 
   it('should preserve relative indentation', () => {
@@ -84,12 +90,15 @@ describe('trimUsageDocumentation', () => {
         {{/each}}
     `;
     const result = trimUsageDocumentation(name, usageDoc);
-    assert.strictEqual(result, `{{#each items}}
+    assert.strictEqual(
+      result,
+      `{{#each items}}
   {{myHelper @index}}
     {{#if condition}}
       <span>{{this}}</span>
     {{/if}}
-{{/each}}`);
+{{/each}}`
+    );
   });
 
   it('should handle lines with no indentation', () => {
@@ -100,9 +109,12 @@ describe('trimUsageDocumentation', () => {
     {{nestedHelper}}
     `;
     const result = trimUsageDocumentation(name, usageDoc);
-    assert.strictEqual(result, `{{myHelper}}
+    assert.strictEqual(
+      result,
+      `{{myHelper}}
   {{anotherHelper}}
-    {{nestedHelper}}`);
+    {{nestedHelper}}`
+    );
   });
 
   it('should handle single line with whitespace', () => {
@@ -123,9 +135,12 @@ describe('trimUsageDocumentation', () => {
     `;
     const result = trimUsageDocumentation(name, usageDoc);
     // The function filters out empty lines in the middle
-    assert.strictEqual(result, `{{#myHelper}}
+    assert.strictEqual(
+      result,
+      `{{#myHelper}}
   <div>Content</div>
-{{/myHelper}}`);
+{{/myHelper}}`
+    );
   });
 
   it('should handle tabs and spaces mixed indentation', () => {
@@ -138,9 +153,12 @@ describe('trimUsageDocumentation', () => {
     `;
     const result = trimUsageDocumentation(name, usageDoc);
     // The function should handle this by finding the minimum indent
-    assert.strictEqual(result, `{{#myHelper}}
+    assert.strictEqual(
+      result,
+      `{{#myHelper}}
   <div>Content</div>
-{{/myHelper}}`);
+{{/myHelper}}`
+    );
   });
 
   it('should handle zero indentation correctly', () => {
@@ -151,9 +169,12 @@ describe('trimUsageDocumentation', () => {
   <div>Some indent</div>
     `;
     const result = trimUsageDocumentation(name, usageDoc);
-    assert.strictEqual(result, `{{myHelper}}
+    assert.strictEqual(
+      result,
+      `{{myHelper}}
 <div>No indent</div>
-  <div>Some indent</div>`);
+  <div>Some indent</div>`
+    );
   });
 
   it('should handle complex real-world example', () => {
@@ -169,12 +190,15 @@ describe('trimUsageDocumentation', () => {
     `;
     const result = trimUsageDocumentation(name, usageDoc);
     // The function filters out the empty line in the middle
-    assert.strictEqual(result, `Usage examples:
+    assert.strictEqual(
+      result,
+      `Usage examples:
 {{formatCurrency amount}}
 {{formatCurrency amount currency="EUR"}}
 {{#with product}}
   Price: {{formatCurrency price}}
-{{/with}}`);
+{{/with}}`
+    );
   });
 
   it('should handle documentation with only whitespace', () => {

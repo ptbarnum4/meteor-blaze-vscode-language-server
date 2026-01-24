@@ -182,7 +182,7 @@ describe('helpers/formatTemplateInvocation', () => {
       const indent = '  ';
       const params = [
         { name: 'param1', value: 'value1' },
-        { name: 'param2', value: 'value2' }
+        { name: 'param2', value: 'value2' },
       ];
 
       let formatted = `{{> ${templateName}`;
@@ -310,10 +310,10 @@ describe('helpers/formatTemplateInvocation', () => {
         '{{> template',
         '{{>template',
         '{{  >  template',
-        '{{\t>\ttemplate'
+        '{{\t>\ttemplate',
       ];
 
-      patterns.forEach(pattern => {
+      patterns.forEach((pattern) => {
         const regex = /\{\{\s*>\s*([a-zA-Z0-9_]+)/;
         const match = pattern.match(regex);
         assert.ok(match !== null, `Should match pattern: ${pattern}`);

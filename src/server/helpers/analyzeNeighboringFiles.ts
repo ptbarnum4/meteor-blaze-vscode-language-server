@@ -11,7 +11,10 @@ import { analyzeTemplateData } from './analyzeTemplateData';
 import { containsMeteorTemplates } from './containsMeteorTemplates';
 
 // Analyze neighboring JS/TS/CSS/LESS files
-export const analyzeNeighboringFiles = (fileAnalysis: FileAnalysis, document: TextDocument) => {
+export const analyzeNeighboringFiles = (
+  fileAnalysis: FileAnalysis,
+  document: TextDocument
+) => {
   const uri = document.uri;
   const filePath = uri.replace('file://', '');
   const dir = path.dirname(filePath);
@@ -25,7 +28,9 @@ export const analyzeNeighboringFiles = (fileAnalysis: FileAnalysis, document: Te
   // Extract template names from the HTML document
   const text = document.getText();
   const templateNames: string[] = [];
-  const templateMatches = text.matchAll(/<template\s+name=["']([^"']+)["'][^>]*>/g);
+  const templateMatches = text.matchAll(
+    /<template\s+name=["']([^"']+)["'][^>]*>/g
+  );
   for (const match of templateMatches) {
     templateNames.push(match[1]);
   }
@@ -34,7 +39,7 @@ export const analyzeNeighboringFiles = (fileAnalysis: FileAnalysis, document: Te
     // Look for neighboring files
     const files = fs.readdirSync(dir);
 
-    files.forEach(file => {
+    files.forEach((file) => {
       const fileBaseName = path.basename(file, path.extname(file));
       const ext = path.extname(file);
       const fullPath = path.join(dir, file);
@@ -77,12 +82,26 @@ export const analyzeNeighboringFiles = (fileAnalysis: FileAnalysis, document: Te
               fileAnalysis.dataPropertyJsDocsByKey = new Map();
             }
             // If only one type was present, attempt to store its prop types
-            const firstTypeName = Object.keys(dataAnalysis.typePropertyTypes)[0];
+            const firstTypeName = Object.keys(
+              dataAnalysis.typePropertyTypes
+            )[0];
             if (firstTypeName) {
-              fileAnalysis.dataPropertyTypesByKey.set(dirKey, dataAnalysis.typePropertyTypes[firstTypeName] || {});
-              fileAnalysis.dataPropertyTypesByKey.set(dirFileKey, dataAnalysis.typePropertyTypes[firstTypeName] || {});
-              fileAnalysis.dataPropertyJsDocsByKey.set(dirKey, dataAnalysis.typePropertyJsDocs[firstTypeName] || {});
-              fileAnalysis.dataPropertyJsDocsByKey.set(dirFileKey, dataAnalysis.typePropertyJsDocs[firstTypeName] || {});
+              fileAnalysis.dataPropertyTypesByKey.set(
+                dirKey,
+                dataAnalysis.typePropertyTypes[firstTypeName] || {}
+              );
+              fileAnalysis.dataPropertyTypesByKey.set(
+                dirFileKey,
+                dataAnalysis.typePropertyTypes[firstTypeName] || {}
+              );
+              fileAnalysis.dataPropertyJsDocsByKey.set(
+                dirKey,
+                dataAnalysis.typePropertyJsDocs[firstTypeName] || {}
+              );
+              fileAnalysis.dataPropertyJsDocsByKey.set(
+                dirFileKey,
+                dataAnalysis.typePropertyJsDocs[firstTypeName] || {}
+              );
             }
           }
 
@@ -93,7 +112,8 @@ export const analyzeNeighboringFiles = (fileAnalysis: FileAnalysis, document: Te
             fileAnalysis.helperDetails.set(dirTemplateKey, helperDetails);
             // Try to map data properties by template name via TemplateStaticTyped
             let propsForTemplate: string[] = [];
-            const mappedType = dataAnalysis.templateTypeMap[extractedTemplateName];
+            const mappedType =
+              dataAnalysis.templateTypeMap[extractedTemplateName];
             if (mappedType && dataAnalysis.types[mappedType]) {
               propsForTemplate = dataAnalysis.types[mappedType];
               if (!fileAnalysis.dataTypeByKey) {
@@ -115,14 +135,20 @@ export const analyzeNeighboringFiles = (fileAnalysis: FileAnalysis, document: Te
                 fileAnalysis.dataPropertyJsDocsByKey = new Map();
               }
               if (mappedType && dataAnalysis.typePropertyTypes[mappedType]) {
-                fileAnalysis.dataPropertyTypesByKey.set(dirTemplateKey, dataAnalysis.typePropertyTypes[mappedType]);
-                fileAnalysis.dataPropertyJsDocsByKey.set(dirTemplateKey, dataAnalysis.typePropertyJsDocs[mappedType] || {});
+                fileAnalysis.dataPropertyTypesByKey.set(
+                  dirTemplateKey,
+                  dataAnalysis.typePropertyTypes[mappedType]
+                );
+                fileAnalysis.dataPropertyJsDocsByKey.set(
+                  dirTemplateKey,
+                  dataAnalysis.typePropertyJsDocs[mappedType] || {}
+                );
               }
             }
           }
 
           // Also store under template names found in HTML (with directory)
-          templateNames.forEach(templateName => {
+          templateNames.forEach((templateName) => {
             const dirTemplateKey = `${dir}/${templateName}`;
             fileAnalysis.jsHelpers.set(dirTemplateKey, helpers);
             fileAnalysis.helperDetails.set(dirTemplateKey, helperDetails);
@@ -149,8 +175,14 @@ export const analyzeNeighboringFiles = (fileAnalysis: FileAnalysis, document: Te
                 fileAnalysis.dataPropertyJsDocsByKey = new Map();
               }
               if (mappedType && dataAnalysis.typePropertyTypes[mappedType]) {
-                fileAnalysis.dataPropertyTypesByKey.set(dirTemplateKey, dataAnalysis.typePropertyTypes[mappedType]);
-                fileAnalysis.dataPropertyJsDocsByKey.set(dirTemplateKey, dataAnalysis.typePropertyJsDocs[mappedType] || {});
+                fileAnalysis.dataPropertyTypesByKey.set(
+                  dirTemplateKey,
+                  dataAnalysis.typePropertyTypes[mappedType]
+                );
+                fileAnalysis.dataPropertyJsDocsByKey.set(
+                  dirTemplateKey,
+                  dataAnalysis.typePropertyJsDocs[mappedType] || {}
+                );
               }
             }
           });
@@ -163,7 +195,7 @@ export const analyzeNeighboringFiles = (fileAnalysis: FileAnalysis, document: Te
 
           fileAnalysis.cssClasses.set(dirKey, classes);
           fileAnalysis.cssClasses.set(dirFileKey, classes);
-          templateNames.forEach(templateName => {
+          templateNames.forEach((templateName) => {
             const dirTemplateKey = `${dir}/${templateName}`;
             fileAnalysis.cssClasses.set(dirTemplateKey, classes);
           });

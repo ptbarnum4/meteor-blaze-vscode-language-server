@@ -3,8 +3,12 @@ import { describe, it } from 'node:test';
 import { TextDocument } from 'vscode-languageserver-textdocument';
 import { TextDocuments } from 'vscode-languageserver/node';
 
-import onCompletion from '../../../server/connection/onCompletion';
-import { CurrentConnectionConfig, HelperInfo, LanguageServerSettings } from '../../../types';
+import onCompletion from '/server/connection/onCompletion';
+import {
+  CurrentConnectionConfig,
+  HelperInfo,
+  LanguageServerSettings,
+} from '/types';
 
 /**
  * Test suite for template parameter value completion (Issue #62)
@@ -15,7 +19,7 @@ describe('connection/onCompletion - Parameter Value Completion', () => {
   const createMockConnection = () => ({
     console: {
       log: () => {},
-      error: () => {}
+      error: () => {},
     },
     workspace: {
       getConfiguration: () =>
@@ -23,15 +27,15 @@ describe('connection/onCompletion - Parameter Value Completion', () => {
           blazeHelpers: {
             hashColor: '#FF6B35',
             nameColor: '#007ACC',
-            extend: []
+            extend: [],
           },
           completion: {
             suggestTemplateParams: true,
             suggestTemplateValues: true,
-            parameterInferenceMinUsage: 2
-          }
-        })
-    }
+            parameterInferenceMinUsage: 2,
+          },
+        }),
+    },
   });
 
   const createMockConfig = (
@@ -43,14 +47,14 @@ describe('connection/onCompletion - Parameter Value Completion', () => {
       jsHelpers: new Map(),
       helperDetails: new Map(),
       cssClasses: new Map(),
-      templates: new Map()
+      templates: new Map(),
     },
     documents: new TextDocuments(TextDocument),
     connection: createMockConnection() as any,
     hasConfigurationCapability: false,
     hasWorkspaceFolderCapability: false,
     hasDiagnosticRelatedInformationCapability: false,
-    ...overrides
+    ...overrides,
   });
 
   describe('Context Detection', () => {
@@ -60,9 +64,14 @@ describe('connection/onCompletion - Parameter Value Completion', () => {
   {{> childTemplate
 </template>`;
 
-      const document = TextDocument.create('file:///test.html', 'html', 1, content);
+      const document = TextDocument.create(
+        'file:///test.html',
+        'html',
+        1,
+        content
+      );
       const mockDocuments = {
-        get: () => document
+        get: () => document,
       } as any;
 
       const config = createMockConfig({ documents: mockDocuments });
@@ -70,7 +79,7 @@ describe('connection/onCompletion - Parameter Value Completion', () => {
 
       const params = {
         textDocument: { uri: 'file:///test.html' },
-        position: { line: 2, character: 19 } // After "childTemplate "
+        position: { line: 2, character: 19 }, // After "childTemplate "
       };
 
       const completions = await handler(params);
@@ -83,9 +92,14 @@ describe('connection/onCompletion - Parameter Value Completion', () => {
   {{> childTemplate param=
 </template>`;
 
-      const document = TextDocument.create('file:///test.html', 'html', 1, content);
+      const document = TextDocument.create(
+        'file:///test.html',
+        'html',
+        1,
+        content
+      );
       const mockDocuments = {
-        get: () => document
+        get: () => document,
       } as any;
 
       const config = createMockConfig({ documents: mockDocuments });
@@ -93,7 +107,7 @@ describe('connection/onCompletion - Parameter Value Completion', () => {
 
       const params = {
         textDocument: { uri: 'file:///test.html' },
-        position: { line: 2, character: 27 } // After "param="
+        position: { line: 2, character: 27 }, // After "param="
       };
 
       const completions = await handler(params);
@@ -106,9 +120,14 @@ describe('connection/onCompletion - Parameter Value Completion', () => {
   {{> childTemplate param=hel
 </template>`;
 
-      const document = TextDocument.create('file:///test.html', 'html', 1, content);
+      const document = TextDocument.create(
+        'file:///test.html',
+        'html',
+        1,
+        content
+      );
       const mockDocuments = {
-        get: () => document
+        get: () => document,
       } as any;
 
       const config = createMockConfig({ documents: mockDocuments });
@@ -116,7 +135,7 @@ describe('connection/onCompletion - Parameter Value Completion', () => {
 
       const params = {
         textDocument: { uri: 'file:///test.html' },
-        position: { line: 2, character: 30 } // After "hel"
+        position: { line: 2, character: 30 }, // After "hel"
       };
 
       const completions = await handler(params);
@@ -131,9 +150,14 @@ describe('connection/onCompletion - Parameter Value Completion', () => {
   {{> childTemplate param=
 </template>`;
 
-      const document = TextDocument.create('file:///test/parent.html', 'html', 1, content);
+      const document = TextDocument.create(
+        'file:///test/parent.html',
+        'html',
+        1,
+        content
+      );
       const mockDocuments = {
-        get: () => document
+        get: () => document,
       } as any;
 
       // Mock helpers for the parent template
@@ -145,12 +169,12 @@ describe('connection/onCompletion - Parameter Value Completion', () => {
         {
           name: 'getUserName',
           returnType: 'string',
-          jsdoc: 'Returns the user name'
+          jsdoc: 'Returns the user name',
         },
         {
           name: 'getCount',
-          returnType: 'number'
-        }
+          returnType: 'number',
+        },
       ]);
 
       const config = createMockConfig({
@@ -159,15 +183,15 @@ describe('connection/onCompletion - Parameter Value Completion', () => {
           jsHelpers,
           helperDetails,
           cssClasses: new Map(),
-          templates: new Map()
-        }
+          templates: new Map(),
+        },
       });
 
       const handler = onCompletion(config);
 
       const params = {
         textDocument: { uri: 'file:///test/parent.html' },
-        position: { line: 2, character: 27 }
+        position: { line: 2, character: 27 },
       };
 
       const completions = await handler(params);
@@ -181,9 +205,14 @@ describe('connection/onCompletion - Parameter Value Completion', () => {
   {{> childTemplate param=
 </template>`;
 
-      const document = TextDocument.create('file:///test/parent.html', 'html', 1, content);
+      const document = TextDocument.create(
+        'file:///test/parent.html',
+        'html',
+        1,
+        content
+      );
       const mockDocuments = {
-        get: () => document
+        get: () => document,
       } as any;
 
       // Mock data properties for the parent template
@@ -197,15 +226,15 @@ describe('connection/onCompletion - Parameter Value Completion', () => {
           helperDetails: new Map(),
           cssClasses: new Map(),
           templates: new Map(),
-          dataProperties
-        }
+          dataProperties,
+        },
       });
 
       const handler = onCompletion(config);
 
       const params = {
         textDocument: { uri: 'file:///test/parent.html' },
-        position: { line: 2, character: 27 }
+        position: { line: 2, character: 27 },
       };
 
       const completions = await handler(params);
@@ -218,9 +247,14 @@ describe('connection/onCompletion - Parameter Value Completion', () => {
   {{> childTemplate param=
 </template>`;
 
-      const document = TextDocument.create('file:///test/parent.html', 'html', 1, content);
+      const document = TextDocument.create(
+        'file:///test/parent.html',
+        'html',
+        1,
+        content
+      );
       const mockDocuments = {
-        get: () => document
+        get: () => document,
       } as any;
 
       const config = createMockConfig({ documents: mockDocuments });
@@ -228,7 +262,7 @@ describe('connection/onCompletion - Parameter Value Completion', () => {
 
       const params = {
         textDocument: { uri: 'file:///test/parent.html' },
-        position: { line: 2, character: 27 }
+        position: { line: 2, character: 27 },
       };
 
       const completions = await handler(params);
@@ -246,9 +280,14 @@ describe('connection/onCompletion - Parameter Value Completion', () => {
     param2=
 </template>`;
 
-      const document = TextDocument.create('file:///test/parent.html', 'html', 1, content);
+      const document = TextDocument.create(
+        'file:///test/parent.html',
+        'html',
+        1,
+        content
+      );
       const mockDocuments = {
-        get: () => document
+        get: () => document,
       } as any;
 
       const jsHelpers = new Map<string, string[]>();
@@ -260,15 +299,15 @@ describe('connection/onCompletion - Parameter Value Completion', () => {
           jsHelpers,
           helperDetails: new Map(),
           cssClasses: new Map(),
-          templates: new Map()
-        }
+          templates: new Map(),
+        },
       });
 
       const handler = onCompletion(config);
 
       const params = {
         textDocument: { uri: 'file:///test/parent.html' },
-        position: { line: 4, character: 12 } // After "param2="
+        position: { line: 4, character: 12 }, // After "param2="
       };
 
       const completions = await handler(params);
@@ -284,9 +323,14 @@ describe('connection/onCompletion - Parameter Value Completion', () => {
   </div>
 </template>`;
 
-      const document = TextDocument.create('file:///test/parent.html', 'html', 1, content);
+      const document = TextDocument.create(
+        'file:///test/parent.html',
+        'html',
+        1,
+        content
+      );
       const mockDocuments = {
-        get: () => document
+        get: () => document,
       } as any;
 
       const config = createMockConfig({ documents: mockDocuments });
@@ -294,7 +338,7 @@ describe('connection/onCompletion - Parameter Value Completion', () => {
 
       const params = {
         textDocument: { uri: 'file:///test/parent.html' },
-        position: { line: 4, character: 13 } // After "param="
+        position: { line: 4, character: 13 }, // After "param="
       };
 
       const completions = await handler(params);
@@ -309,9 +353,14 @@ describe('connection/onCompletion - Parameter Value Completion', () => {
   <div>
 </template>`;
 
-      const document = TextDocument.create('file:///test/parent.html', 'html', 1, content);
+      const document = TextDocument.create(
+        'file:///test/parent.html',
+        'html',
+        1,
+        content
+      );
       const mockDocuments = {
-        get: () => document
+        get: () => document,
       } as any;
 
       const config = createMockConfig({ documents: mockDocuments });
@@ -319,7 +368,7 @@ describe('connection/onCompletion - Parameter Value Completion', () => {
 
       const params = {
         textDocument: { uri: 'file:///test/parent.html' },
-        position: { line: 2, character: 7 } // Inside <div>
+        position: { line: 2, character: 7 }, // Inside <div>
       };
 
       const completions = await handler(params);
@@ -328,9 +377,14 @@ describe('connection/onCompletion - Parameter Value Completion', () => {
 
     it('should return empty array for non-HTML files', async () => {
       const content = `const x = 1;`;
-      const document = TextDocument.create('file:///test.ts', 'typescript', 1, content);
+      const document = TextDocument.create(
+        'file:///test.ts',
+        'typescript',
+        1,
+        content
+      );
       const mockDocuments = {
-        get: () => document
+        get: () => document,
       } as any;
 
       const config = createMockConfig({ documents: mockDocuments });
@@ -338,7 +392,7 @@ describe('connection/onCompletion - Parameter Value Completion', () => {
 
       const params = {
         textDocument: { uri: 'file:///test.ts' },
-        position: { line: 0, character: 10 }
+        position: { line: 0, character: 10 },
       };
 
       const completions = await handler(params);
@@ -351,9 +405,14 @@ describe('connection/onCompletion - Parameter Value Completion', () => {
   {{> chil
 </template>`;
 
-      const document = TextDocument.create('file:///test/parent.html', 'html', 1, content);
+      const document = TextDocument.create(
+        'file:///test/parent.html',
+        'html',
+        1,
+        content
+      );
       const mockDocuments = {
-        get: () => document
+        get: () => document,
       } as any;
 
       const config = createMockConfig({ documents: mockDocuments });
@@ -361,7 +420,7 @@ describe('connection/onCompletion - Parameter Value Completion', () => {
 
       const params = {
         textDocument: { uri: 'file:///test/parent.html' },
-        position: { line: 2, character: 10 } // At "chil"
+        position: { line: 2, character: 10 }, // At "chil"
       };
 
       const completions = await handler(params);
@@ -373,9 +432,14 @@ describe('connection/onCompletion - Parameter Value Completion', () => {
       const content = `
 {{> childTemplate param=`;
 
-      const document = TextDocument.create('file:///test/parent.html', 'html', 1, content);
+      const document = TextDocument.create(
+        'file:///test/parent.html',
+        'html',
+        1,
+        content
+      );
       const mockDocuments = {
-        get: () => document
+        get: () => document,
       } as any;
 
       const config = createMockConfig({ documents: mockDocuments });
@@ -383,7 +447,7 @@ describe('connection/onCompletion - Parameter Value Completion', () => {
 
       const params = {
         textDocument: { uri: 'file:///test/parent.html' },
-        position: { line: 1, character: 24 }
+        position: { line: 1, character: 24 },
       };
 
       const completions = await handler(params);
@@ -400,10 +464,10 @@ describe('connection/onCompletion - Parameter Value Completion', () => {
         detail: 'Helper: string',
         documentation: {
           kind: 'markdown',
-          value: 'Returns the user name'
+          value: 'Returns the user name',
         },
         insertText: 'getUserName',
-        sortText: '0getUserName'
+        sortText: '0getUserName',
       };
 
       assert.strictEqual(typeof mockHelperCompletion.label, 'string');
@@ -419,10 +483,10 @@ describe('connection/onCompletion - Parameter Value Completion', () => {
         detail: 'Template data property',
         documentation: {
           kind: 'markdown',
-          value: 'Data property from the current template'
+          value: 'Data property from the current template',
         },
         insertText: 'userName',
-        sortText: '1userName'
+        sortText: '1userName',
       };
 
       assert.strictEqual(typeof mockDataCompletion.label, 'string');
@@ -436,7 +500,7 @@ describe('connection/onCompletion - Parameter Value Completion', () => {
         kind: 21, // CompletionItemKind.Constant
         detail: 'Current template data context',
         insertText: 'this',
-        sortText: '2this'
+        sortText: '2this',
       };
 
       assert.strictEqual(typeof mockContextCompletion.label, 'string');

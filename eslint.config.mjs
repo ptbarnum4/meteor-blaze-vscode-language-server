@@ -9,10 +9,11 @@ export default defineConfig(
   tslint.configs.recommended,
   prettier,
   {
-    files: ['**/*.ts', './.prettierc.ts'],
+    files: ['src/**/*.ts', './.prettierc.ts'],
+    ignores: ['dist/**', 'node_modules/**'],
     languageOptions: {
       ecmaVersion: 2022,
-      sourceType: 'module',
+      // sourceType: 'module',
       parserOptions: { project: './tsconfig.json' },
       globals: { ...Globals.node, ...Globals.mocha },
     },
@@ -31,8 +32,8 @@ export default defineConfig(
       eqeqeq: 'warn',
       'no-throw-literal': 'warn',
       '@typescript-eslint/no-this-alias': 'off',
-      // '@typescript-eslint/no-explicit-any': 'error',
-      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-explicit-any': 'error',
+      // '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-require-imports': 'off',
       '@typescript-eslint/no-deprecated': 'error',
       'one-var': ['error', 'never'],
@@ -48,6 +49,12 @@ export default defineConfig(
       ],
       // Allow empty blocks for catch statements and other intentional cases
       'no-empty': ['error', { allowEmptyCatch: true }],
+    },
+  },
+  {
+    files: ['**/*.test.ts'],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off',
     },
   }
 );

@@ -3,8 +3,8 @@ import { describe, it } from 'node:test';
 import { TextDocument } from 'vscode-languageserver-textdocument';
 import { InitializedParams, TextDocuments } from 'vscode-languageserver/node';
 
-import onInitialized from '../../../server/connection/onInitialized';
-import { CurrentConnectionConfig, LanguageServerSettings } from '../../../types';
+import onInitialized from '/server/connection/onInitialized';
+import { CurrentConnectionConfig, LanguageServerSettings } from '/types';
 
 /**
  * Test suite for onInitialized connection handler
@@ -16,15 +16,16 @@ describe('connection/onInitialized', () => {
     console: {
       log: () => {}, // Mock console log
       info: () => {}, // Mock console info
-      error: () => {} // Mock console error
+      error: () => {}, // Mock console error
     },
     client: {
-      register: () => Promise.resolve() // Mock client.register
+      register: () => Promise.resolve(), // Mock client.register
     },
     workspace: {
       onDidChangeWorkspaceFolders: () => {}, // Mock workspace folder change handler
-      getConfiguration: () => Promise.resolve({ validateWorkspaceOnStartup: false }) // Mock config
-    }
+      getConfiguration: () =>
+        Promise.resolve({ validateWorkspaceOnStartup: false }), // Mock config
+    },
   });
 
   const createMockConfig = (
@@ -36,14 +37,14 @@ describe('connection/onInitialized', () => {
       jsHelpers: new Map(),
       helperDetails: new Map(),
       cssClasses: new Map(),
-      templates: new Map()
+      templates: new Map(),
     },
     documents: new TextDocuments(TextDocument),
     connection: createMockConnection() as any,
     hasConfigurationCapability: false,
     hasWorkspaceFolderCapability: false,
     hasDiagnosticRelatedInformationCapability: false,
-    ...overrides
+    ...overrides,
   });
 
   it('should return initialized handler function', () => {
@@ -63,7 +64,7 @@ describe('connection/onInitialized', () => {
 
     const config = createMockConfig({
       hasConfigurationCapability: true,
-      connection: mockConnection as any
+      connection: mockConnection as any,
     });
 
     const handler = onInitialized(config);
@@ -86,7 +87,7 @@ describe('connection/onInitialized', () => {
 
     const config = createMockConfig({
       hasConfigurationCapability: false,
-      connection: mockConnection as any
+      connection: mockConnection as any,
     });
 
     const handler = onInitialized(config);
@@ -108,7 +109,7 @@ describe('connection/onInitialized', () => {
 
     const config = createMockConfig({
       hasWorkspaceFolderCapability: true,
-      connection: mockConnection as any
+      connection: mockConnection as any,
     });
 
     const handler = onInitialized(config);
@@ -130,7 +131,7 @@ describe('connection/onInitialized', () => {
 
     const config = createMockConfig({
       hasWorkspaceFolderCapability: false,
-      connection: mockConnection as any
+      connection: mockConnection as any,
     });
 
     const handler = onInitialized(config);
@@ -158,7 +159,7 @@ describe('connection/onInitialized', () => {
     const config = createMockConfig({
       hasConfigurationCapability: true,
       hasWorkspaceFolderCapability: true,
-      connection: mockConnection as any
+      connection: mockConnection as any,
     });
 
     const handler = onInitialized(config);
@@ -187,7 +188,7 @@ describe('connection/onInitialized', () => {
     const config = createMockConfig({
       hasConfigurationCapability: false,
       hasWorkspaceFolderCapability: false,
-      connection: mockConnection as any
+      connection: mockConnection as any,
     });
 
     const handler = onInitialized(config);

@@ -4,14 +4,25 @@
  * @param offset The cursor position offset
  * @returns Object indicating if inside #if or #unless block
  */
-export function findEnclosingIfOrUnlessBlock(text: string, offset: number): {
+export function findEnclosingIfOrUnlessBlock(
+  text: string,
+  offset: number
+): {
   isInside: boolean;
   blockType: 'if' | 'unless' | null;
 } {
   // Find all #if and #unless blocks
   const blockPatterns = [
-    { type: 'if' as const, beginRegex: /\{\{\s*#if\b[^}]*\}\}/g, endRegex: /\{\{\s*\/if\s*\}\}/g },
-    { type: 'unless' as const, beginRegex: /\{\{\s*#unless\b[^}]*\}\}/g, endRegex: /\{\{\s*\/unless\s*\}\}/g }
+    {
+      type: 'if' as const,
+      beginRegex: /\{\{\s*#if\b[^}]*\}\}/g,
+      endRegex: /\{\{\s*\/if\s*\}\}/g,
+    },
+    {
+      type: 'unless' as const,
+      beginRegex: /\{\{\s*#unless\b[^}]*\}\}/g,
+      endRegex: /\{\{\s*\/unless\s*\}\}/g,
+    },
   ];
 
   for (const pattern of blockPatterns) {
@@ -37,7 +48,7 @@ export function findEnclosingIfOrUnlessBlock(text: string, offset: number): {
         if (offset > blockStartEnd && offset < blockEnd) {
           return {
             isInside: true,
-            blockType: type
+            blockType: type,
           };
         }
       }
@@ -49,6 +60,6 @@ export function findEnclosingIfOrUnlessBlock(text: string, offset: number): {
 
   return {
     isInside: false,
-    blockType: null
+    blockType: null,
   };
 }

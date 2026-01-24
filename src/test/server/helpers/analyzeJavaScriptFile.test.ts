@@ -4,13 +4,18 @@ import { describe, it } from 'node:test';
 import os from 'os';
 import path from 'path';
 
-import { analyzeJavaScriptFile } from '../../../server/helpers/analyzeJavaScriptFile';
+import { analyzeJavaScriptFile } from '/server/helpers/analyzeJavaScriptFile';
 
 /**
  * Helper function to create a temporary test file
  */
-function createTestFile(content: string, extension: string = 'js'): { filePath: string; cleanup: () => void } {
-  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'meteor-lang-server-test-'));
+function createTestFile(
+  content: string,
+  extension: string = 'js'
+): { filePath: string; cleanup: () => void } {
+  const tempDir = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'meteor-lang-server-test-')
+  );
   const filePath = path.join(tempDir, `test.${extension}`);
   fs.writeFileSync(filePath, content);
 
@@ -30,7 +35,6 @@ function createTestFile(content: string, extension: string = 'js'): { filePath: 
  * Test suite for analyzeJavaScriptFile helper function
  */
 describe('analyzeJavaScriptFile', () => {
-
   it('should extract basic template helpers', () => {
     const content = `
       Template.myTemplate.helpers({
@@ -55,10 +59,14 @@ describe('analyzeJavaScriptFile', () => {
       assert.strictEqual(result.helpers.includes('anotherHelper'), true);
 
       // Check that we have helper details for the actual helpers
-      const simpleHelper = result.helperDetails.find(h => h.name === 'simpleHelper');
+      const simpleHelper = result.helperDetails.find(
+        (h) => h.name === 'simpleHelper'
+      );
       assert.strictEqual(simpleHelper?.name, 'simpleHelper');
 
-      const anotherHelper = result.helperDetails.find(h => h.name === 'anotherHelper');
+      const anotherHelper = result.helperDetails.find(
+        (h) => h.name === 'anotherHelper'
+      );
       assert.strictEqual(anotherHelper?.name, 'anotherHelper');
     } finally {
       cleanup();
@@ -89,23 +97,34 @@ describe('analyzeJavaScriptFile', () => {
       assert.strictEqual(result.helpers.length, 1);
       assert.strictEqual(result.helpers.includes('formatName'), true);
 
-      const formatNameHelper = result.helperDetails.find(h => h.name === 'formatName');
+      const formatNameHelper = result.helperDetails.find(
+        (h) => h.name === 'formatName'
+      );
       assert.strictEqual(formatNameHelper?.name, 'formatName');
 
       // Check if jsdoc exists before checking its content
       if (formatNameHelper?.jsdoc) {
-        assert.strictEqual(formatNameHelper.jsdoc.includes('formats a user\'s name'), true);
+        assert.strictEqual(
+          formatNameHelper.jsdoc.includes("formats a user's name"),
+          true
+        );
       } else {
         // If JSDoc is not being extracted, we'll fix the test expectation
         console.log('No JSDoc found for formatName helper');
       }
 
       if (formatNameHelper?.parameters) {
-        assert.strictEqual(formatNameHelper.parameters.includes('firstName'), true);
+        assert.strictEqual(
+          formatNameHelper.parameters.includes('firstName'),
+          true
+        );
       } else {
         console.log('No parameters found for formatName helper');
       }
-      assert.strictEqual(formatNameHelper?.parameters?.includes('lastName'), true);
+      assert.strictEqual(
+        formatNameHelper?.parameters?.includes('lastName'),
+        true
+      );
     } finally {
       cleanup();
     }
@@ -133,11 +152,18 @@ describe('analyzeJavaScriptFile', () => {
       assert.strictEqual(result.helpers.includes('getAge'), true);
       assert.strictEqual(result.helpers.includes('formatDate'), true);
 
-      const getAgeHelper = result.helperDetails.find(h => h.name === 'getAge');
+      const getAgeHelper = result.helperDetails.find(
+        (h) => h.name === 'getAge'
+      );
       assert.strictEqual(getAgeHelper?.returnType?.includes('number'), true);
 
-      const formatDateHelper = result.helperDetails.find(h => h.name === 'formatDate');
-      assert.strictEqual(formatDateHelper?.returnType?.includes('string'), true);
+      const formatDateHelper = result.helperDetails.find(
+        (h) => h.name === 'formatDate'
+      );
+      assert.strictEqual(
+        formatDateHelper?.returnType?.includes('string'),
+        true
+      );
     } finally {
       cleanup();
     }
@@ -268,7 +294,9 @@ describe('analyzeJavaScriptFile', () => {
   });
 
   it('should handle non-existent files gracefully', () => {
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'meteor-lang-server-test-'));
+    const tempDir = fs.mkdtempSync(
+      path.join(os.tmpdir(), 'meteor-lang-server-test-')
+    );
     const nonExistentPath = path.join(tempDir, 'non-existent.js');
 
     try {
@@ -331,10 +359,19 @@ describe('analyzeJavaScriptFile', () => {
       const helper = result.helperDetails[0];
 
       assert.strictEqual(helper.name, 'calculateTotal');
-      assert.strictEqual(helper.jsdoc?.includes('total price including tax'), true);
-      assert.strictEqual(helper.parameters?.includes('basePrice: number'), true);
+      assert.strictEqual(
+        helper.jsdoc?.includes('total price including tax'),
+        true
+      );
+      assert.strictEqual(
+        helper.parameters?.includes('basePrice: number'),
+        true
+      );
       assert.strictEqual(helper.parameters?.includes('taxRate: number'), true);
-      assert.strictEqual(helper.parameters?.includes('includeShipping: boolean'), true);
+      assert.strictEqual(
+        helper.parameters?.includes('includeShipping: boolean'),
+        true
+      );
     } finally {
       cleanup();
     }

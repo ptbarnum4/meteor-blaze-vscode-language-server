@@ -1,3 +1,6 @@
+import fs from 'fs';
+import path from 'path';
+
 import { Location } from 'vscode-languageserver/node';
 
 // Helper function to find parameter usage in template HTML file
@@ -5,9 +8,7 @@ const findParameterInTemplateHtml = (
   parameterName: string,
   templateName: string,
   currentDir: string,
-  currentFileUri: string,
-  fs: any,
-  path: any
+  currentFileUri: string
 ): Location[] | null => {
   try {
     // First check the current file (child template might be in the same file)

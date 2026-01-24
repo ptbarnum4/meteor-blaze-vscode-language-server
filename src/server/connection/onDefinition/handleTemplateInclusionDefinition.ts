@@ -1,7 +1,7 @@
 import { Location } from 'vscode-languageserver/node';
-import { CurrentConnectionConfig } from '../../../types';
 import findParameterDefinition from './findParameterDefinition';
 import findTemplateDefinition from './findTemplateDefinition';
+import { CurrentConnectionConfig } from '/types';
 
 // Helper function to handle template inclusion navigation
 const handleTemplateInclusionDefinition = async (
@@ -10,12 +10,15 @@ const handleTemplateInclusionDefinition = async (
   word: string,
   currentDir: string,
   currentFileUri: string,
-  connection: any,
+  connection: CurrentConnectionConfig['connection'],
   config: CurrentConnectionConfig
 ): Promise<Location[] | null> => {
   // Get text around the cursor to determine context
   const beforeCursor = text.substring(Math.max(0, offset - 200), offset);
-  const afterCursor = text.substring(offset, Math.min(text.length, offset + 200));
+  const afterCursor = text.substring(
+    offset,
+    Math.min(text.length, offset + 200)
+  );
   const context = beforeCursor + afterCursor;
 
   // Check if we're in a template inclusion: {{> templateName}}
@@ -28,7 +31,9 @@ const handleTemplateInclusionDefinition = async (
 
   // Check if we're in template parameters: {{> templateName param=value}}
   // Use a more flexible pattern that handles multiline parameters
-  const parameterMatch = beforeCursor.match(/\{\{\s*>\s*([a-zA-Z0-9_]+)[\s\S]*$/);
+  const parameterMatch = beforeCursor.match(
+    /\{\{\s*>\s*([a-zA-Z0-9_]+)[\s\S]*$/
+  );
 
   if (!parameterMatch) {
     return null;
@@ -37,7 +42,12 @@ const handleTemplateInclusionDefinition = async (
 
   // If the word is the template name, navigate to template
   if (word === templateName) {
-    return findTemplateDefinition(templateName, currentDir, connection, currentFileUri);
+    return findTemplateDefinition(
+      templateName,
+      currentDir,
+      connection,
+      currentFileUri
+    );
   }
 
   // Also check if we're still within the template inclusion by looking for the closing }}
@@ -55,11 +65,22 @@ const handleTemplateInclusionDefinition = async (
   // Determine if we're on the left or right side of an equals sign
   // Left side (parameter name) = navigates to child template usage
   // Right side (value) = navigates to parent template helper/data
-  const isLeftSideOfEquals = isOnLeftSideOfEquals(beforeCursor, afterCursor, word);
+  const isLeftSideOfEquals = isOnLeftSideOfEquals(
+    beforeCursor,
+    afterCursor,
+    word
+  );
 
   if (isLeftSideOfEquals) {
     // If the word is on the left side of =, navigate to the parameter usage in child template
-    return await findParameterDefinition(word, templateName, currentDir, currentFileUri, connection, config);
+    return await findParameterDefinition(
+      word,
+      templateName,
+      currentDir,
+      currentFileUri,
+      connection,
+      config
+    );
   }
 
   // If on the right side of =, return null to let parent template helper lookup continue
@@ -75,7 +96,10 @@ const handleTemplateInclusionDefinition = async (
  * @param beforeCursor - The text before the cursor position
  * @returns - True if the current position is within a template inclusion, false otherwise.
  */
-function checkIfInTemplateInclusion(matches: RegExpMatchArray[], beforeCursor: string): boolean {
+function checkIfInTemplateInclusion(
+  matches: RegExpMatchArray[],
+  beforeCursor: string
+): boolean {
   for (const match of matches) {
     if (match.index === undefined) {
       continue; // Skip if match index is undefined
@@ -102,7 +126,11 @@ function checkIfInTemplateInclusion(matches: RegExpMatchArray[], beforeCursor: s
  * @param word - The word at the cursor position
  * @returns True if on the left side of =, false otherwise
  */
-function isOnLeftSideOfEquals(beforeCursor: string, afterCursor: string, word: string): boolean {
+function isOnLeftSideOfEquals(
+  beforeCursor: string,
+  afterCursor: string,
+  word: string
+): boolean {
   // Check if the word ends right before the cursor and is followed by =
   // This handles: "title|=" where | is cursor position
   const endsWithWord = beforeCursor.endsWith(word);
@@ -128,7 +156,10 @@ function isOnLeftSideOfEquals(beforeCursor: string, afterCursor: string, word: s
 
   // Check if we're after the equals sign
   // This handles: "=|title" where | is cursor position
-  if (afterCursor.trimStart().startsWith(word) && beforeCursor.trimEnd().endsWith('=')) {
+  if (
+    afterCursor.trimStart().startsWith(word) &&
+    beforeCursor.trimEnd().endsWith('=')
+  ) {
     return false; // Right side of equals
   }
 

@@ -1,7 +1,7 @@
 import assert from 'assert';
 import { describe, it } from 'node:test';
 
-import { isWithinComment } from '../../../server/helpers/isWithinComment';
+import { isWithinComment } from '/server/helpers/isWithinComment';
 
 /**
  * Test suite for isWithinComment helper function
@@ -132,8 +132,16 @@ describe('isWithinComment', () => {
 
       positions.forEach(({ offset, expected }) => {
         const result = isWithinComment(text, offset);
-        assert.strictEqual(result.isWithin, true, `Position ${offset} should be in comment`);
-        assert.strictEqual(result.commentType, expected, `Position ${offset} should be ${expected} comment`);
+        assert.strictEqual(
+          result.isWithin,
+          true,
+          `Position ${offset} should be in comment`
+        );
+        assert.strictEqual(
+          result.commentType,
+          expected,
+          `Position ${offset} should be ${expected} comment`
+        );
       });
     });
   });

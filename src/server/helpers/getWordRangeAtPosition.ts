@@ -28,6 +28,6 @@ export const getWordRangeAtPosition = (
 
   return {
     start: document.positionAt(start),
-    end: document.positionAt(end)
+    end: document.positionAt(end),
   };
 };

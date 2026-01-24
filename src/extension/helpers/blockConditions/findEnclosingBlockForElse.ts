@@ -11,7 +11,12 @@ export const findEnclosingBlockForElse = (
         position: number;
         length: number;
       }
-    | { type: 'close'; blockType: 'if' | 'unless'; position: number; length: number }
+    | {
+        type: 'close';
+        blockType: 'if' | 'unless';
+        position: number;
+        length: number;
+      }
     | { type: 'else'; position: number; length: number };
 
   const allBlocks: Block[] = [];
@@ -20,10 +25,10 @@ export const findEnclosingBlockForElse = (
   const patterns = [
     { regex: /\{\{\s*#(if|unless)\s+([^}]+)\s*\}\}/g, isOpening: true },
     { regex: /\{\{\s*\/(if|unless)\s*\}\}/g, isOpening: false },
-    { regex: /\{\{\s*else\s*\}\}/g, isElse: true }
+    { regex: /\{\{\s*else\s*\}\}/g, isElse: true },
   ];
 
-  patterns.forEach(pattern => {
+  patterns.forEach((pattern) => {
     let match;
     while ((match = pattern.regex.exec(text)) !== null) {
       if (match.index >= elseOffset) {
@@ -34,7 +39,7 @@ export const findEnclosingBlockForElse = (
         allBlocks.push({
           type: 'else',
           position: match.index,
-          length: match[0].length
+          length: match[0].length,
         });
       } else if (pattern.isOpening) {
         allBlocks.push({
@@ -42,14 +47,14 @@ export const findEnclosingBlockForElse = (
           blockType: match[1] as 'if' | 'unless',
           condition: match[2].trim(),
           position: match.index,
-          length: match[0].length
+          length: match[0].length,
         });
       } else {
         allBlocks.push({
           type: 'close',
           blockType: match[1] as 'if' | 'unless',
           position: match.index,
-          length: match[0].length
+          length: match[0].length,
         });
       }
     }
@@ -59,17 +64,24 @@ export const findEnclosingBlockForElse = (
   allBlocks.sort((a, b) => a.position - b.position);
 
   // Track the stack of open blocks
-  const stack: Array<{ blockType: 'if' | 'unless'; condition: string; position: number }> = [];
+  const stack: Array<{
+    blockType: 'if' | 'unless';
+    condition: string;
+    position: number;
+  }> = [];
 
   for (const block of allBlocks) {
     if (block.type === 'open') {
       stack.push({
         blockType: block.blockType,
         condition: block.condition,
-        position: block.position
+        position: block.position,
       });
     } else if (block.type === 'close') {
-      if (stack.length > 0 && stack[stack.length - 1].blockType === block.blockType) {
+      if (
+        stack.length > 0 &&
+        stack[stack.length - 1].blockType === block.blockType
+      ) {
         stack.pop();
       }
     }
@@ -81,7 +93,7 @@ export const findEnclosingBlockForElse = (
     const enclosingBlock = stack[stack.length - 1];
     return {
       type: enclosingBlock.blockType,
-      condition: enclosingBlock.condition
+      condition: enclosingBlock.condition,
     };
   }
 
@@ -104,7 +116,12 @@ export const findEnclosingBlockForElseWithIndex = (
         position: number;
         length: number;
       }
-    | { type: 'close'; blockType: 'if' | 'unless'; position: number; length: number }
+    | {
+        type: 'close';
+        blockType: 'if' | 'unless';
+        position: number;
+        length: number;
+      }
     | { type: 'else'; position: number; length: number };
 
   const allBlocks: Block[] = [];
@@ -113,10 +130,10 @@ export const findEnclosingBlockForElseWithIndex = (
   const patterns = [
     { regex: /\{\{\s*#(if|unless)\s+([^}]+)\s*\}\}/g, isOpening: true },
     { regex: /\{\{\s*\/(if|unless)\s*\}\}/g, isOpening: false },
-    { regex: /\{\{\s*else\s*\}\}/g, isElse: true }
+    { regex: /\{\{\s*else\s*\}\}/g, isElse: true },
   ];
 
-  patterns.forEach(pattern => {
+  patterns.forEach((pattern) => {
     let match;
     while ((match = pattern.regex.exec(text)) !== null) {
       if (match.index >= elseOffset) {
@@ -127,7 +144,7 @@ export const findEnclosingBlockForElseWithIndex = (
         allBlocks.push({
           type: 'else',
           position: match.index,
-          length: match[0].length
+          length: match[0].length,
         });
       } else if (pattern.isOpening) {
         allBlocks.push({
@@ -135,14 +152,14 @@ export const findEnclosingBlockForElseWithIndex = (
           blockType: match[1] as 'if' | 'unless',
           condition: match[2].trim(),
           position: match.index,
-          length: match[0].length
+          length: match[0].length,
         });
       } else {
         allBlocks.push({
           type: 'close',
           blockType: match[1] as 'if' | 'unless',
           position: match.index,
-          length: match[0].length
+          length: match[0].length,
         });
       }
     }
@@ -152,17 +169,24 @@ export const findEnclosingBlockForElseWithIndex = (
   allBlocks.sort((a, b) => a.position - b.position);
 
   // Track the stack of open blocks
-  const stack: Array<{ blockType: 'if' | 'unless'; condition: string; position: number }> = [];
+  const stack: Array<{
+    blockType: 'if' | 'unless';
+    condition: string;
+    position: number;
+  }> = [];
 
   for (const block of allBlocks) {
     if (block.type === 'open') {
       stack.push({
         blockType: block.blockType,
         condition: block.condition,
-        position: block.position
+        position: block.position,
       });
     } else if (block.type === 'close') {
-      if (stack.length > 0 && stack[stack.length - 1].blockType === block.blockType) {
+      if (
+        stack.length > 0 &&
+        stack[stack.length - 1].blockType === block.blockType
+      ) {
         stack.pop();
       }
     }
@@ -175,7 +199,7 @@ export const findEnclosingBlockForElseWithIndex = (
     return {
       type: enclosingBlock.blockType,
       condition: enclosingBlock.condition,
-      index: enclosingBlock.position
+      index: enclosingBlock.position,
     };
   }
 

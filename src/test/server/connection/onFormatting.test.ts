@@ -4,11 +4,11 @@ import { TextDocument } from 'vscode-languageserver-textdocument';
 import { FormattingOptions, TextDocuments } from 'vscode-languageserver/node';
 
 import {
-    onDocumentFormatting,
-    onDocumentOnTypeFormatting,
-    onDocumentRangeFormatting
-} from '../../../server/connection/onFormatting';
-import { CurrentConnectionConfig, LanguageServerSettings } from '../../../types';
+  onDocumentFormatting,
+  onDocumentOnTypeFormatting,
+  onDocumentRangeFormatting,
+} from '/server/connection/onFormatting';
+import { CurrentConnectionConfig, LanguageServerSettings } from '/types';
 
 /**
  * Test suite for onFormatting connection handlers
@@ -19,17 +19,17 @@ describe('connection/onFormatting', () => {
   const createMockConnection = () => ({
     console: {
       log: () => {},
-      error: () => {}
+      error: () => {},
     },
     workspace: {
       getConfiguration: () =>
         Promise.resolve({
           formatting: {
             enabled: true,
-            indentSize: 2
-          }
-        })
-    }
+            indentSize: 2,
+          },
+        }),
+    },
   });
 
   const createMockConfig = (
@@ -41,14 +41,14 @@ describe('connection/onFormatting', () => {
       jsHelpers: new Map(),
       helperDetails: new Map(),
       cssClasses: new Map(),
-      templates: new Map()
+      templates: new Map(),
     },
     documents: new TextDocuments(TextDocument),
     connection: createMockConnection() as any,
     hasConfigurationCapability: false,
     hasWorkspaceFolderCapability: false,
     hasDiagnosticRelatedInformationCapability: false,
-    ...overrides
+    ...overrides,
   });
 
   describe('onDocumentFormatting', () => {
@@ -64,9 +64,14 @@ describe('connection/onFormatting', () => {
   {{> childTemplate param1=value1 param2=value2 param3=value3}}
 </template>`;
 
-      const document = TextDocument.create('file:///test.html', 'html', 1, content);
+      const document = TextDocument.create(
+        'file:///test.html',
+        'html',
+        1,
+        content
+      );
       const mockDocuments = {
-        get: () => document
+        get: () => document,
       } as any;
 
       const config = createMockConfig({ documents: mockDocuments });
@@ -76,8 +81,8 @@ describe('connection/onFormatting', () => {
         textDocument: { uri: 'file:///test.html' },
         options: {
           tabSize: 2,
-          insertSpaces: true
-        } as FormattingOptions
+          insertSpaces: true,
+        } as FormattingOptions,
       };
 
       const edits = await handler(params);
@@ -88,9 +93,14 @@ describe('connection/onFormatting', () => {
 
     it('should return empty array for non-HTML files', async () => {
       const content = `const x = 1;`;
-      const document = TextDocument.create('file:///test.ts', 'typescript', 1, content);
+      const document = TextDocument.create(
+        'file:///test.ts',
+        'typescript',
+        1,
+        content
+      );
       const mockDocuments = {
-        get: () => document
+        get: () => document,
       } as any;
 
       const config = createMockConfig({ documents: mockDocuments });
@@ -100,8 +110,8 @@ describe('connection/onFormatting', () => {
         textDocument: { uri: 'file:///test.ts' },
         options: {
           tabSize: 2,
-          insertSpaces: true
-        } as FormattingOptions
+          insertSpaces: true,
+        } as FormattingOptions,
       };
 
       const edits = await handler(params);
@@ -110,9 +120,14 @@ describe('connection/onFormatting', () => {
 
     it('should return empty array for HTML without Meteor templates', async () => {
       const content = `<div>Regular HTML content</div>`;
-      const document = TextDocument.create('file:///test.html', 'html', 1, content);
+      const document = TextDocument.create(
+        'file:///test.html',
+        'html',
+        1,
+        content
+      );
       const mockDocuments = {
-        get: () => document
+        get: () => document,
       } as any;
 
       const config = createMockConfig({ documents: mockDocuments });
@@ -122,8 +137,8 @@ describe('connection/onFormatting', () => {
         textDocument: { uri: 'file:///test.html' },
         options: {
           tabSize: 2,
-          insertSpaces: true
-        } as FormattingOptions
+          insertSpaces: true,
+        } as FormattingOptions,
       };
 
       const edits = await handler(params);
@@ -136,9 +151,14 @@ describe('connection/onFormatting', () => {
   {{> simpleTemplate param=value}}
 </template>`;
 
-      const document = TextDocument.create('file:///test.html', 'html', 1, content);
+      const document = TextDocument.create(
+        'file:///test.html',
+        'html',
+        1,
+        content
+      );
       const mockDocuments = {
-        get: () => document
+        get: () => document,
       } as any;
 
       const config = createMockConfig({ documents: mockDocuments });
@@ -148,8 +168,8 @@ describe('connection/onFormatting', () => {
         textDocument: { uri: 'file:///test.html' },
         options: {
           tabSize: 2,
-          insertSpaces: true
-        } as FormattingOptions
+          insertSpaces: true,
+        } as FormattingOptions,
       };
 
       const edits = await handler(params);
@@ -168,9 +188,14 @@ param2=value2
   }}
 </template>`;
 
-      const document = TextDocument.create('file:///test.html', 'html', 1, content);
+      const document = TextDocument.create(
+        'file:///test.html',
+        'html',
+        1,
+        content
+      );
       const mockDocuments = {
-        get: () => document
+        get: () => document,
       } as any;
 
       const config = createMockConfig({ documents: mockDocuments });
@@ -180,8 +205,8 @@ param2=value2
         textDocument: { uri: 'file:///test.html' },
         options: {
           tabSize: 4,
-          insertSpaces: true
-        } as FormattingOptions
+          insertSpaces: true,
+        } as FormattingOptions,
       };
 
       const edits = await handler(params);
@@ -203,9 +228,14 @@ param2=value2
   {{> template2 p1=v1 p2=v2}}
 </template>`;
 
-      const document = TextDocument.create('file:///test.html', 'html', 1, content);
+      const document = TextDocument.create(
+        'file:///test.html',
+        'html',
+        1,
+        content
+      );
       const mockDocuments = {
-        get: () => document
+        get: () => document,
       } as any;
 
       const config = createMockConfig({ documents: mockDocuments });
@@ -215,12 +245,12 @@ param2=value2
         textDocument: { uri: 'file:///test.html' },
         range: {
           start: { line: 0, character: 0 },
-          end: { line: 2, character: 0 }
+          end: { line: 2, character: 0 },
         },
         options: {
           tabSize: 2,
-          insertSpaces: true
-        } as FormattingOptions
+          insertSpaces: true,
+        } as FormattingOptions,
       };
 
       const edits = await handler(params);
@@ -241,9 +271,14 @@ param2=value2
   {{> childTemplate
 </template>`;
 
-      const document = TextDocument.create('file:///test.html', 'html', 1, content);
+      const document = TextDocument.create(
+        'file:///test.html',
+        'html',
+        1,
+        content
+      );
       const mockDocuments = {
-        get: () => document
+        get: () => document,
       } as any;
 
       const config = createMockConfig({ documents: mockDocuments });
@@ -255,8 +290,8 @@ param2=value2
         ch: '\n',
         options: {
           tabSize: 2,
-          insertSpaces: true
-        } as FormattingOptions
+          insertSpaces: true,
+        } as FormattingOptions,
       };
 
       const edits = await handler(params);
@@ -269,9 +304,14 @@ param2=value2
   <div>
 </template>`;
 
-      const document = TextDocument.create('file:///test.html', 'html', 1, content);
+      const document = TextDocument.create(
+        'file:///test.html',
+        'html',
+        1,
+        content
+      );
       const mockDocuments = {
-        get: () => document
+        get: () => document,
       } as any;
 
       const config = createMockConfig({ documents: mockDocuments });
@@ -283,8 +323,8 @@ param2=value2
         ch: '\n',
         options: {
           tabSize: 2,
-          insertSpaces: true
-        } as FormattingOptions
+          insertSpaces: true,
+        } as FormattingOptions,
       };
 
       const edits = await handler(params);
@@ -301,9 +341,14 @@ param2=value2
   }}
 </template>`;
 
-      const document = TextDocument.create('file:///test.html', 'html', 1, content);
+      const document = TextDocument.create(
+        'file:///test.html',
+        'html',
+        1,
+        content
+      );
       const mockDocuments = {
-        get: () => document
+        get: () => document,
       } as any;
 
       const config = createMockConfig({ documents: mockDocuments });
@@ -313,8 +358,8 @@ param2=value2
         textDocument: { uri: 'file:///test.html' },
         options: {
           tabSize: 2,
-          insertSpaces: true
-        } as FormattingOptions
+          insertSpaces: true,
+        } as FormattingOptions,
       };
 
       const edits = await handler(params);
@@ -331,9 +376,14 @@ param2=value2
   }}
 </template>`;
 
-      const document = TextDocument.create('file:///test.html', 'html', 1, content);
+      const document = TextDocument.create(
+        'file:///test.html',
+        'html',
+        1,
+        content
+      );
       const mockDocuments = {
-        get: () => document
+        get: () => document,
       } as any;
 
       const config = createMockConfig({ documents: mockDocuments });
@@ -343,8 +393,8 @@ param2=value2
         textDocument: { uri: 'file:///test.html' },
         options: {
           tabSize: 2,
-          insertSpaces: true
-        } as FormattingOptions
+          insertSpaces: true,
+        } as FormattingOptions,
       };
 
       const edits = await handler(params);
@@ -353,9 +403,14 @@ param2=value2
 
     it('should return empty array for documents without templates', async () => {
       const content = `<div>No templates</div>`;
-      const document = TextDocument.create('file:///test.html', 'html', 1, content);
+      const document = TextDocument.create(
+        'file:///test.html',
+        'html',
+        1,
+        content
+      );
       const mockDocuments = {
-        get: () => document
+        get: () => document,
       } as any;
 
       const config = createMockConfig({ documents: mockDocuments });
@@ -365,8 +420,8 @@ param2=value2
         textDocument: { uri: 'file:///test.html' },
         options: {
           tabSize: 2,
-          insertSpaces: true
-        } as FormattingOptions
+          insertSpaces: true,
+        } as FormattingOptions,
       };
 
       const edits = await handler(params);
@@ -381,9 +436,14 @@ param2=value2
     }}
 </template>`;
 
-      const document = TextDocument.create('file:///test.html', 'html', 1, content);
+      const document = TextDocument.create(
+        'file:///test.html',
+        'html',
+        1,
+        content
+      );
       const mockDocuments = {
-        get: () => document
+        get: () => document,
       } as any;
 
       const config = createMockConfig({ documents: mockDocuments });
@@ -393,8 +453,8 @@ param2=value2
         textDocument: { uri: 'file:///test.html' },
         options: {
           tabSize: 2,
-          insertSpaces: true
-        } as FormattingOptions
+          insertSpaces: true,
+        } as FormattingOptions,
       };
 
       const edits = await handler(params);
@@ -411,9 +471,14 @@ param2=value2
     }}
 </template>`;
 
-      const document = TextDocument.create('file:///test.html', 'html', 1, content);
+      const document = TextDocument.create(
+        'file:///test.html',
+        'html',
+        1,
+        content
+      );
       const mockDocuments = {
-        get: () => document
+        get: () => document,
       } as any;
 
       const config = createMockConfig({ documents: mockDocuments });
@@ -423,13 +488,16 @@ param2=value2
         textDocument: { uri: 'file:///test.html' },
         options: {
           tabSize: 2,
-          insertSpaces: true
-        } as FormattingOptions
+          insertSpaces: true,
+        } as FormattingOptions,
       };
 
       const edits = await handler(params);
       assert.strictEqual(edits.length, 1);
-      assert.strictEqual(edits[0].newText, '{{> myTemplate param1="Something" }}');
+      assert.strictEqual(
+        edits[0].newText,
+        '{{> myTemplate param1="Something" }}'
+      );
     });
 
     it('should format template with 2+ parameters to multi-line', async () => {
@@ -444,9 +512,14 @@ param2=value2
 </div>
 </template>`;
 
-      const document = TextDocument.create('file:///test.html', 'html', 1, content);
+      const document = TextDocument.create(
+        'file:///test.html',
+        'html',
+        1,
+        content
+      );
       const mockDocuments = {
-        get: () => document
+        get: () => document,
       } as any;
 
       const config = createMockConfig({ documents: mockDocuments });
@@ -456,8 +529,8 @@ param2=value2
         textDocument: { uri: 'file:///test.html' },
         options: {
           tabSize: 2,
-          insertSpaces: true
-        } as FormattingOptions
+          insertSpaces: true,
+        } as FormattingOptions,
       };
 
       const edits = await handler(params);
@@ -480,9 +553,14 @@ param2=value2
     }}
 </template>`;
 
-      const document = TextDocument.create('file:///test.html', 'html', 1, content);
+      const document = TextDocument.create(
+        'file:///test.html',
+        'html',
+        1,
+        content
+      );
       const mockDocuments = {
-        get: () => document
+        get: () => document,
       } as any;
 
       const config = createMockConfig({ documents: mockDocuments });
@@ -492,8 +570,8 @@ param2=value2
         textDocument: { uri: 'file:///test.html' },
         options: {
           tabSize: 2,
-          insertSpaces: true
-        } as FormattingOptions
+          insertSpaces: true,
+        } as FormattingOptions,
       };
 
       const edits = await handler(params);
@@ -515,9 +593,14 @@ param2=value2
     }}
 </template>`;
 
-      const document = TextDocument.create('file:///test.html', 'html', 1, content);
+      const document = TextDocument.create(
+        'file:///test.html',
+        'html',
+        1,
+        content
+      );
       const mockDocuments = {
-        get: () => document
+        get: () => document,
       } as any;
 
       const config = createMockConfig({ documents: mockDocuments });
@@ -527,8 +610,8 @@ param2=value2
         textDocument: { uri: 'file:///test.html' },
         options: {
           tabSize: 2,
-          insertSpaces: true
-        } as FormattingOptions
+          insertSpaces: true,
+        } as FormattingOptions,
       };
 
       const edits = await handler(params);
@@ -550,9 +633,14 @@ param2=value2
     }}
 </template>`;
 
-      const document = TextDocument.create('file:///test.html', 'html', 1, content);
+      const document = TextDocument.create(
+        'file:///test.html',
+        'html',
+        1,
+        content
+      );
       const mockDocuments = {
-        get: () => document
+        get: () => document,
       } as any;
 
       const config = createMockConfig({ documents: mockDocuments });
@@ -562,8 +650,8 @@ param2=value2
         textDocument: { uri: 'file:///test.html' },
         options: {
           tabSize: 2,
-          insertSpaces: true
-        } as FormattingOptions
+          insertSpaces: true,
+        } as FormattingOptions,
       };
 
       const edits = await handler(params);
@@ -582,9 +670,14 @@ param2=value2
   {{> template }}
 </template>`;
 
-      const document = TextDocument.create('file:///test.html', 'html', 1, content);
+      const document = TextDocument.create(
+        'file:///test.html',
+        'html',
+        1,
+        content
+      );
       const mockDocuments = {
-        get: () => document
+        get: () => document,
       } as any;
 
       const config = createMockConfig({ documents: mockDocuments });
@@ -594,8 +687,8 @@ param2=value2
         textDocument: { uri: 'file:///test.html' },
         options: {
           tabSize: 2,
-          insertSpaces: true
-        } as FormattingOptions
+          insertSpaces: true,
+        } as FormattingOptions,
       };
 
       const edits = await handler(params);
@@ -613,9 +706,14 @@ param2=value2
 </div>
 </template>`;
 
-      const document = TextDocument.create('file:///test.html', 'html', 1, content);
+      const document = TextDocument.create(
+        'file:///test.html',
+        'html',
+        1,
+        content
+      );
       const mockDocuments = {
-        get: () => document
+        get: () => document,
       } as any;
 
       const config = createMockConfig({ documents: mockDocuments });
@@ -625,8 +723,8 @@ param2=value2
         textDocument: { uri: 'file:///test.html' },
         options: {
           tabSize: 2,
-          insertSpaces: true
-        } as FormattingOptions
+          insertSpaces: true,
+        } as FormattingOptions,
       };
 
       const edits = await handler(params);
@@ -643,9 +741,14 @@ param2=value2
   }}
 </template>`;
 
-      const document = TextDocument.create('file:///test.html', 'html', 1, content);
+      const document = TextDocument.create(
+        'file:///test.html',
+        'html',
+        1,
+        content
+      );
       const mockDocuments = {
-        get: () => document
+        get: () => document,
       } as any;
 
       const config = createMockConfig({ documents: mockDocuments });
@@ -655,8 +758,8 @@ param2=value2
         textDocument: { uri: 'file:///test.html' },
         options: {
           tabSize: 2,
-          insertSpaces: true
-        } as FormattingOptions
+          insertSpaces: true,
+        } as FormattingOptions,
       };
 
       const edits = await handler(params);
@@ -665,7 +768,9 @@ param2=value2
       if (edits.length > 0) {
         const formatted = edits[0].newText;
         assert.ok(
-          formatted.includes('gradProgram=(getFinalProgram alum.alumni.graduation.programId)'),
+          formatted.includes(
+            'gradProgram=(getFinalProgram alum.alumni.graduation.programId)'
+          ),
           'Should preserve full parameter value with nested helper expression'
         );
       }
@@ -681,9 +786,14 @@ param2=value2
                    }}
 </template>`;
 
-      const document = TextDocument.create('file:///test.html', 'html', 1, content);
+      const document = TextDocument.create(
+        'file:///test.html',
+        'html',
+        1,
+        content
+      );
       const mockDocuments = {
-        get: () => document
+        get: () => document,
       } as any;
 
       const config = createMockConfig({ documents: mockDocuments });
@@ -693,8 +803,8 @@ param2=value2
         textDocument: { uri: 'file:///test.html' },
         options: {
           tabSize: 2,
-          insertSpaces: true
-        } as FormattingOptions
+          insertSpaces: true,
+        } as FormattingOptions,
       };
 
       const edits = await handler(params);

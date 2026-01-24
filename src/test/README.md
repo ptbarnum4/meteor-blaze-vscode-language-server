@@ -58,9 +58,11 @@ npm run watch-tests
 Located in `src/test/server/helpers/`, these tests cover individual helper functions:
 
 #### `containsMeteorTemplates.test.ts`
+
 Tests the function that detects whether a document contains Meteor templates.
 
 **Test Cases:**
+
 - Documents with valid Meteor templates
 - Templates with single/double quotes
 - Templates with additional attributes
@@ -69,9 +71,11 @@ Tests the function that detects whether a document contains Meteor templates.
 - Multiple templates
 
 #### `isWithinHandlebarsExpression.test.ts`
+
 Tests cursor position detection within Handlebars expressions.
 
 **Test Cases:**
+
 - Double braces `{{}}`
 - Triple braces `{{{}}`
 - Cursor outside expressions
@@ -80,9 +84,11 @@ Tests cursor position detection within Handlebars expressions.
 - Multiple expressions
 
 #### `trimUsageDocumentation.test.ts`
+
 Tests documentation string formatting and indentation normalization.
 
 **Test Cases:**
+
 - Default usage generation
 - Whitespace trimming
 - Leading/trailing empty line removal
@@ -91,9 +97,11 @@ Tests documentation string formatting and indentation normalization.
 - Single line usage
 
 #### `getWordRangeAtPosition.test.ts`
+
 Tests word boundary detection for language features.
 
 **Test Cases:**
+
 - Simple words
 - Words with hash prefix (`#each`)
 - Words with @ prefix (`@index`)
@@ -102,9 +110,11 @@ Tests word boundary detection for language features.
 - Multiline content
 
 #### `analyzeJavaScriptFile.test.ts`
+
 Tests JavaScript/TypeScript file analysis for helper extraction.
 
 **Test Cases:**
+
 - Basic `Template.helpers()` calls
 - JSDoc comment parsing
 - TypeScript syntax support
@@ -115,9 +125,11 @@ Tests JavaScript/TypeScript file analysis for helper extraction.
 - Complex nested braces
 
 #### `analyzeCSSFile.test.ts`
+
 Tests CSS/LESS file analysis for class extraction.
 
 **Test Cases:**
+
 - Basic CSS classes
 - Classes with hyphens and numbers
 - Nested classes (LESS/SCSS)
@@ -212,9 +224,7 @@ Add this configuration to `.vscode/launch.json`:
     "--extensionDevelopmentPath=${workspaceFolder}",
     "--extensionTestsPath=${workspaceFolder}/out/test/suite/index"
   ],
-  "outFiles": [
-    "${workspaceFolder}/out/test/**/*.js"
-  ],
+  "outFiles": ["${workspaceFolder}/out/test/**/*.js"],
   "preLaunchTask": "${workspaceFolder}:compile-tests"
 }
 ```

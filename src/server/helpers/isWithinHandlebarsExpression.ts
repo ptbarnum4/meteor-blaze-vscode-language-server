@@ -22,7 +22,10 @@ export const isWithinHandlebarsExpression = (
       start = i;
       isTriple = true;
       break;
-    } else if (text.substring(i, i + 2) === '{{' && text.substring(i, i + 3) !== '{{{') {
+    } else if (
+      text.substring(i, i + 2) === '{{' &&
+      text.substring(i, i + 3) !== '{{{'
+    ) {
       start = i;
       isTriple = false;
       isSingleBracket = false;
@@ -31,7 +34,8 @@ export const isWithinHandlebarsExpression = (
       // Only consider it a single bracket if:
       // 1. It's not followed by another { (not part of {{)
       // 2. It's not preceded by another { (not part of {{)
-      const isFollowedByBrace = i + 1 < text.length && text.charAt(i + 1) === '{';
+      const isFollowedByBrace =
+        i + 1 < text.length && text.charAt(i + 1) === '{';
       const isPrecededByBrace = i > 0 && text.charAt(i - 1) === '{';
 
       if (!isFollowedByBrace && !isPrecededByBrace) {
@@ -49,7 +53,7 @@ export const isWithinHandlebarsExpression = (
       expressionStart: -1,
       expressionEnd: -1,
       isTriple: false,
-      isSingleBracket: false
+      isSingleBracket: false,
     };
   }
 
@@ -60,7 +64,7 @@ export const isWithinHandlebarsExpression = (
       expressionStart: start + 1,
       expressionEnd: offset,
       isTriple: false,
-      isSingleBracket: true
+      isSingleBracket: true,
     };
   }
 
@@ -77,7 +81,7 @@ export const isWithinHandlebarsExpression = (
           expressionStart: searchStart,
           expressionEnd: i,
           isTriple,
-          isSingleBracket: false
+          isSingleBracket: false,
         };
       }
       // If cursor is after the closing braces entirely, we're not within the expression
@@ -86,7 +90,7 @@ export const isWithinHandlebarsExpression = (
         expressionStart: -1,
         expressionEnd: -1,
         isTriple: false,
-        isSingleBracket: false
+        isSingleBracket: false,
       };
     }
   }
@@ -98,6 +102,6 @@ export const isWithinHandlebarsExpression = (
     expressionStart: -1,
     expressionEnd: -1,
     isTriple: false,
-    isSingleBracket: false
+    isSingleBracket: false,
   };
 };

@@ -3,11 +3,11 @@ import {
   DocumentOnTypeFormattingParams,
   DocumentRangeFormattingParams,
   Range,
-  TextEdit
+  TextEdit,
 } from 'vscode-languageserver/node';
 
-import { CurrentConnectionConfig } from '../../types';
 import { containsMeteorTemplates } from '../helpers/containsMeteorTemplates';
+import { CurrentConnectionConfig } from '/types';
 
 /**
  * Applies text edits to a document text and returns the modified text
@@ -32,7 +32,8 @@ function applyTextEdits(text: string, edits: TextEdit[]): string {
     if (startLine === endLine) {
       // Single line edit
       const line = lines[startLine];
-      lines[startLine] = line.substring(0, startChar) + edit.newText + line.substring(endChar);
+      lines[startLine] =
+        line.substring(0, startChar) + edit.newText + line.substring(endChar);
     } else {
       // Multi-line edit
       const firstLine = lines[startLine].substring(0, startChar);
@@ -143,7 +144,8 @@ function findTemplateInvocations(text: string): TemplateInvocation[] {
     }
 
     // Get base indentation (indentation of the line with {{)
-    const baseIndentation = lines[startLine].substring(0, startChar).match(/^\s*/)?.[0] || '';
+    const baseIndentation =
+      lines[startLine].substring(0, startChar).match(/^\s*/)?.[0] || '';
 
     // Parse parameters - handles quoted strings, unquoted values, and standalone params
     const parameters: Array<{ name: string; value: string }> = [];
@@ -260,12 +262,12 @@ function findTemplateInvocations(text: string): TemplateInvocation[] {
       templateName,
       range: {
         start: { line: startLine, character: startChar },
-        end: { line: endLine, character: endChar }
+        end: { line: endLine, character: endChar },
       },
       parameters,
       isMultiLine,
       originalText,
-      baseIndentation
+      baseIndentation,
     });
   }
 
@@ -332,7 +334,7 @@ export const onDocumentFormatting = (config: CurrentConnectionConfig) => {
     // Get formatting settings
     const settings = await config.connection.workspace.getConfiguration({
       scopeUri: params.textDocument.uri,
-      section: 'meteorLanguageServer'
+      section: 'meteorLanguageServer',
     });
 
     const formattingEnabled = settings?.formatting?.enabled !== false;
@@ -352,10 +354,9 @@ export const onDocumentFormatting = (config: CurrentConnectionConfig) => {
           `Requesting base formatter '${baseFormatter}' for ${params.textDocument.uri}`
         );
         const folders = await connection.workspace.getWorkspaceFolders();
-        const projectRoot = (folders && folders.length > 0 ? folders[0].uri : '').replace(
-          'file://',
-          ''
-        );
+        const projectRoot = (
+          folders && folders.length > 0 ? folders[0].uri : ''
+        ).replace('file://', '');
         const relativePath = document.uri.replace(projectRoot, '');
 
         const formatterName = 'ptbarnum4.meteor-blaze-vscode-language-server';
@@ -363,9 +364,9 @@ export const onDocumentFormatting = (config: CurrentConnectionConfig) => {
         const options = {
           '⓵ Formatter 1 (Runs 1st)': baseFormatter,
           '⓶ Formatter 2 (Runs 2nd)': formatterName,
-          '📄 Filename' : filename,
+          '📄 Filename': filename,
           '📁 Relative Path': relativePath,
-          ...params.options
+          ...params.options,
         };
 
         connection.console.info(
@@ -379,13 +380,15 @@ export const onDocumentFormatting = (config: CurrentConnectionConfig) => {
           {
             uri: params.textDocument.uri,
             formatterId: baseFormatter,
-            options: params.options
+            options: params.options,
           }
         );
 
         if (result && Array.isArray(result)) {
           baseEdits = result;
-          connection.console.log(`Base formatter returned ${baseEdits.length} edits`);
+          connection.console.log(
+            `Base formatter returned ${baseEdits.length} edits`
+          );
           // Apply base formatter edits to get updated text
           workingText = applyTextEdits(workingText, baseEdits);
         } else {
@@ -393,7 +396,9 @@ export const onDocumentFormatting = (config: CurrentConnectionConfig) => {
         }
       } catch (error) {
         // If base formatter fails, continue with just Meteor formatting
-        connection.console.warn(`Failed to invoke base formatter '${baseFormatter}': ${error}`);
+        connection.console.warn(
+          `Failed to invoke base formatter '${baseFormatter}': ${error}`
+        );
       }
     }
 
@@ -405,13 +410,17 @@ export const onDocumentFormatting = (config: CurrentConnectionConfig) => {
     const meteorEdits: TextEdit[] = [];
 
     for (const invocation of invocations) {
-      const formattedText = formatTemplateInvocation(invocation, indentSize, useTabs);
+      const formattedText = formatTemplateInvocation(
+        invocation,
+        indentSize,
+        useTabs
+      );
 
       // Only add edit if the text actually changed
       if (formattedText !== invocation.originalText) {
         meteorEdits.push({
           range: invocation.range,
-          newText: formattedText
+          newText: formattedText,
         });
       }
     }
@@ -431,11 +440,11 @@ export const onDocumentFormatting = (config: CurrentConnectionConfig) => {
             start: { line: 0, character: 0 },
             end: {
               line: originalLines.length - 1,
-              character: originalLines[originalLines.length - 1].length
-            }
+              character: originalLines[originalLines.length - 1].length,
+            },
           },
-          newText: finalText
-        }
+          newText: finalText,
+        },
       ];
     }
 
@@ -471,7 +480,7 @@ export const onDocumentRangeFormatting = (config: CurrentConnectionConfig) => {
     // Get formatting settings
     const settings = await config.connection.workspace.getConfiguration({
       scopeUri: params.textDocument.uri,
-      section: 'meteorLanguageServer'
+      section: 'meteorLanguageServer',
     });
 
     const formattingEnabled = settings?.formatting?.enabled !== false;
@@ -496,13 +505,17 @@ export const onDocumentRangeFormatting = (config: CurrentConnectionConfig) => {
         invocation.range.end.line <= params.range.end.line;
 
       if (isInRange) {
-        const formattedText = formatTemplateInvocation(invocation, indentSize, useTabs);
+        const formattedText = formatTemplateInvocation(
+          invocation,
+          indentSize,
+          useTabs
+        );
 
         // Only add edit if the text actually changed
         if (formattedText !== invocation.originalText) {
           edits.push({
             range: invocation.range,
-            newText: formattedText
+            newText: formattedText,
           });
         }
       }
@@ -518,7 +531,9 @@ export const onDocumentRangeFormatting = (config: CurrentConnectionConfig) => {
 export const onDocumentOnTypeFormatting = (config: CurrentConnectionConfig) => {
   const { documents } = config;
 
-  return async (params: DocumentOnTypeFormattingParams): Promise<TextEdit[]> => {
+  return async (
+    params: DocumentOnTypeFormattingParams
+  ): Promise<TextEdit[]> => {
     const document = documents.get(params.textDocument.uri);
     if (!document) {
       return [];
@@ -534,7 +549,7 @@ export const onDocumentOnTypeFormatting = (config: CurrentConnectionConfig) => {
     // Get formatting settings
     const settings = await config.connection.workspace.getConfiguration({
       scopeUri: params.textDocument.uri,
-      section: 'meteorLanguageServer'
+      section: 'meteorLanguageServer',
     });
 
     const formattingEnabled = settings?.formatting?.enabled !== false;
@@ -554,7 +569,9 @@ export const onDocumentOnTypeFormatting = (config: CurrentConnectionConfig) => {
     const textBeforeCursor = text.substring(0, offset);
 
     // Check if we're inside a template invocation
-    const templateMatch = textBeforeCursor.match(/\{\{\s*>\s*([a-zA-Z0-9_]+)(?:[^{}])*$/);
+    const templateMatch = textBeforeCursor.match(
+      /\{\{\s*>\s*([a-zA-Z0-9_]+)(?:[^{}])*$/
+    );
     if (!templateMatch) {
       return [];
     }
@@ -578,10 +595,10 @@ export const onDocumentOnTypeFormatting = (config: CurrentConnectionConfig) => {
           {
             range: {
               start: position,
-              end: position
+              end: position,
             },
-            newText: `${baseIndent}${indent}`
-          }
+            newText: `${baseIndent}${indent}`,
+          },
         ];
       }
     }
@@ -602,14 +619,18 @@ export const onDocumentOnTypeFormatting = (config: CurrentConnectionConfig) => {
               invocation.range.end.character === 0);
 
           if (containsPosition) {
-            const formattedText = formatTemplateInvocation(invocation, indentSize, useTabs);
+            const formattedText = formatTemplateInvocation(
+              invocation,
+              indentSize,
+              useTabs
+            );
 
             if (formattedText !== invocation.originalText) {
               return [
                 {
                   range: invocation.range,
-                  newText: formattedText
-                }
+                  newText: formattedText,
+                },
               ];
             }
           }

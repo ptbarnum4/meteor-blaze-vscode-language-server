@@ -10,6 +10,10 @@ suite('Extension Test Suite', () => {
   });
 
   test('Extension should be present', () => {
-    assert.ok(vscode.extensions.getExtension('ptbarnum4.meteor-blaze-vscode-language-server'));
+    assert.ok(
+      vscode.extensions.getExtension(
+        'ptbarnum4.meteor-blaze-vscode-language-server'
+      )
+    );
   });
 });

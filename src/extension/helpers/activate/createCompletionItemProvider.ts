@@ -5,7 +5,7 @@ import vscode from 'vscode';
  */
 const INCLUDE_FILES = [
   { language: 'html', scheme: 'file' },
-  { language: 'handlebars', scheme: 'file' }
+  { language: 'handlebars', scheme: 'file' },
 ];
 
 /**
@@ -32,7 +32,6 @@ const createCompletionItemProvider = (): vscode.Disposable => {
   );
 };
 
-
 /**
  * Provides completion items for Meteor block conditions.
  * It checks the current block type and provides properties defined in the configuration.
@@ -49,18 +48,23 @@ function provideCompletionItems(
   _token: vscode.CancellationToken,
   _context: vscode.CompletionContext
 ) {
-  const blockConfig = vscode.workspace.getConfiguration('meteorLanguageServer.blockConditions');
+  const blockConfig = vscode.workspace.getConfiguration(
+    'meteorLanguageServer.blockConditions'
+  );
   type ExtendedBlock = { type: string; label: string; propNames?: string[] };
   const extendBlocks = blockConfig.get<ExtendedBlock[]>('extend', []);
   const defaultBlockTypes = [
     { type: 'if', label: 'if' },
     { type: 'each', label: 'each' },
     { type: 'unless', label: 'unless' },
-    { type: 'with', label: 'with' }
+    { type: 'with', label: 'with' },
   ];
-  const blockTypesMap = new Map<string, { type: string; label: string; propNames?: string[] }>();
-  defaultBlockTypes.forEach(b => blockTypesMap.set(b.type, b));
-  extendBlocks.forEach(b => blockTypesMap.set(b.type, b));
+  const blockTypesMap = new Map<
+    string,
+    { type: string; label: string; propNames?: string[] }
+  >();
+  defaultBlockTypes.forEach((b) => blockTypesMap.set(b.type, b));
+  extendBlocks.forEach((b) => blockTypesMap.set(b.type, b));
   const blockTypes: ExtendedBlock[] = Array.from(blockTypesMap.values());
 
   const text = document.getText();
@@ -73,13 +77,15 @@ function provideCompletionItems(
     return undefined;
   }
 
-  return foundBlock.propNames.map(p => {
-    const item = new vscode.CompletionItem(p, vscode.CompletionItemKind.Property);
+  return foundBlock.propNames.map((p) => {
+    const item = new vscode.CompletionItem(
+      p,
+      vscode.CompletionItemKind.Property
+    );
     item.detail = `Custom property for block #${foundBlock!.type}`;
     return item;
   });
 }
-
 
 /**
  * Finds the block type at the given offset in the document.

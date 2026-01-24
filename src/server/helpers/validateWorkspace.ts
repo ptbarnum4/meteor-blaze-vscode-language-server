@@ -2,9 +2,9 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { TextDocument } from 'vscode-languageserver-textdocument';
 
-import { CurrentConnectionConfig } from '../../types';
 import { analyzeNeighboringFiles } from './analyzeNeighboringFiles';
 import { validateTextDocument } from './validateTextDocument';
+import { CurrentConnectionConfig } from '/types';
 
 /**
  * Recursively finds all HTML/Meteor template files in a directory
@@ -13,7 +13,7 @@ function findTemplateFiles(dir: string, fileList: string[] = []): string[] {
   try {
     const files = fs.readdirSync(dir);
 
-    files.forEach(file => {
+    files.forEach((file) => {
       const filePath = path.join(dir, file);
 
       try {
@@ -23,7 +23,14 @@ function findTemplateFiles(dir: string, fileList: string[] = []): string[] {
           // Skip common directories that shouldn't be validated
           const dirName = path.basename(filePath);
           if (
-            !['node_modules', '.git', '.meteor', 'dist', 'out', 'build'].includes(dirName) &&
+            ![
+              'node_modules',
+              '.git',
+              '.meteor',
+              'dist',
+              'out',
+              'build',
+            ].includes(dirName) &&
             !dirName.startsWith('.')
           ) {
             findTemplateFiles(filePath, fileList);
@@ -50,12 +57,17 @@ function findTemplateFiles(dir: string, fileList: string[] = []): string[] {
 /**
  * Validates all template files in the workspace
  */
-export async function validateWorkspace(config: CurrentConnectionConfig): Promise<void> {
+export async function validateWorkspace(
+  config: CurrentConnectionConfig
+): Promise<void> {
   try {
-    const workspaceFolders = await config.connection.workspace.getWorkspaceFolders();
+    const workspaceFolders =
+      await config.connection.workspace.getWorkspaceFolders();
 
     if (!workspaceFolders || workspaceFolders.length === 0) {
-      config.connection.console.info('No workspace folders found for validation');
+      config.connection.console.info(
+        'No workspace folders found for validation'
+      );
       return;
     }
 
@@ -74,7 +86,9 @@ export async function validateWorkspace(config: CurrentConnectionConfig): Promis
       const templateFiles = findTemplateFiles(folderPath);
       totalFiles += templateFiles.length;
 
-      config.connection.console.info(`Found ${templateFiles.length} template files in ${folder.name}`);
+      config.connection.console.info(
+        `Found ${templateFiles.length} template files in ${folder.name}`
+      );
 
       // Validate each file
       for (const filePath of templateFiles) {
@@ -83,12 +97,7 @@ export async function validateWorkspace(config: CurrentConnectionConfig): Promis
           const uri = `file://${filePath}`;
 
           // Create a TextDocument from the file content
-          const document = TextDocument.create(
-            uri,
-            'html',
-            1,
-            content
-          );
+          const document = TextDocument.create(uri, 'html', 1, content);
 
           // Analyze neighboring files to populate dataProperties Map
           analyzeNeighboringFiles(config.fileAnalysis, document);
@@ -97,7 +106,9 @@ export async function validateWorkspace(config: CurrentConnectionConfig): Promis
           await validateTextDocument(config, document);
           validatedFiles++;
         } catch (err) {
-          config.connection.console.error(`Error validating ${filePath}: ${err}`);
+          config.connection.console.error(
+            `Error validating ${filePath}: ${err}`
+          );
         }
       }
     }
@@ -106,6 +117,8 @@ export async function validateWorkspace(config: CurrentConnectionConfig): Promis
       `Workspace validation complete: ${validatedFiles}/${totalFiles} files validated`
     );
   } catch (err) {
-    config.connection.console.error(`Error during workspace validation: ${err}`);
+    config.connection.console.error(
+      `Error during workspace validation: ${err}`
+    );
   }
 }

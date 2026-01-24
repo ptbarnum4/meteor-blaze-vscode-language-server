@@ -1,17 +1,21 @@
 import fs from 'fs';
 import path from 'path';
 import * as ts from 'typescript';
+import { safeParse } from './strings';
+import { TsConfig } from '/types';
 
 export type TemplateDataAnalysis = {
-  types: Record<string, string[]>;          // TS type or interface name -> properties
+  types: Record<string, string[]>; // TS type or interface name -> properties
   typePropertyTypes: Record<string, Record<string, string>>; // Type name -> property -> type string
   typePropertyJsDocs: Record<string, Record<string, string>>; // Type name -> property -> JSDoc comment
-  typedefs: Record<string, string[]>;       // JSDoc typedef name -> properties
-  templateTypeMap: Record<string, string>;  // template name -> data type name
+  typedefs: Record<string, string[]>; // JSDoc typedef name -> properties
+  templateTypeMap: Record<string, string>; // template name -> data type name
 };
 
 // Extract properties from types and interfaces in a TypeScript file
-const extractTypesFromFile = (content: string): {
+const extractTypesFromFile = (
+  content: string
+): {
   types: Record<string, string[]>;
   typePropertyTypes: Record<string, Record<string, string>>;
   typePropertyJsDocs: Record<string, Record<string, string>>;
@@ -38,7 +42,7 @@ const extractTypesFromFile = (content: string): {
         if (typeof comment.comment === 'string') {
           return comment.comment;
         } else if (Array.isArray(comment.comment)) {
-          return comment.comment.map(c => c.text).join('');
+          return comment.comment.map((c) => c.text).join('');
         }
       }
     }
@@ -58,10 +62,12 @@ const extractTypesFromFile = (content: string): {
         const propTypes: Record<string, string> = {};
         const propJsDocs: Record<string, string> = {};
 
-        node.type.members.forEach(member => {
+        node.type.members.forEach((member) => {
           if (ts.isPropertySignature(member) && member.name) {
             const propName = member.name.getText(sourceFile);
-            const propType = member.type ? member.type.getText(sourceFile) : 'any';
+            const propType = member.type
+              ? member.type.getText(sourceFile)
+              : 'any';
             const jsDoc = getJsDocComment(member);
 
             if (!names.includes(propName)) {
@@ -87,10 +93,12 @@ const extractTypesFromFile = (content: string): {
       const propTypes: Record<string, string> = {};
       const propJsDocs: Record<string, string> = {};
 
-      node.members.forEach(member => {
+      node.members.forEach((member) => {
         if (ts.isPropertySignature(member) && member.name) {
           const propName = member.name.getText(sourceFile);
-          const propType = member.type ? member.type.getText(sourceFile) : 'any';
+          const propType = member.type
+            ? member.type.getText(sourceFile)
+            : 'any';
           const jsDoc = getJsDocComment(member);
 
           if (!names.includes(propName)) {
@@ -119,7 +127,8 @@ const extractTypesFromFile = (content: string): {
 // Extract JSDoc typedefs
 const extractTypedefs = (content: string): Record<string, string[]> => {
   const out: Record<string, string[]> = {};
-  const typedefBlockRegex = /\/\*\*[\s\S]*?@typedef\s+\{Object\}\s+(\w+)[\s\S]*?\*\//g;
+  const typedefBlockRegex =
+    /\/\*\*[\s\S]*?@typedef\s+\{Object\}\s+(\w+)[\s\S]*?\*\//g;
   let m;
   while ((m = typedefBlockRegex.exec(content)) !== null) {
     const name = m[1];
@@ -138,9 +147,12 @@ const extractTypedefs = (content: string): Record<string, string[]> => {
 };
 
 // Extract TemplateStaticTyped<'name', TypeName, ...>
-const extractTemplateStaticTyped = (content: string): Record<string, string> => {
+const extractTemplateStaticTyped = (
+  content: string
+): Record<string, string> => {
   const map: Record<string, string> = {};
-  const regex = /TemplateStaticTyped\s*<\s*['\"]([^'\"]+)['\"]\s*,\s*([A-Za-z_][A-Za-z0-9_]*)/g;
+  const regex =
+    /TemplateStaticTyped\s*<\s*['\"]([^'\"]+)['\"]\s*,\s*([A-Za-z_][A-Za-z0-9_]*)/g;
   let m;
   while ((m = regex.exec(content)) !== null) {
     const templateName = m[1];
@@ -151,45 +163,46 @@ const extractTemplateStaticTyped = (content: string): Record<string, string> => 
 };
 
 // Helper function to find tsconfig.json for TypeScript path resolution
-function findTsConfigForTemplateData(startPath: string): any {
+function findTsConfigForTemplateData(startPath: string): TsConfig | null {
   let currentDir = startPath;
 
   while (currentDir !== path.dirname(currentDir)) {
-    if (fs.existsSync(path.join(currentDir, '.meteor'))) {
-      const tsconfigPath = path.join(currentDir, 'tsconfig.json');
+    if (!fs.existsSync(path.join(currentDir, '.meteor'))) {
+      currentDir = path.dirname(currentDir);
+    }
+    const tsconfigPath = path.join(currentDir, 'tsconfig.json');
 
-      if (fs.existsSync(tsconfigPath)) {
-        try {
-          const tsconfigContent = fs.readFileSync(tsconfigPath, 'utf8');
-
-          // Try multiple parsing strategies
-          // Strategy 1: Parse as-is (valid JSON without comments)
-          try {
-            return JSON.parse(tsconfigContent);
-          } catch {
-            // Strategy 2: Remove comments and try again
-            try {
-              const cleanContent = safelyRemoveJsonComments(tsconfigContent);
-              return JSON.parse(cleanContent);
-            } catch {
-              // Strategy 3: Remove comments AND trailing commas
-              try {
-                let cleaned = safelyRemoveJsonComments(tsconfigContent);
-                cleaned = cleaned.replace(/,(\s*[}\]])/g, '$1');
-                return JSON.parse(cleaned);
-              } catch {
-                // Silently fail - tsconfig is not critical
-                return null;
-              }
-            }
-          }
-        } catch {
-          return null;
-        }
-      }
+    if (!fs.existsSync(tsconfigPath)) {
       break;
     }
-    currentDir = path.dirname(currentDir);
+
+    try {
+      const tsconfigContent = fs.readFileSync(tsconfigPath, 'utf8');
+
+      // Try multiple parsing strategies
+      // Strategy 1: Parse as-is (valid JSON without comments)
+      const tsconfig = safeParse<TsConfig>(tsconfigContent);
+      if (tsconfig) {
+        return tsconfig;
+      }
+
+      // Strategy 2: Remove comments and try again
+      const commentsRemoved = safelyRemoveJsonComments(tsconfigContent);
+      const cleanContent = safeParse<TsConfig>(commentsRemoved);
+
+      if (cleanContent) {
+        return cleanContent;
+      }
+
+      // Strategy 3: Remove comments AND trailing commas
+      const withoutTrailingCommas = safeParse<TsConfig>(
+        commentsRemoved?.replace(/,(\s*[}\]])/g, '$1')
+      );
+
+      return withoutTrailingCommas || null;
+    } catch {
+      return null;
+    }
   }
 
   return null;
@@ -197,6 +210,9 @@ function findTsConfigForTemplateData(startPath: string): any {
 
 // Safely remove comments from JSON content
 function safelyRemoveJsonComments(content: string): string {
+  if (!content) {
+    return '';
+  }
   const result: string[] = [];
   let inString = false;
   let inLineComment = false;
@@ -274,7 +290,11 @@ function safelyRemoveJsonComments(content: string): string {
 }
 
 // TypeScript path resolution function for template data analysis
-function resolveTsPathForTemplateData(importPath: string, tsconfig: any, projectRoot: string): string | null {
+function resolveTsPathForTemplateData(
+  importPath: string,
+  tsconfig: TsConfig,
+  projectRoot: string
+): string | null {
   if (!tsconfig?.compilerOptions?.paths) {
     return null;
   }
@@ -283,11 +303,14 @@ function resolveTsPathForTemplateData(importPath: string, tsconfig: any, project
   const basePath = path.resolve(projectRoot, baseUrl);
 
   // Try to match the import path against tsconfig paths
-  for (const [pattern, mappings] of Object.entries(paths) as [string, string[]][]) {
+  for (const [pattern, mappings] of Object.entries(paths) as [
+    string,
+    string[],
+  ][]) {
     // Convert glob pattern to regex
     const regexPattern = pattern
-      .replace(/\*/g, '([^/]*)')  // Replace * with capture group
-      .replace(/\//g, '\\/');     // Escape forward slashes
+      .replace(/\*/g, '([^/]*)') // Replace * with capture group
+      .replace(/\//g, '\\/'); // Escape forward slashes
 
     const regex = new RegExp(`^${regexPattern}$`);
     const match = importPath.match(regex);
@@ -317,7 +340,8 @@ const findImportedFiles = (content: string, filePath: string): string[] => {
   const files: string[] = [];
 
   // Updated regex to handle both relative (./**, ../**) and absolute (/***) imports
-  const importRegex = /import\s+(?:type\s+)?\{[^}]*\}\s+from\s+['\"]((?:\.\.?\/|\/).*?)['\"]/g;
+  const importRegex =
+    /import\s+(?:type\s+)?\{[^}]*\}\s+from\s+['\"]((?:\.\.?\/|\/).*?)['\"]/g;
   let m;
 
   while ((m = importRegex.exec(content)) !== null) {
@@ -330,8 +354,10 @@ const findImportedFiles = (content: string, filePath: string): string[] => {
       let projectRoot = currentDir;
 
       while (currentDir !== path.dirname(currentDir)) {
-        if (fs.existsSync(path.join(currentDir, '.meteor')) ||
-            fs.existsSync(path.join(currentDir, 'package.json'))) {
+        if (
+          fs.existsSync(path.join(currentDir, '.meteor')) ||
+          fs.existsSync(path.join(currentDir, 'package.json'))
+        ) {
           projectRoot = currentDir;
           break;
         }
@@ -343,7 +369,11 @@ const findImportedFiles = (content: string, filePath: string): string[] => {
       let fullImportPath;
 
       if (tsconfig) {
-        const tsResolvedPath = resolveTsPathForTemplateData(importPath, tsconfig, projectRoot);
+        const tsResolvedPath = resolveTsPathForTemplateData(
+          importPath,
+          tsconfig,
+          projectRoot
+        );
         if (tsResolvedPath) {
           fullImportPath = tsResolvedPath;
         } else {
@@ -359,7 +389,7 @@ const findImportedFiles = (content: string, filePath: string): string[] => {
         fullImportPath + '.ts',
         fullImportPath + '.d.ts',
         fullImportPath + '.js',
-        fullImportPath
+        fullImportPath,
       ];
     } else {
       // Relative import
@@ -367,7 +397,7 @@ const findImportedFiles = (content: string, filePath: string): string[] => {
         path.resolve(dir, importPath + '.ts'),
         path.resolve(dir, importPath + '.d.ts'),
         path.resolve(dir, importPath + '.js'),
-        path.resolve(dir, importPath)
+        path.resolve(dir, importPath),
       ];
     }
 
@@ -386,7 +416,9 @@ const findImportedFiles = (content: string, filePath: string): string[] => {
   return files;
 };
 
-export const analyzeTemplateData = (entryFilePath: string): TemplateDataAnalysis => {
+export const analyzeTemplateData = (
+  entryFilePath: string
+): TemplateDataAnalysis => {
   const visited = new Set<string>();
   const types: Record<string, string[]> = {};
   const typePropertyTypes: Record<string, Record<string, string>> = {};
@@ -431,5 +463,11 @@ export const analyzeTemplateData = (entryFilePath: string): TemplateDataAnalysis
     }
   }
 
-  return { types, typePropertyTypes, typePropertyJsDocs, typedefs, templateTypeMap };
+  return {
+    types,
+    typePropertyTypes,
+    typePropertyJsDocs,
+    typedefs,
+    templateTypeMap,
+  };
 };

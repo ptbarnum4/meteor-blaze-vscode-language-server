@@ -8,7 +8,11 @@
 
 // External LSP types
 import { TextDocument } from 'vscode-languageserver-textdocument';
-import { createConnection, ProposedFeatures, TextDocuments } from 'vscode-languageserver/node';
+import {
+  createConnection,
+  ProposedFeatures,
+  TextDocuments,
+} from 'vscode-languageserver/node';
 
 // Shared types/state used across handlers
 import { CurrentConnectionConfig } from '/types';
@@ -22,9 +26,9 @@ import onDidChangeConfiguration from './onDidChangeConfiguration';
 import onDidChangeContent from './onDidChangeContent';
 import onDidClose from './onDidClose';
 import {
-    onDocumentFormatting,
-    onDocumentOnTypeFormatting,
-    onDocumentRangeFormatting
+  onDocumentFormatting,
+  onDocumentOnTypeFormatting,
+  onDocumentRangeFormatting,
 } from './onFormatting';
 import onHover from './onHover';
 import onInitialize from './onInitialize';
@@ -54,13 +58,13 @@ const config: CurrentConnectionConfig = {
     jsHelpers: new Map(),
     helperDetails: new Map(),
     cssClasses: new Map(),
-    templates: new Map()
+    templates: new Map(),
   },
   documents,
   connection,
   hasConfigurationCapability: false,
   hasWorkspaceFolderCapability: false,
-  hasDiagnosticRelatedInformationCapability: false
+  hasDiagnosticRelatedInformationCapability: false,
 };
 
 // --- Handler Registration ---------------------------------------------------
@@ -99,7 +103,7 @@ connection.onRequest('workspace/validateAll', async () => {
  */
 const connectionConfig = {
   documents,
-  connection
+  connection,
 };
 
 export default connectionConfig;

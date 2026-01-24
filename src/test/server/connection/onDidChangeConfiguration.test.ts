@@ -1,10 +1,13 @@
 import assert from 'assert';
 import { describe, it } from 'node:test';
 import { TextDocument } from 'vscode-languageserver-textdocument';
-import { DidChangeConfigurationParams, TextDocuments } from 'vscode-languageserver/node';
+import {
+  DidChangeConfigurationParams,
+  TextDocuments,
+} from 'vscode-languageserver/node';
 
-import onDidChangeConfiguration from '../../../server/connection/onDidChangeConfiguration';
-import { CurrentConnectionConfig, LanguageServerSettings } from '../../../types';
+import onDidChangeConfiguration from '/server/connection/onDidChangeConfiguration';
+import { CurrentConnectionConfig, LanguageServerSettings } from '/types';
 
 /**
  * Test suite for onDidChangeConfiguration connection handler
@@ -14,12 +17,12 @@ describe('connection/onDidChangeConfiguration', () => {
 
   const createMockConnection = () => ({
     console: {
-      log: () => {} // Mock console log
+      log: () => {}, // Mock console log
     },
     sendDiagnostics: () => {}, // Mock sendDiagnostics
     workspace: {
-      getConfiguration: () => Promise.resolve(mockSettings)
-    }
+      getConfiguration: () => Promise.resolve(mockSettings),
+    },
   });
 
   const createMockDocuments = () => {
@@ -27,7 +30,12 @@ describe('connection/onDidChangeConfiguration', () => {
     // Mock the all() method to return some test documents
     documents.all = () => [
       TextDocument.create('file:///test1.html', 'html', 1, '<div>test</div>'),
-      TextDocument.create('file:///test2.html', 'html', 1, '<template name="test"></template>')
+      TextDocument.create(
+        'file:///test2.html',
+        'html',
+        1,
+        '<template name="test"></template>'
+      ),
     ];
     return documents;
   };
@@ -41,14 +49,14 @@ describe('connection/onDidChangeConfiguration', () => {
       jsHelpers: new Map(),
       helperDetails: new Map(),
       cssClasses: new Map(),
-      templates: new Map()
+      templates: new Map(),
     },
     documents: createMockDocuments(),
     connection: createMockConnection() as any,
     hasConfigurationCapability: false,
     hasWorkspaceFolderCapability: false,
     hasDiagnosticRelatedInformationCapability: false,
-    ...overrides
+    ...overrides,
   });
 
   it('should return configuration change handler function', () => {
@@ -61,13 +69,16 @@ describe('connection/onDidChangeConfiguration', () => {
     const config = createMockConfig({ hasConfigurationCapability: true });
 
     // Add some document settings
-    config.documentSettings.set('file:///test.html', Promise.resolve(mockSettings));
+    config.documentSettings.set(
+      'file:///test.html',
+      Promise.resolve(mockSettings)
+    );
     assert.strictEqual(config.documentSettings.size, 1);
 
     const handler = onDidChangeConfiguration(config);
 
     const params: DidChangeConfigurationParams = {
-      settings: {}
+      settings: {},
     };
 
     handler(params);
@@ -86,8 +97,8 @@ describe('connection/onDidChangeConfiguration', () => {
 
     const params: DidChangeConfigurationParams = {
       settings: {
-        meteorLanguageServer: newSettings
-      }
+        meteorLanguageServer: newSettings,
+      },
     };
 
     handler(params);
@@ -102,7 +113,7 @@ describe('connection/onDidChangeConfiguration', () => {
     const handler = onDidChangeConfiguration(config);
 
     const params: DidChangeConfigurationParams = {
-      settings: {}
+      settings: {},
     };
 
     handler(params);
@@ -118,8 +129,8 @@ describe('connection/onDidChangeConfiguration', () => {
 
     const params: DidChangeConfigurationParams = {
       settings: {
-        meteorLanguageServer: { maxNumberOfProblems: 50 }
-      }
+        meteorLanguageServer: { maxNumberOfProblems: 50 },
+      },
     };
 
     // Should not throw when validating documents
@@ -134,7 +145,7 @@ describe('connection/onDidChangeConfiguration', () => {
     const handler = onDidChangeConfiguration(config);
 
     const params: DidChangeConfigurationParams = {
-      settings: {}
+      settings: {},
     };
 
     assert.doesNotThrow(() => {
@@ -152,8 +163,8 @@ describe('connection/onDidChangeConfiguration', () => {
 
     const params: DidChangeConfigurationParams = {
       settings: {
-        meteorLanguageServer: null
-      }
+        meteorLanguageServer: null,
+      },
     };
 
     assert.doesNotThrow(() => {
@@ -166,12 +177,15 @@ describe('connection/onDidChangeConfiguration', () => {
     const originalMap = config.documentSettings;
 
     // Add some settings
-    config.documentSettings.set('file:///test.html', Promise.resolve(mockSettings));
+    config.documentSettings.set(
+      'file:///test.html',
+      Promise.resolve(mockSettings)
+    );
 
     const handler = onDidChangeConfiguration(config);
 
     const params: DidChangeConfigurationParams = {
-      settings: {}
+      settings: {},
     };
 
     handler(params);

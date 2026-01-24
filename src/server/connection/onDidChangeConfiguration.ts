@@ -1,7 +1,7 @@
 import { DidChangeConfigurationParams } from 'vscode-languageserver/node';
 
-import { CurrentConnectionConfig, LanguageServerSettings } from '../../types';
 import { validateTextDocument } from '../helpers/validateTextDocument';
+import { CurrentConnectionConfig, LanguageServerSettings } from '/types';
 
 const onDidChangeConfiguration = (config: CurrentConnectionConfig) => {
   return (change: DidChangeConfigurationParams) => {
@@ -13,7 +13,7 @@ const onDidChangeConfiguration = (config: CurrentConnectionConfig) => {
       );
     }
 
-    config.documents.all().forEach(doc => validateTextDocument(config, doc));
+    config.documents.all().forEach((doc) => validateTextDocument(config, doc));
   };
 };
 
