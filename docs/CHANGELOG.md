@@ -4,13 +4,16 @@ All notable changes to the "meteor-blaze-vscode-language-server" extension will 
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
-## [Unreleased] - 2026-01-22
+## [Unreleased]
+
+## [0.0.12] - 2026-01-24
 
 ### ✨ New Features
 
 #### Template Parameter Completion & Indentation (Issue #62)
 
 **Template Parameter Completion:**
+
 - **Parameter Name Suggestions** (left of `=`): When typing template invocation parameters, automatically suggests available parameters based on TypeScript type definitions and template usage patterns
 - **Value Suggestions** (right of `=`): After typing `=`, suggests helpers, data properties, and context values from the current template
 - **Smart Filtering**: Already-used parameters are automatically excluded from suggestions
@@ -18,6 +21,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - **Documentation Support**: Shows JSDoc comments for parameters when available
 
 **Template Invocation Formatting:**
+
 - **Format on Save**: Automatically formats multi-line template invocations with proper indentation
 - **Format on Type**: Smart formatting triggers when pressing Enter or typing closing `}}`
 - **Proper Indentation**: Each parameter on its own line with consistent indentation
@@ -26,6 +30,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - **Smart Behavior**: Only formats multi-line invocations, preserves single-line when appropriate
 
 **New Configuration Options:**
+
 ```json
 {
   "meteorLanguageServer.formatting": {
@@ -41,6 +46,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ```
 
 ### 🎯 Enhancements
+
 - Enhanced completion system with context-aware suggestions for template invocations
 - Improved formatting provider with support for document, range, and on-type formatting
 - Better TypeScript type extraction for template parameter schemas
@@ -48,16 +54,19 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ## [0.0.11] - 2026-01-13
 
 ### 🐛 Bug Fixes
+
 - Improved stability and error handling in language server
 - Enhanced template parsing for edge cases
 - Fixed minor issues with code completion accuracy
 
 ### ✨ Enhancements
+
 - Performance improvements in document analysis
 - Better handling of complex template structures
 - Enhanced diagnostic messages for better clarity
 
 ### 🔧 Maintenance
+
 - Code refactoring and cleanup
 - Updated internal dependencies
 - Improved test coverage
@@ -67,6 +76,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ### ✨ New Features
 
 #### Rich Global Helper Configuration
+
 - **New `meteorLanguageServer.globalHelpers` setting**: Define custom global helpers with comprehensive documentation
 - **Parameter definitions**: Document parameter names, types, and descriptions
 - **Return type information**: Specify and document return types
@@ -77,6 +87,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - **Backward compatible**: Legacy `blazeHelpers.extend` still supported
 
 #### Configuration Example
+
 ```json
 {
   "meteorLanguageServer.globalHelpers": {
@@ -101,9 +112,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
           "type": "string",
           "doc": "Formatted date string"
         },
-        "examples": [
-          { "html": "{{ formatDate createdAt 'DD-MM-YYYY' }}" }
-        ]
+        "examples": [{ "html": "{{ formatDate createdAt 'DD-MM-YYYY' }}" }]
       }
     ]
   }
@@ -111,6 +120,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ```
 
 **Benefits:**
+
 - Better documentation for external package helpers
 - Improved team collaboration with shared helper docs
 - Enhanced code completion with type information
@@ -121,6 +131,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ### 🔧 Maintenance
 
 #### Development Dependencies Updated
+
 - **@eslint/js**: Updated from ^9.0.0 to ^9.39.1
 - **@types/node**: Updated from ^24.5.2 to ^24.10.0
 - **@types/vscode**: Updated from ^1.104.0 to ^1.105.0
@@ -139,6 +150,7 @@ No functional changes to the extension - this is a pure dependency maintenance r
 ### ✨ New Features
 
 #### Invalid Block Detection in HTML Tags
+
 - **Detects invalid Blaze syntax patterns**: Extension now identifies and reports errors when `{{#if}}` or `{{#unless}}` blocks are used directly within HTML element tags to conditionally set attributes
 - **Smart validation**: Correctly allows blocks within quoted attribute values (e.g., `class="{{#if}}...{{/if}}"`)
 - **Comment-aware**: Skips validation within HTML (`<!-- -->`) and Handlebars (`{{!-- --}}`, `{{! }}`) comments
@@ -146,6 +158,7 @@ No functional changes to the extension - this is a pure dependency maintenance r
 - **Complete block highlighting**: Highlights entire blocks from `{{#if}}` to `{{/if}}` for better error visibility
 
 #### Workspace-Wide Validation
+
 - **New command**: "Meteor/Blaze: Validate All Templates in Workspace" accessible via Command Palette
 - **Automatic validation on startup**: Validates all `.html`, `.htm`, `.meteor`, and `.hbs` files when language server starts (configurable)
 - **New setting**: `meteorLanguageServer.validateWorkspaceOnStartup` (default: `true`)
@@ -154,6 +167,7 @@ No functional changes to the extension - this is a pure dependency maintenance r
 - **Large project support**: Efficiently handles projects with many template files
 
 #### Enhanced HTML/Blaze Nesting Validation
+
 - **{{else}} boundary support**: Added `{{else}}` tag recognition as a structural boundary
 - **Flexible HTML placement**: Allows HTML to be opened in `{{#if}}` and closed in `{{else}}` (or vice versa)
 - **Better nested block handling**: Improved validation of nested blocks within `{{else}}` branches
@@ -162,17 +176,20 @@ No functional changes to the extension - this is a pure dependency maintenance r
 ### 🐛 Bug Fixes
 
 #### Duplicate Parameter Detection
+
 - **Fixed false positives for hyphenated attributes**: Now correctly distinguishes between similar hyphenated HTML attributes (e.g., `data-test-id`, `data-custom-id`, `data-id`)
 - **Technical improvement**: Updated regex pattern from `/\b([a-zA-Z_$][a-zA-Z0-9_$]*)=/g` to `/(?:^|\s)([a-zA-Z_$][a-zA-Z0-9_$-]*)=/g` to properly handle hyphens in attribute names
 - **Eliminated false duplicates**: Attributes like `data-test-id` and `data-custom-id` are now correctly recognized as different parameters
 
 #### Handlebars Inline Comment Detection
+
 - **Fixed nested expression handling**: Correctly handles inline comments containing nested `{{ }}` expressions
 - **Brace depth tracking**: Implemented proper brace counting to identify true comment boundaries
 - **Eliminated false positives**: Comments like `{{! <button {{#if active}}disabled{{/if}}></button> }}` are now correctly recognized as single comments
 - **Improved parser accuracy**: No longer treats the first `}}` within a comment as the comment's end
 
 #### Quote Tracking in Template Files
+
 - **Smart quote detection**: Enhanced quote tracking to avoid false positives from single quotes in Handlebars expressions
 - **Context-aware parsing**: Only tracks quotes within attribute assignments, not within Handlebars expression arguments
 - **Better handling of complex templates**: Properly handles templates with quotes in parameters like `{{#if isInRole 'admin,super,admiral' 'confirmed'}}`
@@ -181,12 +198,14 @@ No functional changes to the extension - this is a pure dependency maintenance r
 ### 📝 Documentation
 
 #### New Example Configuration Files
+
 - **example-settings.jsonc**: Basic language server configuration with block conditions and custom helpers
 - **example-settings-auto-insert.jsonc**: Auto-insert end tags configuration examples
 - **example-settings-blazeHelpers-colors.jsonc**: Custom colors for Blaze helper tokens
 - **example-blaze-token-theme.jsonc**: TextMate token color customization examples
 
 #### Updated Documentation
+
 - **README.md**: Added workspace validation section with configuration examples and example file references
 - **SETUP.md**: Added reference to example configuration files at the top with detailed descriptions
 - **Enhanced feature documentation**: Improved examples and use cases throughout documentation
@@ -194,10 +213,12 @@ No functional changes to the extension - this is a pure dependency maintenance r
 ### 🏗️ Technical Changes
 
 #### New Files
+
 - `src/server/helpers/validateWorkspace.ts`: Workspace validation logic with recursive file discovery and error handling
 - 20+ test files in `test-project/imports/ui/`: Comprehensive test coverage for edge cases and validation scenarios
 
 #### Modified Files
+
 - `src/server/helpers/validateTextDocument.ts`: Core validation logic with new validators for invalid blocks and enhanced nesting
 - `src/server/helpers/isWithinComment.ts`: Enhanced comment detection with brace depth tracking for nested expressions
 - `src/server/connection/onInitialized.ts`: Auto-validation on startup with configurable settings
@@ -206,7 +227,9 @@ No functional changes to the extension - this is a pure dependency maintenance r
 - `package.json`: New command and setting configuration
 
 #### Test Coverage
+
 Added 20+ comprehensive test cases:
+
 - Invalid blocks in HTML tags (multiple scenarios)
 - Blocks within quoted attribute values (valid use cases)
 - Comment detection (HTML and Handlebars, including nested)
@@ -219,22 +242,26 @@ Added 20+ comprehensive test cases:
 ### 🎨 Code Quality Improvements
 
 #### Enhanced Quote Tracking Algorithm
+
 - Properly distinguishes between quotes in attribute assignments vs. text content
 - Handles nested Handlebars expressions within quotes
 - Tracks single and double quotes independently
 - Respects escape sequences
 
 #### Improved Comment Handling
+
 - Implemented brace depth tracking for inline comments
 - Handles nested `{{ }}` expressions within comments
 - Supports all comment types: HTML (`<!-- -->`), Handlebars block (`{{!-- --}}`), and inline (`{{! }}`)
 
 #### Pattern Matching Enhancements
+
 - Fixed regex patterns to handle hyphenated attribute names
 - Improved parameter extraction accounting for whitespace and special characters
 - Added lookbehind assertions for more accurate matching
 
 ### 📊 Statistics
+
 - **New files**: 23
 - **Modified files**: 12
 - **Test cases added**: 20+
@@ -242,11 +269,13 @@ Added 20+ comprehensive test cases:
 - **Bug fixes**: 3 major false positive scenarios resolved
 
 ### 🔄 Breaking Changes
+
 **None.** This release is fully backward compatible.
 
 ## [0.0.7] - 2025-09-21
 
 ### 🔄 Major Infrastructure & Dependency Updates
+
 - **GitHub Actions Modernization**: Updated to latest action versions and Node.js 22.x
   - Updated `actions/checkout` from v4 → v5
   - Updated `actions/setup-node` from v4 → v5
@@ -267,6 +296,7 @@ Added 20+ comprehensive test cases:
   - GitHub Actions updates monitoring
 
 ### 🎨 Enhanced Visual & Theme Integration
+
 - **Improved Block Condition Hints**: Enhanced visual integration and smart behavior
   - Updated default color from `editorCodeLens.foreground` → `#727272` for better theme compatibility
   - Refined default margin from `0 0 0 1em` → `0 0 0 0.75em` for optimal spacing
@@ -283,6 +313,7 @@ Added 20+ comprehensive test cases:
   - `delimiter.defaultColor` (#808080) - Delimiter symbols
 
 ### 📋 Documentation & Configuration Overhaul
+
 - **Reorganized Documentation Structure**: Consolidated and organized all documentation under `docs/`
   - New `docs/README.md` - Central documentation hub
   - New `docs/SETUP.md` - Complete setup and configuration guide
@@ -294,6 +325,7 @@ Added 20+ comprehensive test cases:
   - Content preserved and enhanced in new documentation structure
 
 ### 🛠️ Code Quality & Performance Improvements
+
 - **ESLint Configuration Modernization**: Updated to ESLint v9 flat config format
   - Enhanced TypeScript integration and rule optimization
   - Better handling of unused variables and error patterns
@@ -305,6 +337,7 @@ Added 20+ comprehensive test cases:
 - **TypeScript Configuration Updates**: Updated to Node.js 20 module resolution with `skipLibCheck`
 
 ### 🧪 Testing & Development Enhancements
+
 - **Test Infrastructure Updates**: Enhanced test coverage and examples
   - New comment detection test cases in `test-project/imports/ui/test/commentTest.html`
   - Updated test project configurations for Node.js 22.x
@@ -315,6 +348,7 @@ Added 20+ comprehensive test cases:
   - Improved documentation for contributors
 
 ### 🔧 Compatibility & Migration
+
 - **Backward Compatibility**: All changes maintain backward compatibility
 - **Migration Benefits**: Users upgrading will experience:
   - Better visual integration with updated default colors
@@ -328,6 +362,7 @@ Added 20+ comprehensive test cases:
 ## [0.0.6] - 2025-08-17
 
 ### Fixed
+
 - **Global Helper Reference Resolution**: Fixed critical issues with global template helper lookup
   - **Absolute Import Support**: Fixed resolution of absolute imports (e.g., `/imports/lib/globalHelpers`)
   - **TypeScript Path Mapping**: Added support for TypeScript `paths` configuration in `tsconfig.json`
@@ -339,6 +374,7 @@ Added 20+ comprehensive test cases:
   - Support for multiple Meteor import patterns used in real-world projects
 
 ### Enhanced
+
 - **Code Architecture Overhaul**: Refactored extension activation into focused, testable modules
   - `createCompletionItemProvider()` - Isolated completion logic
   - `createSemanticProvider()` - Dedicated semantic token management
@@ -355,6 +391,7 @@ Added 20+ comprehensive test cases:
   - Enhanced syntax highlighting accuracy by excluding commented code
 
 ### Added
+
 - **Enhanced Validation and Diagnostics**:
   - Nesting validation between HTML tags and Blaze blocks
   - Duplicate parameter detection in template inclusions
@@ -367,6 +404,7 @@ Added 20+ comprehensive test cases:
   - Cross-platform compatibility testing with proper cleanup
 
 ### Technical Improvements
+
 - **Dependency Updates**: Updated to `glob@^11.0.3` for better file pattern matching
 - **Performance Optimizations**: Enhanced file type filtering and lazy loading
 - **Build Process**: Improved build configuration and error handling
@@ -375,6 +413,7 @@ Added 20+ comprehensive test cases:
 ## [0.0.5] - 2025-08-13
 
 ### Added
+
 - **Enhanced Template Completion System**: Comprehensive auto-completion for Meteor/Blaze templates
   - **Smart Single Bracket Detection**: Automatically detects single `{` and wraps completions in double brackets `{{}}`
   - **Template Helper Completions**: Intelligent detection and completion of Template.helpers() functions with full JSDoc support
@@ -384,6 +423,7 @@ Added 20+ comprehensive test cases:
   - **File Type Filtering**: Completions only appear in appropriate template files (`.html`, `.htm`, `.meteor`)
 
 ### Enhanced
+
 - **Intelligent Helper Parsing**: Advanced JavaScript analysis with robust filtering
   - Comprehensive exclusion of JavaScript keywords and control flow statements (`if`, `for`, `while`, etc.)
   - Smart object literal context validation to ensure only actual template helpers are detected
@@ -394,6 +434,7 @@ Added 20+ comprehensive test cases:
   - Enhanced single bracket detection with context-aware completion triggering
 
 ### Technical Improvements
+
 - **Enhanced File Analysis**: Robust Template.helpers() block parsing with proper brace matching
 - **Improved Code Completion Engine**: More accurate completion suggestions with detailed documentation
 - **Better Error Handling**: Comprehensive error handling in file analysis and completion generation
@@ -402,6 +443,7 @@ Added 20+ comprehensive test cases:
 ## [0.0.4] - 2025-08-11
 
 ### Added
+
 - **Comprehensive Configuration Documentation**: New consolidated setup documentation in `docs/SETUP.md`
   - Detailed examples for all extension configuration options
   - Theme customization guide with color token explanations
@@ -414,6 +456,7 @@ Added 20+ comprehensive test cases:
 - **Documentation Cross-Referencing**: Added prominent links to configuration guide in main README
 
 ### Changed
+
 - **Simplified Onboarding**: Removed redundant color theme setup prompts
 - **Enhanced Theme Support**: Improved approach to Handlebars token highlighting
   - Removed standalone `blaze-theme.json` to prevent auto-generated VS Code UI elements
@@ -422,11 +465,13 @@ Added 20+ comprehensive test cases:
   - Enhanced semantic token organization in package.json
 
 ### Removed
+
 - Color theme setup notification messages that interrupted workflow
 - Auto-generated "Set Color Theme" button from extension UI
 - Standalone `blaze-theme.json` theme file
 
 ### Technical Improvements
+
 - Enhanced activation flow with actionable user guidance
 - Improved documentation structure for better maintainability
 - Cleaned up package.json theme contributions
@@ -435,10 +480,12 @@ Added 20+ comprehensive test cases:
 ## [0.0.3] - 2025-08-11
 
 ### Added
+
 templates
-  - Detects missing/mismatched closing tags with intelligent error messages
-  - Suggests correct closing tags based on context and nesting
-  - Configurable validation rules through `meteorLanguageServer.blockConditions` settings
+
+- Detects missing/mismatched closing tags with intelligent error messages
+- Suggests correct closing tags based on context and nesting
+- Configurable validation rules through `meteorLanguageServer.blockConditions` settings
 - **Smart File Filtering**: Template validation now only applies to appropriate files
   - Validates `.html`, `.htm`, and `.meteor` files containing actual templates
   - Excludes test files (`.test.ts`, `.spec.js`, etc.), config files, and source code files
@@ -461,18 +508,21 @@ templates
   - Conditional logic for argument-aware expression highlighting
 
 ### Changed
+
 - Reorganized project structure: moved `src/extension.ts` to `src/extension/index.ts`
 - Updated all import references for consistency
 - Enhanced error messages for block validation with contextual suggestions
 - Improved completion trigger characters to include `}` for auto-insertion
 
 ### Fixed
+
 - Comprehensive test suite repair: all 165 tests now passing
 - Fixed import path issues causing module resolution failures
 - Resolved Mac Ctrl+Space conflicts with Spotlight search
 - Enhanced same-line detection logic for accurate completion hints
 
 ### Technical Improvements
+
 - Added 6 new test cases for file filtering validation
 - Comprehensive test coverage for auto-insertion functionality
 - Enhanced language server protocol integration
