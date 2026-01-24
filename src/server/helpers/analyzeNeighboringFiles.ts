@@ -5,10 +5,10 @@ import { TextDocument } from 'vscode-languageserver-textdocument';
 
 import { FileAnalysis } from '/types';
 
-import { analyzeCSSFile } from './analyzeCSSFile';
-import { analyzeJavaScriptFile } from './analyzeJavaScriptFile';
-import { analyzeTemplateData } from './analyzeTemplateData';
-import { containsMeteorTemplates } from './containsMeteorTemplates';
+import { analyzeCSSFile } from './analyzeCSSFile.js';
+import { analyzeJavaScriptFile } from './analyzeJavaScriptFile.js';
+import { analyzeTemplateData } from './analyzeTemplateData.js';
+import { containsMeteorTemplates } from './containsMeteorTemplates.js';
 
 // Analyze neighboring JS/TS/CSS/LESS files
 export const analyzeNeighboringFiles = (

@@ -1,9 +1,12 @@
 import assert from 'assert';
 import { describe, it } from 'node:test';
 import { TextDocument } from 'vscode-languageserver-textdocument';
-import { InitializedParams, TextDocuments } from 'vscode-languageserver/node';
+import {
+  InitializedParams,
+  TextDocuments,
+} from 'vscode-languageserver/node.js';
 
-import onInitialized from '/server/connection/onInitialized';
+import onInitialized from '../../../server/connection/onInitialized.js';
 import { CurrentConnectionConfig, LanguageServerSettings } from '/types';
 
 /**

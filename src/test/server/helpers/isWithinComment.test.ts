@@ -1,7 +1,7 @@
 import assert from 'assert';
 import { describe, it } from 'node:test';
 
-import { isWithinComment } from '/server/helpers/isWithinComment';
+import { isWithinComment } from '../../../server/helpers/isWithinComment.js';
 
 /**
  * Test suite for isWithinComment helper function

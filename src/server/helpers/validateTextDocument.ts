@@ -3,11 +3,11 @@ import {
   Diagnostic,
   DiagnosticSeverity,
   Range,
-} from 'vscode-languageserver/node';
+} from 'vscode-languageserver/node.js';
 
-import { containsMeteorTemplates } from './containsMeteorTemplates';
-import getDocumentSettings from './getDocumentSettings';
-import { isWithinComment } from './isWithinComment';
+import { containsMeteorTemplates } from './containsMeteorTemplates.js';
+import getDocumentSettings from './getDocumentSettings.js';
+import { isWithinComment } from './isWithinComment.js';
 import { CurrentConnectionConfig, LanguageServerSettings } from '/types';
 
 /**

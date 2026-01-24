@@ -7,29 +7,29 @@ import {
   CompletionItemKind,
   MarkupKind,
   TextDocumentPositionParams,
-} from 'vscode-languageserver/node';
+} from 'vscode-languageserver/node.js';
 
 import {
   analyzeGlobalHelpers,
   mergeConfiguredHelpers,
-} from '/server/helpers/analyzeGlobalHelpers';
-import {
-  createBlockCompletions,
-  shouldProvideBlockCompletion,
-} from '/server/helpers/autoInsertEndTags';
-import { containsMeteorTemplates } from '/server/helpers/containsMeteorTemplates';
-import { extractParametersFromTemplate } from '/server/helpers/extractTemplateParameters';
-import { findEnclosingEachInContext } from '/server/helpers/findEnclosingEachInContext';
-import { findEnclosingIfOrUnlessBlock } from '/server/helpers/findEnclosingIfOrUnlessBlock';
-import getDocumentSettings from '/server/helpers/getDocumentSettings';
-import { isWithinComment } from '/server/helpers/isWithinComment';
-import { isWithinHandlebarsExpression } from '/server/helpers/isWithinHandlebarsExpression';
+} from '../../server/helpers/analyzeGlobalHelpers';
 import {
   BlazeHelperConfig,
   CurrentConnectionConfig,
   HelperInfo,
   TsConfig,
-} from '/types';
+} from '../../types/index.js';
+import {
+  createBlockCompletions,
+  shouldProvideBlockCompletion,
+} from '../helpers/autoInsertEndTags.js';
+import { containsMeteorTemplates } from '../helpers/containsMeteorTemplates.js';
+import { extractParametersFromTemplate } from '../helpers/extractTemplateParameters.js';
+import { findEnclosingEachInContext } from '../helpers/findEnclosingEachInContext.js';
+import { findEnclosingIfOrUnlessBlock } from '../helpers/findEnclosingIfOrUnlessBlock.js';
+import getDocumentSettings from '../helpers/getDocumentSettings.js';
+import { isWithinComment } from '../helpers/isWithinComment.js';
+import { isWithinHandlebarsExpression } from '../helpers/isWithinHandlebarsExpression.js';
 
 const onCompletion = (config: CurrentConnectionConfig) => {
   const { connection, documents } = config;

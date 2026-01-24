@@ -4,9 +4,9 @@ import { TextDocument } from 'vscode-languageserver-textdocument';
 import {
   DidChangeConfigurationParams,
   TextDocuments,
-} from 'vscode-languageserver/node';
+} from 'vscode-languageserver/node.js';
 
-import onDidChangeConfiguration from '/server/connection/onDidChangeConfiguration';
+import onDidChangeConfiguration from '../../../server/connection/onDidChangeConfiguration.js';
 import { CurrentConnectionConfig, LanguageServerSettings } from '/types';
 
 /**

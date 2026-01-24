@@ -1,4 +1,4 @@
-import { CompletionItem } from 'vscode-languageserver/node';
+import { CompletionItem } from 'vscode-languageserver/node.js';
 
 import { CurrentConnectionConfig } from '/types';
 

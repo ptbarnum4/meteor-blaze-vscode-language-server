@@ -1,6 +1,6 @@
-import { Location } from 'vscode-languageserver/node';
-import findParameterDefinition from './findParameterDefinition';
-import findTemplateDefinition from './findTemplateDefinition';
+import { Location } from 'vscode-languageserver/node.js';
+import findParameterDefinition from './findParameterDefinition.js';
+import findTemplateDefinition from './findTemplateDefinition.js';
 import { CurrentConnectionConfig } from '/types';
 
 // Helper function to handle template inclusion navigation

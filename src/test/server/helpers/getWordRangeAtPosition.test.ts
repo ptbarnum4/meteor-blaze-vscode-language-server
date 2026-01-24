@@ -1,9 +1,9 @@
 import assert from 'assert';
 import { describe, it } from 'node:test';
 import { TextDocument } from 'vscode-languageserver-textdocument';
-import { Position } from 'vscode-languageserver/node';
+import { Position } from 'vscode-languageserver/node.js';
 
-import { getWordRangeAtPosition } from '/server/helpers/getWordRangeAtPosition';
+import { getWordRangeAtPosition } from '../../../server/helpers/getWordRangeAtPosition.js';
 
 /**
  * Test suite for getWordRangeAtPosition helper function

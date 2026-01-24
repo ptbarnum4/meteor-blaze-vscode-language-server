@@ -1,13 +1,16 @@
 import assert from 'assert';
 import { describe, it } from 'node:test';
 import { TextDocument } from 'vscode-languageserver-textdocument';
-import { FormattingOptions, TextDocuments } from 'vscode-languageserver/node';
+import {
+  FormattingOptions,
+  TextDocuments,
+} from 'vscode-languageserver/node.js';
 
 import {
   onDocumentFormatting,
   onDocumentOnTypeFormatting,
   onDocumentRangeFormatting,
-} from '/server/connection/onFormatting';
+} from '../../../server/connection/onFormatting.js';
 import { CurrentConnectionConfig, LanguageServerSettings } from '/types';
 
 /**

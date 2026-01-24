@@ -1,7 +1,7 @@
 import path from 'path';
 
 import { MarkupKind } from 'vscode-languageserver';
-import { Range } from 'vscode-languageserver/node';
+import { Range } from 'vscode-languageserver/node.js';
 
 import { GlobalHelperInfo } from '/types';
 

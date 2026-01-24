@@ -6,24 +6,24 @@ import {
   Hover,
   MarkupKind,
   TextDocumentPositionParams,
-} from 'vscode-languageserver/node';
+} from 'vscode-languageserver/node.js';
 
 import {
   analyzeGlobalHelpers,
   mergeConfiguredHelpers,
-} from '../helpers/analyzeGlobalHelpers';
-import { containsMeteorTemplates } from '../helpers/containsMeteorTemplates';
-import createGlobalTemplateHelperDocs from '../helpers/documents/createGlobalHelperDocs';
-import { extractParametersFromTemplate } from '../helpers/extractTemplateParameters';
-import { findEnclosingEachInContext } from '../helpers/findEnclosingEachInContext';
-import getDocumentSettings from '../helpers/getDocumentSettings';
-import { getWordRangeAtPosition } from '../helpers/getWordRangeAtPosition';
-import { isWithinComment } from '../helpers/isWithinComment';
-import { isWithinHandlebarsExpression } from '../helpers/isWithinHandlebarsExpression';
+} from '../helpers/analyzeGlobalHelpers.js';
+import { containsMeteorTemplates } from '../helpers/containsMeteorTemplates.js';
+import createGlobalTemplateHelperDocs from '../helpers/documents/createGlobalHelperDocs.js';
+import { extractParametersFromTemplate } from '../helpers/extractTemplateParameters.js';
+import { findEnclosingEachInContext } from '../helpers/findEnclosingEachInContext.js';
+import getDocumentSettings from '../helpers/getDocumentSettings.js';
+import { getWordRangeAtPosition } from '../helpers/getWordRangeAtPosition.js';
+import { isWithinComment } from '../helpers/isWithinComment.js';
+import { isWithinHandlebarsExpression } from '../helpers/isWithinHandlebarsExpression.js';
 import {
   trimLanguageDocumentation,
   trimUsageDocumentation,
-} from '../helpers/trimUsageDocumentation';
+} from '../helpers/trimUsageDocumentation.js';
 import {
   BlazeHelperConfig,
   BlazeHelperInfo,

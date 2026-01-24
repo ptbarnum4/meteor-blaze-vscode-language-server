@@ -1,18 +1,18 @@
 import path from 'path';
 
-import { DefinitionParams, Location } from 'vscode-languageserver/node';
+import { DefinitionParams, Location } from 'vscode-languageserver/node.js';
 
 import {
   analyzeGlobalHelpers,
   mergeConfiguredHelpers,
-} from '../../helpers/analyzeGlobalHelpers';
-import { containsMeteorTemplates } from '../../helpers/containsMeteorTemplates';
-import { findEnclosingEachInContext } from '../../helpers/findEnclosingEachInContext';
-import getDocumentSettings from '../../helpers/getDocumentSettings';
-import { getWordRangeAtPosition } from '../../helpers/getWordRangeAtPosition';
-import { isWithinComment } from '../../helpers/isWithinComment';
-import { isWithinHandlebarsExpression } from '../../helpers/isWithinHandlebarsExpression';
-import handleTemplateInclusionDefinition from './handleTemplateInclusionDefinition';
+} from '../../helpers/analyzeGlobalHelpers.js';
+import { containsMeteorTemplates } from '../../helpers/containsMeteorTemplates.js';
+import { findEnclosingEachInContext } from '../../helpers/findEnclosingEachInContext.js';
+import getDocumentSettings from '../../helpers/getDocumentSettings.js';
+import { getWordRangeAtPosition } from '../../helpers/getWordRangeAtPosition.js';
+import { isWithinComment } from '../../helpers/isWithinComment.js';
+import { isWithinHandlebarsExpression } from '../../helpers/isWithinHandlebarsExpression.js';
+import handleTemplateInclusionDefinition from './handleTemplateInclusionDefinition.js';
 import { CurrentConnectionConfig } from '/types';
 
 const onDefinition = (config: CurrentConnectionConfig) => {

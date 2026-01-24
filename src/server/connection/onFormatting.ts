@@ -4,9 +4,9 @@ import {
   DocumentRangeFormattingParams,
   Range,
   TextEdit,
-} from 'vscode-languageserver/node';
+} from 'vscode-languageserver/node.js';
 
-import { containsMeteorTemplates } from '../helpers/containsMeteorTemplates';
+import { containsMeteorTemplates } from '../helpers/containsMeteorTemplates.js';
 import { CurrentConnectionConfig } from '/types';
 
 /**

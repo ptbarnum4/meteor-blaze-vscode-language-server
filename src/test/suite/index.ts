@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import 'source-map-support/register';
 
 export function run(): Promise<void> {
   return new Promise((c, e) => {

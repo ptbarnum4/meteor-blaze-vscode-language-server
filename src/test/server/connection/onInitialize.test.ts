@@ -5,9 +5,9 @@ import {
   InitializeParams,
   TextDocuments,
   TextDocumentSyncKind,
-} from 'vscode-languageserver/node';
+} from 'vscode-languageserver/node.js';
 
-import onInitialize from '/server/connection/onInitialize';
+import onInitialize from '../../../server/connection/onInitialize.js';
 import { CurrentConnectionConfig, LanguageServerSettings } from '/types';
 
 /**
@@ -77,7 +77,7 @@ describe('connection/onInitialize', () => {
     );
     assert.deepStrictEqual(
       result.capabilities.completionProvider?.triggerCharacters,
-      ['{', '"', "'", '.', ' ', '}']
+      ['{', '"', "'", '.', ' ', '}', '\n']
     );
     assert.strictEqual(result.capabilities.hoverProvider, true);
     assert.strictEqual(result.capabilities.definitionProvider, true);

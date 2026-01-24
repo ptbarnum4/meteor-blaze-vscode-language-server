@@ -2,7 +2,7 @@ import {
   InitializeParams,
   InitializeResult,
   TextDocumentSyncKind,
-} from 'vscode-languageserver/node';
+} from 'vscode-languageserver/node.js';
 
 import { CurrentConnectionConfig } from '/types';
 
@@ -27,7 +27,7 @@ const onInitialize = (config: CurrentConnectionConfig) => {
         textDocumentSync: TextDocumentSyncKind.Incremental,
         completionProvider: {
           resolveProvider: true,
-          triggerCharacters: ['{', '"', "'", '.', ' ', '}'],
+          triggerCharacters: ['{', '"', "'", '.', ' ', '}', '\n'],
         },
         hoverProvider: true,
         definitionProvider: true,

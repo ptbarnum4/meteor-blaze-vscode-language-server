@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 
-import { Location } from 'vscode-languageserver/node';
+import { Location } from 'vscode-languageserver/node.js';
 
 // Helper function to find parameter usage in template HTML file
 const findParameterInTemplateHtml = (

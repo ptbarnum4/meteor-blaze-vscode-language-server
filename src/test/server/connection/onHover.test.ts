@@ -5,9 +5,9 @@ import {
   Position,
   TextDocumentPositionParams,
   TextDocuments,
-} from 'vscode-languageserver/node';
+} from 'vscode-languageserver/node.js';
 
-import onHover from '/server/connection/onHover';
+import onHover from '../../../server/connection/onHover.js';
 import { CurrentConnectionConfig, LanguageServerSettings } from '/types';
 
 /**

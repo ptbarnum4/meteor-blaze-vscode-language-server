@@ -3,7 +3,7 @@ import assert from 'node:assert';
 import { describe, it } from 'node:test';
 import os from 'os';
 import path from 'path';
-import { analyzeFileForGlobalHelpers } from '/server/helpers/analyzeGlobalHelpers';
+import { analyzeFileForGlobalHelpers } from '../../../server/helpers/analyzeGlobalHelpers.js';
 import { GlobalHelperInfo } from '/types';
 
 describe('analyzeGlobalHelpers', () => {

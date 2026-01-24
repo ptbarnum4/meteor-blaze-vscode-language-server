@@ -1,4 +1,5 @@
 import path from 'path';
+import 'source-map-support/register';
 
 import { runTests } from '@vscode/test-electron';
 
@@ -13,7 +14,12 @@ async function main() {
     const extensionTestsPath = path.resolve(__dirname, './suite/index');
 
     // Download VS Code, unzip it and run the integration test
-    await runTests({ extensionDevelopmentPath, extensionTestsPath });
+    const resultCount = await runTests({
+      extensionDevelopmentPath,
+      extensionTestsPath,
+    });
+
+    console.log(`Tests passed: ${resultCount}`);
   } catch {
     console.error('Failed to run tests');
     process.exit(1);

@@ -1,5 +1,5 @@
 import { TextDocument } from 'vscode-languageserver-textdocument';
-import { TextDocumentChangeEvent } from 'vscode-languageserver/node';
+import { TextDocumentChangeEvent } from 'vscode-languageserver/node.js';
 
 import { CurrentConnectionConfig } from '/types';
 

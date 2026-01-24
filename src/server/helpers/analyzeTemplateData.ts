@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import * as ts from 'typescript';
-import { safeParse } from './strings';
+import { safeParse } from './strings.js';
 import { TsConfig } from '/types';
 
 export type TemplateDataAnalysis = {

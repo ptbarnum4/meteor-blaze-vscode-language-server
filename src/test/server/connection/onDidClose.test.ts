@@ -4,9 +4,9 @@ import { TextDocument } from 'vscode-languageserver-textdocument';
 import {
   TextDocumentChangeEvent,
   TextDocuments,
-} from 'vscode-languageserver/node';
+} from 'vscode-languageserver/node.js';
 
-import onDidClose from '/server/connection/onDidClose';
+import onDidClose from '../../../server/connection/onDidClose.js';
 import { CurrentConnectionConfig, LanguageServerSettings } from '/types';
 
 /**

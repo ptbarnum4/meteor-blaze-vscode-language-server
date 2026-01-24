@@ -1,9 +1,9 @@
 import assert from 'assert';
 import { describe, it } from 'node:test';
 import { TextDocument } from 'vscode-languageserver-textdocument';
-import { TextDocuments } from 'vscode-languageserver/node';
+import { TextDocuments } from 'vscode-languageserver/node.js';
 
-import getDocumentSettings from '/server/helpers/getDocumentSettings';
+import getDocumentSettings from '../../../server/helpers/getDocumentSettings.js';
 import { CurrentConnectionConfig, LanguageServerSettings } from '/types';
 
 /**

@@ -5,9 +5,9 @@ import {
   CompletionItem,
   CompletionItemKind,
   TextDocuments,
-} from 'vscode-languageserver/node';
+} from 'vscode-languageserver/node.js';
 
-import onCompletionResolve from '/server/connection/onCompletionResolve';
+import onCompletionResolve from '../../../server/connection/onCompletionResolve.js';
 import { CurrentConnectionConfig, LanguageServerSettings } from '/types';
 
 /**

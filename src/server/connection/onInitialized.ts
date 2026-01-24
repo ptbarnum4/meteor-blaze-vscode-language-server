@@ -1,9 +1,9 @@
 import {
   DidChangeConfigurationNotification,
   InitializedParams,
-} from 'vscode-languageserver/node';
+} from 'vscode-languageserver/node.js';
 
-import { validateWorkspace } from '../helpers/validateWorkspace';
+import { validateWorkspace } from '../helpers/validateWorkspace.js';
 import { CurrentConnectionConfig } from '/types';
 
 const onInitialized = (config: CurrentConnectionConfig) => {

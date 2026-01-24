@@ -3,8 +3,8 @@ import path from 'path';
 
 import { TextDocument } from 'vscode-languageserver-textdocument';
 
-import { analyzeNeighboringFiles } from './analyzeNeighboringFiles';
-import { validateTextDocument } from './validateTextDocument';
+import { analyzeNeighboringFiles } from './analyzeNeighboringFiles.js';
+import { validateTextDocument } from './validateTextDocument.js';
 import { CurrentConnectionConfig } from '/types';
 
 /**

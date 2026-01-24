@@ -5,9 +5,9 @@ import {
   DefinitionParams,
   Position,
   TextDocuments,
-} from 'vscode-languageserver/node';
+} from 'vscode-languageserver/node.js';
 
-import onDefinition from '/server/connection/onDefinition';
+import onDefinition from '../../../server/connection/onDefinition/index.js';
 import { CurrentConnectionConfig, LanguageServerSettings } from '/types';
 
 /**

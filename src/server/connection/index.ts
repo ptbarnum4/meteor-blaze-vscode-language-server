@@ -12,27 +12,27 @@ import {
   createConnection,
   ProposedFeatures,
   TextDocuments,
-} from 'vscode-languageserver/node';
+} from 'vscode-languageserver/node.js';
 
 // Shared types/state used across handlers
 import { CurrentConnectionConfig } from '/types';
 
 // Request/notification handlers
-import { validateWorkspace } from '../helpers/validateWorkspace';
-import onCompletion from './onCompletion';
-import onCompletionResolve from './onCompletionResolve';
-import onDefinition from './onDefinition';
-import onDidChangeConfiguration from './onDidChangeConfiguration';
-import onDidChangeContent from './onDidChangeContent';
-import onDidClose from './onDidClose';
+import { validateWorkspace } from '../helpers/validateWorkspace.js';
+import onCompletion from './onCompletion.js';
+import onCompletionResolve from './onCompletionResolve.js';
+import onDefinition from './onDefinition/index.js';
+import onDidChangeConfiguration from './onDidChangeConfiguration.js';
+import onDidChangeContent from './onDidChangeContent.js';
+import onDidClose from './onDidClose.js';
 import {
   onDocumentFormatting,
   onDocumentOnTypeFormatting,
   onDocumentRangeFormatting,
-} from './onFormatting';
-import onHover from './onHover';
-import onInitialize from './onInitialize';
-import onInitialized from './onInitialized';
+} from './onFormatting.js';
+import onHover from './onHover.js';
+import onInitialize from './onInitialize.js';
+import onInitialized from './onInitialized.js';
 // --- Connection & Documents -------------------------------------------------
 /**
  * Creates the LSP connection used to communicate with the client (VS Code).

@@ -1,9 +1,9 @@
 import assert from 'assert';
 import { describe, it } from 'node:test';
 import { TextDocument } from 'vscode-languageserver-textdocument';
-import { TextDocuments } from 'vscode-languageserver/node';
+import { TextDocuments } from 'vscode-languageserver/node.js';
 
-import { validateTextDocument } from '/server/helpers/validateTextDocument';
+import { validateTextDocument } from '../../../server/helpers/validateTextDocument.js';
 import { CurrentConnectionConfig, LanguageServerSettings } from '/types';
 
 /**

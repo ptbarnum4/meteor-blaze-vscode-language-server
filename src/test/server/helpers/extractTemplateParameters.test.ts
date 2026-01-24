@@ -1,6 +1,6 @@
 import * as assert from 'assert';
 import { describe, it } from 'node:test';
-import { extractTemplateParameters } from '/server/helpers/extractTemplateParameters';
+import { extractTemplateParameters } from '../../../server/helpers/extractTemplateParameters.js';
 
 describe('extractTemplateParameters', () => {
   it('should extract parameters from block helpers correctly', () => {
