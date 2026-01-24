@@ -15,7 +15,10 @@ import { findMatchingBlockConditionWithIndex } from './findMatchingBlockConditio
  * @param position The position to check from
  * @returns true if the line contains a comment after the position
  */
-const lineHasExistingComment = (text: string, position: vscode.Position): boolean => {
+const lineHasExistingComment = (
+  text: string,
+  position: vscode.Position
+): boolean => {
   const lines = text.split('\n');
   if (position.line >= lines.length) {
     return false;
@@ -25,7 +28,8 @@ const lineHasExistingComment = (text: string, position: vscode.Position): boolea
   const afterPosition = lineText.substring(position.character);
 
   // Check for HTML comments: <!-- anything -->
-  const hasHtmlComment = /<!--.*?-->/.test(afterPosition) || /<!--/.test(afterPosition);
+  const hasHtmlComment =
+    /<!--.*?-->/.test(afterPosition) || /<!--/.test(afterPosition);
 
   // Check for Handlebars comments: {{!-- anything --}} or {{! anything }}
   const hasHandlebarsComment =
@@ -58,28 +62,38 @@ export const updateBlockConditionDecorations = (
   const isHtmlFile = /\.(html|htm|meteor|hbs)$/i.test(uri);
   if (!isHtmlFile) {
     const decorationType = extConfig.blockConditionDecorationType;
-    decorationType && editor.setDecorations(decorationType, []);
+    if (decorationType) {
+      editor.setDecorations(decorationType, []);
+    }
     return;
   }
 
   // Check if block condition hints are enabled
-  const blockConfig = vscode.workspace.getConfiguration('meteorLanguageServer.blockConditions');
+  const blockConfig = vscode.workspace.getConfiguration(
+    'meteorLanguageServer.blockConditions'
+  );
   const enabled = blockConfig.get<boolean>('enabled', true);
 
   const decorationType = extConfig.blockConditionDecorationType;
   if (!enabled) {
-    decorationType && editor.setDecorations(decorationType, []);
+    if (decorationType) {
+      editor.setDecorations(decorationType, []);
+    }
     return;
   }
 
   // Only process documents with Meteor templates
   if (!containsMeteorTemplates(document)) {
-    decorationType && editor.setDecorations(decorationType, []);
+    if (decorationType) {
+      editor.setDecorations(decorationType, []);
+    }
     return;
   }
 
   // Get blazeHelpers config for colors
-  const blazeConfig = vscode.workspace.getConfiguration('meteorLanguageServer.blazeHelpers');
+  const blazeConfig = vscode.workspace.getConfiguration(
+    'meteorLanguageServer.blazeHelpers'
+  );
 
   let nameColor = blazeConfig.get<string>('nameColor', '');
   // Fallback to Blaze theme default if not provided
@@ -97,7 +111,10 @@ export const updateBlockConditionDecorations = (
     return new vscode.ThemeColor(scope) as any;
   }
 
-  nameColor = getThemeOrConfigColor('entity.name.tag.meteor keyword.control.meteor', nameColor);
+  nameColor = getThemeOrConfigColor(
+    'entity.name.tag.meteor keyword.control.meteor',
+    nameColor
+  );
 
   const text = document.getText();
   const decorations: vscode.DecorationOptions[] = [];
@@ -111,12 +128,12 @@ export const updateBlockConditionDecorations = (
     { type: 'if', label: 'if' },
     { type: 'each', label: 'each' },
     { type: 'unless', label: 'unless' },
-    { type: 'with', label: 'with' }
+    { type: 'with', label: 'with' },
   ];
   // Merge and deduplicate by type
   const blockTypesMap = new Map<string, { type: string; label: string }>();
-  defaultBlockTypes.forEach(b => blockTypesMap.set(b.type, b));
-  extendBlocks.forEach(b => blockTypesMap.set(b.type, b));
+  defaultBlockTypes.forEach((b) => blockTypesMap.set(b.type, b));
+  extendBlocks.forEach((b) => blockTypesMap.set(b.type, b));
   const blockTypes: ExtendedBlock[] = Array.from(blockTypesMap.values());
 
   // Process each block type
@@ -133,7 +150,10 @@ export const updateBlockConditionDecorations = (
 
       // Look backwards to find the matching {{#blockType}} condition
       const beforeEndBlock = text.substring(0, match.index);
-      const matchResult = findMatchingBlockConditionWithIndex(beforeEndBlock, type);
+      const matchResult = findMatchingBlockConditionWithIndex(
+        beforeEndBlock,
+        type
+      );
 
       let propText = '';
       if (propNames && propNames.length > 0) {
@@ -158,9 +178,9 @@ export const updateBlockConditionDecorations = (
           range: new vscode.Range(endPos, endPos),
           renderOptions: {
             after: {
-              contentText: `// END ${label}${propText} ${matchResult.condition}`
-            }
-          }
+              contentText: `// END ${label}${propText} ${matchResult.condition}`,
+            },
+          },
         });
       }
     }
@@ -177,10 +197,15 @@ export const updateBlockConditionDecorations = (
         }
 
         // Use the new function to find the enclosing block with index
-        const enclosingBlock = findEnclosingBlockForElseWithIndex(text, elseMatch.index);
+        const enclosingBlock = findEnclosingBlockForElseWithIndex(
+          text,
+          elseMatch.index
+        );
 
         if (enclosingBlock && enclosingBlock.type === type) {
-          const elsePos = document.positionAt(elseMatch.index + elseMatch[0].length);
+          const elsePos = document.positionAt(
+            elseMatch.index + elseMatch[0].length
+          );
           const startPos = document.positionAt(enclosingBlock.index);
 
           // Skip decoration if start and else are on the same line
@@ -200,9 +225,9 @@ export const updateBlockConditionDecorations = (
             range: new vscode.Range(elsePos, elsePos),
             renderOptions: {
               after: {
-                contentText: `// ${prefix} ${enclosingBlock.condition}`
-              }
-            }
+                contentText: `// ${prefix} ${enclosingBlock.condition}`,
+              },
+            },
           });
         }
       }
@@ -219,30 +244,33 @@ export const updateBlockConditionDecorations = (
  *
  * @returns A TextEditorDecorationType for block conditions
  */
-export const createBlockConditionDecorationType = (): vscode.TextEditorDecorationType => {
-  const config = vscode.workspace.getConfiguration('meteorLanguageServer.blockConditions');
+export const createBlockConditionDecorationType =
+  (): vscode.TextEditorDecorationType => {
+    const config = vscode.workspace.getConfiguration(
+      'meteorLanguageServer.blockConditions'
+    );
 
-  // Get settings with fallbacks
-  const colorSetting = config.get<string>('color', '#727272');
-  const fontStyle = config.get<string>('fontStyle', 'italic');
-  const margin = config.get<string>('margin', '0 0 0 0.75em');
+    // Get settings with fallbacks
+    const colorSetting = config.get<string>('color', '#727272');
+    const fontStyle = config.get<string>('fontStyle', 'italic');
+    const margin = config.get<string>('margin', '0 0 0 0.75em');
 
-  // Handle color setting - can be theme color name or hex color
-  let color: string | vscode.ThemeColor;
-  if (colorSetting.startsWith('#')) {
-    color = colorSetting;
-  } else {
-    color = new vscode.ThemeColor(colorSetting);
-  }
-
-  return vscode.window.createTextEditorDecorationType({
-    after: {
-      color: color,
-      fontStyle: fontStyle as any,
-      margin: margin
+    // Handle color setting - can be theme color name or hex color
+    let color: string | vscode.ThemeColor;
+    if (colorSetting.startsWith('#')) {
+      color = colorSetting;
+    } else {
+      color = new vscode.ThemeColor(colorSetting);
     }
-  });
-};
+
+    return vscode.window.createTextEditorDecorationType({
+      after: {
+        color: color,
+        fontStyle: fontStyle as any,
+        margin: margin,
+      },
+    });
+  };
 
 /**
  * Update the decoration type for block conditions based on current configuration.
@@ -259,7 +287,7 @@ export const updateDecorationType = (extConfig: ExtensionConfig) => {
   extConfig.blockConditionDecorationType = createBlockConditionDecorationType();
 
   // Update decorations for all visible editors
-  vscode.window.visibleTextEditors.forEach(editor => {
+  vscode.window.visibleTextEditors.forEach((editor) => {
     if (
       ['html', 'handlebars', 'meteor-html', 'meteor-handlebars'].includes(
         editor.document.languageId

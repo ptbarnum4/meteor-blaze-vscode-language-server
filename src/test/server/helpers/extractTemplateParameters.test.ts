@@ -172,7 +172,8 @@ describe('extractTemplateParameters', () => {
     assert.ok(usersParam?.inferredType, 'Should have inferred type');
     assert.ok(usersParam?.inferredType?.includes('firstName'), 'Type should include firstName property');
     assert.ok(usersParam?.inferredType?.includes('lastName'), 'Type should include lastName property');
-    assert.ok(usersParam?.inferredType?.startsWith('Array<'), 'Should be an Array type');
+    assert.ok(usersParam?.inferredType?.endsWith('}[]'), 'Should be an Array type');
+    assert.ok(usersParam?.inferredType?.startsWith('{'), 'Should contain object type');
   });
 
   it('should infer array type for #each-in with property lookups', () => {

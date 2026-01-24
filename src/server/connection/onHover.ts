@@ -1,10 +1,18 @@
+import fs from 'fs';
 import path from 'path';
 
 import { TextDocument } from 'vscode-languageserver-textdocument';
-import { Hover, MarkupKind, TextDocumentPositionParams } from 'vscode-languageserver/node';
+import {
+  Hover,
+  MarkupKind,
+  TextDocumentPositionParams,
+} from 'vscode-languageserver/node';
 
 import { CurrentConnectionConfig } from '../../types';
-import { analyzeGlobalHelpers, mergeConfiguredHelpers } from '../helpers/analyzeGlobalHelpers';
+import {
+  analyzeGlobalHelpers,
+  mergeConfiguredHelpers,
+} from '../helpers/analyzeGlobalHelpers';
 import { containsMeteorTemplates } from '../helpers/containsMeteorTemplates';
 import createGlobalTemplateHelperDocs from '../helpers/documents/createGlobalHelperDocs';
 import { extractParametersFromTemplate } from '../helpers/extractTemplateParameters';
@@ -15,12 +23,14 @@ import { isWithinComment } from '../helpers/isWithinComment';
 import { isWithinHandlebarsExpression } from '../helpers/isWithinHandlebarsExpression';
 import {
   trimLanguageDocumentation,
-  trimUsageDocumentation
+  trimUsageDocumentation,
 } from '../helpers/trimUsageDocumentation';
 
 const onHover = (config: CurrentConnectionConfig) => {
   const { connection, documents } = config;
-  return async (textDocumentPosition: TextDocumentPositionParams): Promise<Hover | null> => {
+  return async (
+    textDocumentPosition: TextDocumentPositionParams
+  ): Promise<Hover | null> => {
     const document = documents.get(textDocumentPosition.textDocument.uri);
     if (!document) {
       return null;
@@ -63,7 +73,10 @@ const onHover = (config: CurrentConnectionConfig) => {
     }
 
     // Get word at current position
-    const wordRange = getWordRangeAtPosition(document, textDocumentPosition.position);
+    const wordRange = getWordRangeAtPosition(
+      document,
+      textDocumentPosition.position
+    );
     if (!wordRange) {
       return null;
     }
@@ -83,15 +96,24 @@ const onHover = (config: CurrentConnectionConfig) => {
     const templateInclusionPattern = /\{\{\s*>\s*([a-zA-Z0-9_]+)/;
 
     // Check if the word is preceded by {{>
-    const precedingText = text.substring(Math.max(0, offset - 50), offset + word.length);
-    const templateInclusionMatch = precedingText.match(templateInclusionPattern);
+    const precedingText = text.substring(
+      Math.max(0, offset - 50),
+      offset + word.length
+    );
+    const templateInclusionMatch = precedingText.match(
+      templateInclusionPattern
+    );
 
     if (templateInclusionMatch && templateInclusionMatch[1] === word) {
-      const templateHover = await getTemplateInclusionHover(word, config, document);
+      const templateHover = await getTemplateInclusionHover(
+        word,
+        config,
+        document
+      );
       if (templateHover) {
         return {
           contents: templateHover,
-          range: wordRange
+          range: wordRange,
         };
       }
     }
@@ -110,7 +132,7 @@ const onHover = (config: CurrentConnectionConfig) => {
     if (templateParameterHover) {
       return {
         contents: templateParameterHover,
-        range: wordRange
+        range: wordRange,
       };
     }
 
@@ -121,15 +143,20 @@ const onHover = (config: CurrentConnectionConfig) => {
     const eachCtx = findEnclosingEachInContext(documentText, cursorOffset);
 
     // Look for this helper in analyzed files using directory-specific keys
-    const dirLookupKeys = [`${dir}/${currentTemplateName}`, `${dir}/${baseName}`].filter(Boolean);
+    const dirLookupKeys = [
+      `${dir}/${currentTemplateName}`,
+      `${dir}/${baseName}`,
+    ].filter(Boolean);
 
     for (const key of dirLookupKeys) {
       const helpers = config.fileAnalysis.jsHelpers.get(key as string);
-      const helperDetails = config.fileAnalysis.helperDetails.get(key as string);
+      const helperDetails = config.fileAnalysis.helperDetails.get(
+        key as string
+      );
 
       if (helpers && helpers.includes(word)) {
         // Find the detailed information for this helper
-        const helperInfo = helperDetails?.find(h => h.name === word);
+        const helperInfo = helperDetails?.find((h) => h.name === word);
 
         // Get template file info
         const templateFileName = path.basename(filePath);
@@ -179,7 +206,7 @@ const onHover = (config: CurrentConnectionConfig) => {
             path.join(dir, `${currentTemplateName}.js`),
             path.join(dir, `${currentTemplateName}.ts`),
             path.join(dir, `${baseName}.js`),
-            path.join(dir, `${baseName}.ts`)
+            path.join(dir, `${baseName}.ts`),
           ];
 
           for (const file of possibleFiles) {
@@ -206,7 +233,7 @@ const onHover = (config: CurrentConnectionConfig) => {
             // Split by commas not inside generics or parentheses (simple heuristic)
             const parts = raw
               .split(/,(?![^<]*>|[^()]*\))/)
-              .map(p => p.trim())
+              .map((p) => p.trim())
               .filter(Boolean);
             for (const p of parts) {
               // Take everything before ':' or '=' and strip optional '?'
@@ -236,9 +263,9 @@ const onHover = (config: CurrentConnectionConfig) => {
         return {
           contents: {
             kind: MarkupKind.Markdown,
-            value: hoverContent.join('\n')
+            value: hoverContent.join('\n'),
           },
-          range: wordRange
+          range: wordRange,
         };
       }
     }
@@ -254,7 +281,10 @@ const onHover = (config: CurrentConnectionConfig) => {
       const packageJsonPath = path.join(workspaceRoot, 'package.json');
       const meteorPath = path.join(workspaceRoot, '.meteor');
 
-      if (require('fs').existsSync(packageJsonPath) || require('fs').existsSync(meteorPath)) {
+      if (
+        require('fs').existsSync(packageJsonPath) ||
+        require('fs').existsSync(meteorPath)
+      ) {
         break;
       }
 
@@ -280,16 +310,22 @@ const onHover = (config: CurrentConnectionConfig) => {
 
       // Add timeout to prevent hanging during tests or large projects
       const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error('Global helpers analysis timed out')), 5000);
+        setTimeout(
+          () => reject(new Error('Global helpers analysis timed out')),
+          5000
+        );
       });
 
       const detectedHelpers = await Promise.race([
         analyzeGlobalHelpers(workspaceRoot),
-        timeoutPromise
+        timeoutPromise,
       ]);
 
       // Merge configured helpers with detected helpers
-      const globalHelpersResult = mergeConfiguredHelpers(detectedHelpers, settings);
+      const globalHelpersResult = mergeConfiguredHelpers(
+        detectedHelpers,
+        settings
+      );
 
       const globalHelper = globalHelpersResult.helperDetails.find(
         (helper: any) => helper.name === word
@@ -299,15 +335,22 @@ const onHover = (config: CurrentConnectionConfig) => {
       }
     } catch (error) {
       // Handle errors in global helpers analysis
-      connection.console.error(`Error analyzing global helpers for hover: ${error}`);
+      connection.console.error(
+        `Error analyzing global helpers for hover: ${error}`
+      );
     }
 
     for (const key of dirLookupKeys) {
-      const helperDetails = config.fileAnalysis.helperDetails.get(key as string);
-      const dataProps = config.fileAnalysis.dataProperties?.get(key as string) || [];
+      const helperDetails = config.fileAnalysis.helperDetails.get(
+        key as string
+      );
+      const dataProps =
+        config.fileAnalysis.dataProperties?.get(key as string) || [];
       const typeName = config.fileAnalysis.dataTypeByKey?.get(key as string);
-      const typeMap = config.fileAnalysis.dataPropertyTypesByKey?.get(key as string) || {};
-      const jsDocMap = config.fileAnalysis.dataPropertyJsDocsByKey?.get(key as string) || {};
+      const typeMap =
+        config.fileAnalysis.dataPropertyTypesByKey?.get(key as string) || {};
+      const jsDocMap =
+        config.fileAnalysis.dataPropertyJsDocsByKey?.get(key as string) || {};
 
       // #each alias hover: allow hover on alias even if it's not part of template data properties
       if (eachCtx && eachCtx.alias === word) {
@@ -316,7 +359,9 @@ const onHover = (config: CurrentConnectionConfig) => {
 
         // If not found in data properties, check if it's a helper with a return type
         if (!listType) {
-          const helperInfo = helperDetails?.find(h => h.name === eachCtx.source);
+          const helperInfo = helperDetails?.find(
+            (h) => h.name === eachCtx.source
+          );
           if (helperInfo?.returnType) {
             listType = helperInfo.returnType;
           }
@@ -351,7 +396,9 @@ const onHover = (config: CurrentConnectionConfig) => {
         const aliasType: string | undefined = deriveElementType(listType);
 
         const hoverLines: string[] = [];
-        hoverLines.push(`**${word}** - Each item alias in \`${eachCtx.source}\``);
+        hoverLines.push(
+          `**${word}** - Each item alias in \`${eachCtx.source}\``
+        );
         hoverLines.push('');
         if (typeName) {
           hoverLines.push(`From type: \`${typeName}\``);
@@ -370,9 +417,9 @@ const onHover = (config: CurrentConnectionConfig) => {
         return {
           contents: {
             kind: MarkupKind.Markdown,
-            value: hoverLines.join('\n')
+            value: hoverLines.join('\n'),
           },
-          range: wordRange
+          range: wordRange,
         };
       }
 
@@ -418,7 +465,8 @@ const onHover = (config: CurrentConnectionConfig) => {
         }
 
         // Check if property is optional by looking at the type
-        const isOptional = propType?.includes('undefined') || propType?.includes('| null');
+        const isOptional =
+          propType?.includes('undefined') || propType?.includes('| null');
         const optionalMarker = isOptional ? '?' : '';
 
         // Format like VS Code TypeScript hover: (property) name?: type
@@ -426,7 +474,9 @@ const onHover = (config: CurrentConnectionConfig) => {
 
         // First line: property signature
         hoverLines.push(`\`\`\`typescript`);
-        hoverLines.push(`(property) ${word}${optionalMarker}: ${adjustedType || 'any'}`);
+        hoverLines.push(
+          `(property) ${word}${optionalMarker}: ${adjustedType || 'any'}`
+        );
         hoverLines.push(`\`\`\``);
 
         // Add JSDoc documentation if available
@@ -438,9 +488,9 @@ const onHover = (config: CurrentConnectionConfig) => {
         return {
           contents: {
             kind: MarkupKind.Markdown,
-            value: hoverLines.join('\n')
+            value: hoverLines.join('\n'),
           },
-          range: wordRange
+          range: wordRange,
         };
       }
     }
@@ -470,7 +520,7 @@ const onHover = (config: CurrentConnectionConfig) => {
               Key: {{item.key}}
               Thing: {{item.thing}}
             {{/each}}
-            `
+            `,
       },
       {
         name: '#if',
@@ -496,7 +546,7 @@ const onHover = (config: CurrentConnectionConfig) => {
             {{else}}
               This content is rendered if condition is false
             {{/if}}
-            `
+            `,
       },
       {
         name: '#unless',
@@ -523,7 +573,7 @@ const onHover = (config: CurrentConnectionConfig) => {
             {{else}}
               This content is rendered if condition is true
             {{/unless}}
-            `
+            `,
       },
       {
         name: '#with',
@@ -546,7 +596,7 @@ const onHover = (config: CurrentConnectionConfig) => {
                 </p>
               {{/with}}
             {{/each}}
-            `
+            `,
       },
       {
         name: '#let',
@@ -562,7 +612,7 @@ const onHover = (config: CurrentConnectionConfig) => {
               <p>Welcome, {{profile.name}} {{profile.lastName}}!</p>
               <p>Your full name is {{profile.name}} {{profile.lastName}}.</p>
             {{/let}}
-            `
+            `,
       },
       {
         name: '@index',
@@ -573,7 +623,7 @@ const onHover = (config: CurrentConnectionConfig) => {
             {{#each items}}
               <p>Item {{@index}}: {{this}}</p>
             {{/each}}
-            `
+            `,
       },
       {
         name: '@key',
@@ -584,7 +634,7 @@ const onHover = (config: CurrentConnectionConfig) => {
             {{#each items}}
               <p>Key: {{@key}}, Value: {{this}}</p>
             {{/each}}
-            `
+            `,
       },
       {
         name: '@first',
@@ -599,7 +649,7 @@ const onHover = (config: CurrentConnectionConfig) => {
                 <p>Not the first item: {{this}}</p>
               {{/if}}
             {{/each}}
-            `
+            `,
       },
       {
         name: '@last',
@@ -614,7 +664,7 @@ const onHover = (config: CurrentConnectionConfig) => {
                 <p>Not the last item: {{this}}</p>
               {{/if}}
             {{/each}}
-            `
+            `,
       },
       {
         name: 'this',
@@ -635,11 +685,13 @@ const onHover = (config: CurrentConnectionConfig) => {
               <p>Name: {{this.name}}</p> <!-- 'this' refers to the user context // 'John' -->
               <p>Age: {{this.age}}</p>
             {{/with}}
-            `
-      }
+            `,
+      },
     ];
     try {
-      const workspaceConfig = await connection.workspace.getConfiguration('meteorLanguageServer');
+      const workspaceConfig = await connection.workspace.getConfiguration(
+        'meteorLanguageServer'
+      );
       let hashColor = '#FF6B35';
       let nameColor = '#007ACC';
       if (typeof workspaceConfig?.blazeHelpers?.hashColor === 'string') {
@@ -655,11 +707,15 @@ const onHover = (config: CurrentConnectionConfig) => {
           .map((h: any) => {
             if (typeof h === 'string') {
               return { name: h, doc: '', usage: `{{${h}}}` };
-            } else if (typeof h === 'object' && h !== null && typeof h.name === 'string') {
+            } else if (
+              typeof h === 'object' &&
+              h !== null &&
+              typeof h.name === 'string'
+            ) {
               return {
                 name: h.name,
                 doc: h.doc || '',
-                usage: trimUsageDocumentation(h.name, h.usage)
+                usage: trimUsageDocumentation(h.name, h.usage),
               };
             }
             return null;
@@ -668,7 +724,7 @@ const onHover = (config: CurrentConnectionConfig) => {
       }
       blazeHelpers = [...blazeHelpers, ...extendedHelpers];
 
-      const foundHelper = blazeHelpers.find(h => h.name === word);
+      const foundHelper = blazeHelpers.find((h) => h.name === word);
       if (foundHelper) {
         let coloredLabel = word;
         if (word.startsWith('#')) {
@@ -676,7 +732,7 @@ const onHover = (config: CurrentConnectionConfig) => {
             1
           )}</span>`;
         }
-        let hoverLines = [`${coloredLabel} - Blaze Helper`, ``];
+        const hoverLines = [`${coloredLabel} - Blaze Helper`, ``];
         if (foundHelper.doc) {
           hoverLines.push(foundHelper.doc, ``);
         }
@@ -696,9 +752,9 @@ const onHover = (config: CurrentConnectionConfig) => {
         return {
           contents: {
             kind: MarkupKind.Markdown,
-            value: hoverLines.join('\n')
+            value: hoverLines.join('\n'),
           },
-          range: wordRange
+          range: wordRange,
         };
       }
     } catch {
@@ -716,12 +772,19 @@ async function getTemplateInclusionHover(
   currentDocument: TextDocument
 ): Promise<{ kind: MarkupKind; value: string } | null> {
   try {
-    const fs = await import('fs');
-    const path = await import('path');
-
     const currentFilePath = currentDocument.uri.replace('file://', '');
     const currentDir = path.dirname(currentFilePath);
-    const currentBaseName = path.basename(currentFilePath, path.extname(currentFilePath));
+    const currentBaseName = path.basename(
+      currentFilePath,
+      path.extname(currentFilePath)
+    );
+
+    console.log('Getting hover for template inclusion:', {
+      templateName,
+      currentFilePath,
+      currentDir,
+      currentBaseName,
+    });
 
     // FIRST: Check if the template exists in the current file (same file)
     const content = currentDocument.getText();
@@ -734,13 +797,17 @@ async function getTemplateInclusionHover(
     if (templateMatch) {
       const templateContent = templateMatch[1];
       const contentLines = templateContent.split('\n');
-      const preview = trimLanguageDocumentation(templateContent, 'handlebars', 10);
+      const preview = trimLanguageDocumentation(
+        templateContent,
+        'handlebars',
+        10
+      );
       const hasMore = contentLines.length > 10;
 
       const hoverContent = [
         `**${templateName}** - Template (Same File)`,
         '',
-        '📄 **Template defined in current file**'
+        '📄 **Template defined in current file**',
       ];
 
       // Extract parameters from template usage (it's in the same file)
@@ -758,17 +825,20 @@ async function getTemplateInclusionHover(
       let hasTypedParams = false;
       const typedParams = new Map<string, { type: string; doc?: string }>();
 
-      for (const [key] of _config.fileAnalysis.dataProperties?.entries() || []) {
+      for (const [key] of _config.fileAnalysis.dataProperties?.entries() ||
+        []) {
         if (key.endsWith(`/${templateName}`)) {
           hasTypedParams = true;
           const dataProps = _config.fileAnalysis.dataProperties?.get(key) || [];
-          const typeMap = _config.fileAnalysis.dataPropertyTypesByKey?.get(key) || {};
-          const jsDocMap = _config.fileAnalysis.dataPropertyJsDocsByKey?.get(key) || {};
+          const typeMap =
+            _config.fileAnalysis.dataPropertyTypesByKey?.get(key) || {};
+          const jsDocMap =
+            _config.fileAnalysis.dataPropertyJsDocsByKey?.get(key) || {};
 
           for (const prop of dataProps) {
             typedParams.set(prop, {
               type: typeMap[prop] || 'any',
-              doc: jsDocMap[prop]
+              doc: jsDocMap[prop],
             });
           }
           break;
@@ -798,14 +868,9 @@ async function getTemplateInclusionHover(
         } else {
           hoverContent.push('**Parameters (inferred from usage):**');
         }
-
-        for (const [name, info] of allParams) {
-          if (info.doc) {
-            hoverContent.push(`- \`${name}: ${info.type}\` - ${info.doc}`);
-          } else {
-            hoverContent.push(`- \`${name}: ${info.type}\``);
-          }
-        }
+        hoverContent.push('```typescript');
+        hoverContent.push(formatParametersAsTypeScriptObject(allParams));
+        hoverContent.push('```');
       }
 
       hoverContent.push('');
@@ -816,19 +881,32 @@ async function getTemplateInclusionHover(
 
       return {
         kind: MarkupKind.Markdown,
-        value: hoverContent.join('\n')
+        value: hoverContent.join('\n'),
       };
     }
 
     // Second: Check if template is imported from another file
-    const associatedFile = findAssociatedJSFileForHover(currentDir, currentBaseName, fs, path);
+    const associatedFile = findAssociatedJSFileForHover(
+      currentDir,
+      currentBaseName,
+      fs,
+      path
+    );
 
     if (!associatedFile) {
-      return await createTemplateNotFoundHover(templateName, currentDocument, _config);
+      return await createTemplateNotFoundHover(
+        templateName,
+        currentDocument,
+        _config
+      );
     }
 
     // Parse imports to see if this template is imported
-    const importedTemplates = parseTemplateImportsForHover(associatedFile, fs, path);
+    const importedTemplates = parseTemplateImportsForHover(
+      associatedFile,
+      fs,
+      path
+    );
 
     if (!importedTemplates.includes(templateName)) {
       return {
@@ -845,20 +923,29 @@ async function getTemplateInclusionHover(
           `import './${templateName}/${templateName}';`,
           `\`\`\``,
           '',
-          `**Usage:** \`{{> ${templateName}}}\``
-        ].join('\n')
+          `**Usage:** \`{{> ${templateName}}}\``,
+        ].join('\n'),
       };
     }
 
     // Find the actual template file to show content preview
-    const templateInfo = findImportedTemplateFile(templateName, associatedFile, fs, path);
+    const templateInfo = findImportedTemplateFile(
+      templateName,
+      associatedFile,
+      fs,
+      path
+    );
 
     if (templateInfo) {
       const relativePath = path.relative(process.cwd(), templateInfo.file);
 
       // Get a preview of the template content (first few lines)
       const contentLines = templateInfo.content.split('\n');
-      const preview = trimLanguageDocumentation(templateInfo.content, 'handlebars', 10);
+      const preview = trimLanguageDocumentation(
+        templateInfo.content,
+        'handlebars',
+        10
+      );
 
       const hasMore = contentLines.length > 10;
 
@@ -867,7 +954,7 @@ async function getTemplateInclusionHover(
         '',
         `**File:** \`${relativePath}\``,
         '',
-        '✅ **Template imported** in associated file'
+        '✅ **Template imported** in associated file',
       ];
 
       // Try to extract parameters from template usage
@@ -888,17 +975,20 @@ async function getTemplateInclusionHover(
       let hasTypedParams = false;
       const typedParams = new Map<string, { type: string; doc?: string }>();
 
-      for (const [key] of _config.fileAnalysis.dataProperties?.entries() || []) {
+      for (const [key] of _config.fileAnalysis.dataProperties?.entries() ||
+        []) {
         if (key.endsWith(`/${templateName}`)) {
           hasTypedParams = true;
           const dataProps = _config.fileAnalysis.dataProperties?.get(key) || [];
-          const typeMap = _config.fileAnalysis.dataPropertyTypesByKey?.get(key) || {};
-          const jsDocMap = _config.fileAnalysis.dataPropertyJsDocsByKey?.get(key) || {};
+          const typeMap =
+            _config.fileAnalysis.dataPropertyTypesByKey?.get(key) || {};
+          const jsDocMap =
+            _config.fileAnalysis.dataPropertyJsDocsByKey?.get(key) || {};
 
           for (const prop of dataProps) {
             typedParams.set(prop, {
               type: typeMap[prop] || 'any',
-              doc: jsDocMap[prop]
+              doc: jsDocMap[prop],
             });
           }
           break;
@@ -906,7 +996,10 @@ async function getTemplateInclusionHover(
       }
 
       // Merge typed parameters with extracted parameters
-      const allParams = new Map<string, { type: string; doc?: string; inferred: boolean }>();
+      const allParams = new Map<
+        string,
+        { type: string; doc?: string; inferred: boolean }
+      >();
 
       // Add typed parameters first
       for (const [name, info] of typedParams) {
@@ -916,7 +1009,10 @@ async function getTemplateInclusionHover(
       // Add extracted parameters that aren't already typed
       for (const param of extractedParams) {
         if (!allParams.has(param.name)) {
-          allParams.set(param.name, { type: param.inferredType || 'string', inferred: true });
+          allParams.set(param.name, {
+            type: param.inferredType || 'string',
+            inferred: true,
+          });
         }
       }
 
@@ -928,14 +1024,9 @@ async function getTemplateInclusionHover(
         } else {
           hoverContent.push('**Parameters (inferred from usage):**');
         }
-
-        for (const [name, info] of allParams) {
-          if (info.doc) {
-            hoverContent.push(`- \`${name}: ${info.type}\` - ${info.doc}`);
-          } else {
-            hoverContent.push(`- \`${name}: ${info.type}\``);
-          }
-        }
+        hoverContent.push('```typescript');
+        hoverContent.push(formatParametersAsTypeScriptObject(allParams));
+        hoverContent.push('```');
       }
 
       hoverContent.push('');
@@ -944,14 +1035,20 @@ async function getTemplateInclusionHover(
       hoverContent.push('');
       hoverContent.push(`**Usage:** \`{{> ${templateName}}}\``);
       hoverContent.push('');
-      hoverContent.push('This template is properly imported and available for inclusion.');
+      hoverContent.push(
+        'This template is properly imported and available for inclusion.'
+      );
 
       return {
         kind: MarkupKind.Markdown,
-        value: hoverContent.join('\n')
+        value: hoverContent.join('\n'),
       };
     } else {
-      return await createTemplateNotFoundHover(templateName, currentDocument, _config);
+      return await createTemplateNotFoundHover(
+        templateName,
+        currentDocument,
+        _config
+      );
     }
   } catch {
     return null;
@@ -965,8 +1062,7 @@ async function createTemplateNotFoundHover(
   _config: CurrentConnectionConfig
 ): Promise<{ kind: MarkupKind; value: string }> {
   // First, check if the template exists in the current file
-  const fs = await import('fs');
-  const path = await import('path');
+
   const currentFilePath = currentDocument.uri.replace('file://', '');
   const content = currentDocument.getText();
 
@@ -980,13 +1076,17 @@ async function createTemplateNotFoundHover(
   if (templateMatch) {
     const templateContent = templateMatch[1];
     const contentLines = templateContent.split('\n');
-    const preview = trimLanguageDocumentation(templateContent, 'handlebars', 10);
+    const preview = trimLanguageDocumentation(
+      templateContent,
+      'handlebars',
+      10
+    );
     const hasMore = contentLines.length > 10;
 
     const hoverContent = [
       `**${templateName}** - Template (Same File)`,
       '',
-      '📄 **Template defined in current file**'
+      '📄 **Template defined in current file**',
     ];
 
     // Extract parameters from template usage
@@ -1018,9 +1118,15 @@ async function createTemplateNotFoundHover(
         hoverContent.push('**Parameters (inferred from usage):**');
       }
 
+      // Convert extracted params to Map format for formatting
+      const paramsMap = new Map<string, { type: string; doc?: string }>();
       for (const param of extractedParams) {
-        hoverContent.push(`- \`${param.name}: any\``);
+        paramsMap.set(param.name, { type: param.inferredType || 'string' });
       }
+
+      hoverContent.push('```typescript');
+      hoverContent.push(formatParametersAsTypeScriptObject(paramsMap));
+      hoverContent.push('```');
     }
 
     hoverContent.push('');
@@ -1031,7 +1137,7 @@ async function createTemplateNotFoundHover(
 
     return {
       kind: MarkupKind.Markdown,
-      value: hoverContent.join('\n')
+      value: hoverContent.join('\n'),
     };
   }
 
@@ -1050,8 +1156,8 @@ async function createTemplateNotFoundHover(
       '2. Check that the template name is correct',
       '3. Verify the template file exists',
       '',
-      `**Usage:** \`{{> ${templateName}}}\``
-    ].join('\n')
+      `**Usage:** \`{{> ${templateName}}}\``,
+    ].join('\n'),
   };
 }
 
@@ -1115,16 +1221,25 @@ function findAssociatedJSFileForHover(
 }
 
 // Helper function to parse template imports for hover
-function parseTemplateImportsForHover(filePath: string, fs: any, path: any): string[] {
+function parseTemplateImportsForHover(
+  filePath: string,
+  fs: any,
+  path: any
+): string[] {
   try {
     const content = fs.readFileSync(filePath, 'utf8');
     const templates: string[] = [];
 
     // Find tsconfig.json for this Meteor project (same as autocomplete)
-    const tsconfig = findTsConfigForMeteorProject(path.dirname(filePath), fs, path);
+    const tsconfig = findTsConfigForMeteorProject(
+      path.dirname(filePath),
+      fs,
+      path
+    );
 
     // Find all import statements (both named and unnamed, including absolute paths)
-    const importPattern = /import\s+(?:[^'"]*\s+from\s+)?['"]((?:\.\.?\/|\/)[^'"]*)['"]/g;
+    const importPattern =
+      /import\s+(?:[^'"]*\s+from\s+)?['"]((?:\.\.?\/|\/)[^'"]*)['"]/g;
 
     let match;
     while ((match = importPattern.exec(content)) !== null) {
@@ -1147,7 +1262,12 @@ function parseTemplateImportsForHover(filePath: string, fs: any, path: any): str
           }
 
           // Try TypeScript path resolution
-          const tsResolvedPath = resolveTsPath(importPath, tsconfig, projectRoot, path);
+          const tsResolvedPath = resolveTsPath(
+            importPath,
+            tsconfig,
+            projectRoot,
+            path
+          );
 
           if (tsResolvedPath) {
             fullImportPath = tsResolvedPath;
@@ -1200,7 +1320,9 @@ function parseTemplateImportsForHover(filePath: string, fs: any, path: any): str
         const templatePattern = /Template\.([a-zA-Z_$][a-zA-Z0-9_$]*)/g;
         let templateMatch;
 
-        while ((templateMatch = templatePattern.exec(importedFileContent)) !== null) {
+        while (
+          (templateMatch = templatePattern.exec(importedFileContent)) !== null
+        ) {
           const templateName = templateMatch[1];
           if (!templates.includes(templateName)) {
             templates.push(templateName);
@@ -1234,13 +1356,20 @@ function parseTemplateImportsForHover(filePath: string, fs: any, path: any): str
 
     return templates;
   } catch (error) {
-    console.error(`Error parsing template imports for hover from ${filePath}:`, error);
+    console.error(
+      `Error parsing template imports for hover from ${filePath}:`,
+      error
+    );
     return [];
   }
 }
 
 // Helper function to find tsconfig.json in the same directory as .meteor (for hover)
-function findTsConfigForMeteorProject(startPath: string, fs: any, path: any): any {
+function findTsConfigForMeteorProject(
+  startPath: string,
+  fs: any,
+  path: any
+): any {
   let currentDir = startPath;
 
   // Walk up the directory tree to find .meteor directory
@@ -1379,7 +1508,10 @@ function resolveTsPath(
   const basePath = path.resolve(projectRoot, baseUrl);
 
   // Try to match the import path against tsconfig paths
-  for (const [pattern, mappings] of Object.entries(paths) as [string, string[]][]) {
+  for (const [pattern, mappings] of Object.entries(paths) as [
+    string,
+    string[],
+  ][]) {
     // Convert glob pattern to regex
     const regexPattern = pattern
       .replace(/\*/g, '([^/]*)') // Replace * with capture group
@@ -1451,13 +1583,12 @@ function findImportedTemplateFile(
         fullImportPath = path.resolve(associatedDir, importPath);
       }
 
-      // Try to find template.html in the import directory
-      let templateHtmlPath;
-
       // For imports like './nestedTemplate/nestedTemplate' or '/imports/ui/template2/nestedTemplate2/nestedTemplate2'
       // the template.html is in the nestedTemplate or nestedTemplate2 directory
       const importDir = path.dirname(fullImportPath);
-      templateHtmlPath = path.join(importDir, 'template.html');
+
+      // Try to find template.html in the import directory
+      const templateHtmlPath = path.join(importDir, 'template.html');
 
       try {
         if (fs.existsSync(templateHtmlPath)) {
@@ -1478,7 +1609,10 @@ function findImportedTemplateFile(
 
     return null;
   } catch (error) {
-    console.error(`Error finding imported template file for ${templateName}:`, error);
+    console.error(
+      `Error finding imported template file for ${templateName}:`,
+      error
+    );
     return null;
   }
 }
@@ -1495,13 +1629,13 @@ function getParentTemplatePropertyHover(
   // Look for this word in parent template's helpers and data properties
   const dirLookupKeys = [
     `${currentDir}/${parentTemplateName}`,
-    `${currentDir}/${path.basename(currentDir)}`
+    `${currentDir}/${path.basename(currentDir)}`,
   ].filter(Boolean);
 
   for (const key of dirLookupKeys) {
     // Check if it's a helper
     const helperDetails = config.fileAnalysis.helperDetails.get(key as string);
-    const helperInfo = helperDetails?.find(h => h.name === word);
+    const helperInfo = helperDetails?.find((h) => h.name === word);
 
     if (helperInfo) {
       const hoverLines: string[] = [];
@@ -1526,23 +1660,29 @@ function getParentTemplatePropertyHover(
     }
 
     // Check if it's a data property
-    const dataProps = config.fileAnalysis.dataProperties?.get(key as string) || [];
-    const typeMap = config.fileAnalysis.dataPropertyTypesByKey?.get(key as string) || {};
-    const jsDocMap = config.fileAnalysis.dataPropertyJsDocsByKey?.get(key as string) || {};
+    const dataProps =
+      config.fileAnalysis.dataProperties?.get(key as string) || [];
+    const typeMap =
+      config.fileAnalysis.dataPropertyTypesByKey?.get(key as string) || {};
+    const jsDocMap =
+      config.fileAnalysis.dataPropertyJsDocsByKey?.get(key as string) || {};
 
     if (dataProps.includes(word)) {
       const propType = typeMap[word];
       const jsDoc = jsDocMap[word];
 
       // Check if property is optional
-      const isOptional = propType?.includes('undefined') || propType?.includes('| null');
+      const isOptional =
+        propType?.includes('undefined') || propType?.includes('| null');
       const optionalMarker = isOptional ? '?' : '';
 
       const hoverLines: string[] = [];
 
       // Format like VS Code TypeScript hover
       hoverLines.push(`\`\`\`typescript`);
-      hoverLines.push(`(property) ${word}${optionalMarker}: ${propType || 'any'}`);
+      hoverLines.push(
+        `(property) ${word}${optionalMarker}: ${propType || 'any'}`
+      );
       hoverLines.push(`\`\`\``);
 
       // Add JSDoc documentation if available
@@ -1609,21 +1749,25 @@ function getChildTemplatePropertyHover(
   for (const key of possibleKeys) {
     const dataProps = config.fileAnalysis.dataProperties?.get(key) || [];
     const typeMap = config.fileAnalysis.dataPropertyTypesByKey?.get(key) || {};
-    const jsDocMap = config.fileAnalysis.dataPropertyJsDocsByKey?.get(key) || {};
+    const jsDocMap =
+      config.fileAnalysis.dataPropertyJsDocsByKey?.get(key) || {};
 
     if (dataProps.includes(word)) {
       const propType = typeMap[word];
       const jsDoc = jsDocMap[word];
 
       // Check if property is optional
-      const isOptional = propType?.includes('undefined') || propType?.includes('| null');
+      const isOptional =
+        propType?.includes('undefined') || propType?.includes('| null');
       const optionalMarker = isOptional ? '?' : '';
 
       const hoverLines: string[] = [];
 
       // Format like VS Code TypeScript hover
       hoverLines.push(`\`\`\`typescript`);
-      hoverLines.push(`(property) ${word}${optionalMarker}: ${propType || 'any'}`);
+      hoverLines.push(
+        `(property) ${word}${optionalMarker}: ${propType || 'any'}`
+      );
       hoverLines.push(`\`\`\``);
 
       // Add JSDoc documentation if available
@@ -1644,7 +1788,7 @@ function getChildTemplatePropertyHover(
   const possibleHtmlPaths = [
     path.join(currentDir, `${childTemplateName}.html`),
     path.join(currentDir, childTemplateName, 'template.html'),
-    path.join(currentDir, childTemplateName, `${childTemplateName}.html`)
+    path.join(currentDir, childTemplateName, `${childTemplateName}.html`),
   ];
 
   for (const htmlPath of possibleHtmlPaths) {
@@ -1663,7 +1807,7 @@ function getChildTemplatePropertyHover(
         globalHelpers
       );
 
-      const foundParam = extractedParams.find(p => p.name === word);
+      const foundParam = extractedParams.find((p) => p.name === word);
 
       if (foundParam) {
         const hoverLines: string[] = [];
@@ -1673,7 +1817,9 @@ function getChildTemplatePropertyHover(
         hoverLines.push(`(property) ${word}: any`);
         hoverLines.push(`\`\`\``);
         hoverLines.push('');
-        hoverLines.push(`Parameter for the \`${childTemplateName}\` template (inferred from usage).`);
+        hoverLines.push(
+          `Parameter for the \`${childTemplateName}\` template (inferred from usage).`
+        );
 
         return hoverLines.join('\n');
       }
@@ -1707,12 +1853,17 @@ async function getTemplateParameterHover(
     // Get text around the cursor to determine context
     // Increase the window size to handle longer template inclusions
     const beforeCursor = text.substring(Math.max(0, offset - 500), offset);
-    const afterCursor = text.substring(offset, Math.min(text.length, offset + 500));
+    const afterCursor = text.substring(
+      offset,
+      Math.min(text.length, offset + 500)
+    );
 
     // Check if we're in template parameters: {{> templateName param=value}}
     // Find the CLOSEST/LAST {{> before the cursor, not the first one
     // Use a global match and take the last one
-    const allMatches = [...beforeCursor.matchAll(/\{\{\s*>\s*([a-zA-Z0-9_]+)/g)];
+    const allMatches = [
+      ...beforeCursor.matchAll(/\{\{\s*>\s*([a-zA-Z0-9_]+)/g),
+    ];
 
     if (allMatches.length === 0) {
       return null;
@@ -1758,12 +1909,18 @@ async function getTemplateParameterHover(
       const afterText = text.substring(offset);
 
       // Find the last template inclusion start before our position
-      const lastTemplateMatch = beforeText.match(/\{\{\s*>\s*([a-zA-Z0-9_]+)[^}]*$/);
+      const lastTemplateMatch = beforeText.match(
+        /\{\{\s*>\s*([a-zA-Z0-9_]+)[^}]*$/
+      );
 
       // Find the next }} after our position
       const nextCloseMatch = afterText.match(/^[^}]*\}\}/);
 
-      if (lastTemplateMatch && nextCloseMatch && lastTemplateMatch[1] === templateName) {
+      if (
+        lastTemplateMatch &&
+        nextCloseMatch &&
+        lastTemplateMatch[1] === templateName
+      ) {
         isInTemplateInclusion = true;
       }
     }
@@ -1778,7 +1935,10 @@ async function getTemplateParameterHover(
     const wordEndOffset = document.offsetAt(wordRange.end);
 
     // Get context before the word starts and after the word ends
-    const contextBeforeWord = text.substring(Math.max(0, wordStartOffset - 50), wordStartOffset);
+    const contextBeforeWord = text.substring(
+      Math.max(0, wordStartOffset - 50),
+      wordStartOffset
+    );
     const contextAfterWord = text.substring(
       wordEndOffset,
       Math.min(text.length, wordEndOffset + 50)
@@ -1835,7 +1995,7 @@ async function getTemplateParameterHover(
         `(property) ${word}: any`,
         `\`\`\``,
         '',
-        `Parameter for the \`${templateName}\` template.`
+        `Parameter for the \`${templateName}\` template.`,
       ].join('\n');
     }
 
@@ -1844,7 +2004,12 @@ async function getTemplateParameterHover(
     // Fall back to reading the child template's TypeScript file directly
     // Find the associated JS/TS file for the current template to parse imports
     const currentBaseName = path.basename(currentDir);
-    const associatedFile = findAssociatedJSFileForHover(currentDir, currentBaseName, fs, path);
+    const associatedFile = findAssociatedJSFileForHover(
+      currentDir,
+      currentBaseName,
+      fs,
+      path
+    );
 
     if (!associatedFile) {
       // If we're explicitly on left side, return basic info instead of null
@@ -1855,14 +2020,18 @@ async function getTemplateParameterHover(
           `(property) ${word}: any`,
           `\`\`\``,
           '',
-          `Parameter passed to the \`${templateName}\` template.`
+          `Parameter passed to the \`${templateName}\` template.`,
         ].join('\n');
       }
       return null;
     }
 
     // Parse imports to see if this template is imported
-    const importedTemplates = parseTemplateImportsForHover(associatedFile, fs, path);
+    const importedTemplates = parseTemplateImportsForHover(
+      associatedFile,
+      fs,
+      path
+    );
 
     if (!importedTemplates.includes(templateName)) {
       // If we're on left side, return a basic message instead of null
@@ -1873,7 +2042,7 @@ async function getTemplateParameterHover(
           `(property) ${word}: any`,
           `\`\`\``,
           '',
-          `Parameter passed to the \`${templateName}\` template.`
+          `Parameter passed to the \`${templateName}\` template.`,
         ].join('\n');
       }
       return null;
@@ -1901,11 +2070,15 @@ async function getTemplateParameterHover(
         const helpersBody = helpersMatch[1];
 
         // Look for the parameter as a helper function
-        const helperRegex = new RegExp(`\\b${word}\\s*\\([^)]*\\)\\s*:?\\s*([^{]*)\\{`, 'g');
+        const helperRegex = new RegExp(
+          `\\b${word}\\s*\\([^)]*\\)\\s*:?\\s*([^{]*)\\{`,
+          'g'
+        );
         const helperMatch = helperRegex.exec(helpersBody);
 
         if (helperMatch) {
-          const returnType = helperMatch[1].trim().replace(/^:\s*/, '') || 'any';
+          const returnType =
+            helperMatch[1].trim().replace(/^:\s*/, '') || 'any';
 
           // Try to extract JSDoc comment
           const lines = helpersBody.split('\n');
@@ -1918,7 +2091,7 @@ async function getTemplateParameterHover(
                 const line = lines[j].trim();
                 if (line.startsWith('/**')) {
                   // Found start of JSDoc, collect all lines
-                  let jsdocLines = [];
+                  const jsdocLines = [];
                   for (let k = j; k <= i - 1; k++) {
                     const docLine = lines[k].trim();
                     if (docLine === '/**' || docLine === '*/') {
@@ -1944,7 +2117,7 @@ async function getTemplateParameterHover(
             `**${word}** - Template Helper Function`,
             '',
             `**Template:** ${templateName}`,
-            `**Returns:** \`${returnType}\``
+            `**Returns:** \`${returnType}\``,
           ];
 
           if (documentation) {
@@ -1956,16 +2129,20 @@ async function getTemplateParameterHover(
       }
 
       // Look for the parameter in type definitions
-      const pascalTemplateName = templateName.charAt(0).toUpperCase() + templateName.slice(1);
+      const pascalTemplateName =
+        templateName.charAt(0).toUpperCase() + templateName.slice(1);
       const typeNames = [
         `${pascalTemplateName}Data`,
         `${templateName}Data`,
         `${pascalTemplateName}TemplateData`,
-        `${templateName}TemplateData`
+        `${templateName}TemplateData`,
       ];
 
       for (const typeName of typeNames) {
-        const typePattern = new RegExp(`type\\s+${typeName}\\s*=\\s*\\{([\\s\\S]*?)\\}\\s*;`, 'i');
+        const typePattern = new RegExp(
+          `type\\s+${typeName}\\s*=\\s*\\{([\\s\\S]*?)\\}\\s*;`,
+          'i'
+        );
         const typeMatch = content.match(typePattern);
 
         if (typeMatch) {
@@ -1989,7 +2166,7 @@ async function getTemplateParameterHover(
                 const prevLine = lines[j].trim();
                 if (prevLine.startsWith('/**')) {
                   // Found start of JSDoc, collect all lines
-                  let jsdocLines = [];
+                  const jsdocLines = [];
                   for (let k = j; k < i; k++) {
                     const docLine = lines[k].trim();
                     if (docLine === '/**' || docLine === '*/') {
@@ -2017,7 +2194,9 @@ async function getTemplateParameterHover(
 
               // First line: property signature
               hoverContent.push(`\`\`\`typescript`);
-              hoverContent.push(`(property) ${word}${optionalMarker}: ${propertyType}`);
+              hoverContent.push(
+                `(property) ${word}${optionalMarker}: ${propertyType}`
+              );
               hoverContent.push(`\`\`\``);
 
               // Add documentation if available
@@ -2039,7 +2218,7 @@ async function getTemplateParameterHover(
       `(property) ${word}: any`,
       `\`\`\``,
       '',
-      `Parameter passed to the \`${templateName}\` template.`
+      `Parameter passed to the \`${templateName}\` template.`,
     ].join('\n');
   } catch (error) {
     console.error(`Error getting template parameter hover for ${word}:`, error);
@@ -2111,9 +2290,37 @@ function findTemplateTypeScriptFileForHover(
 
     return null;
   } catch (error) {
-    console.error(`Error finding TypeScript file for hover for ${templateName}:`, error);
+    console.error(
+      `Error finding TypeScript file for hover for ${templateName}:`,
+      error
+    );
     return null;
   }
+}
+
+/**
+ * Format template parameters as a TypeScript object type
+ * @param params - Map of parameter names to their type info
+ * @returns Formatted TypeScript type string
+ */
+function formatParametersAsTypeScriptObject(
+  params: Map<string, { type: string; doc?: string; inferred?: boolean }>
+): string {
+  if (params.size === 0) {
+    return '{}';
+  }
+
+  const paramLines: string[] = [];
+
+  for (const [name, info] of params) {
+    if (info.doc) {
+      // Add JSDoc comment for parameters with documentation
+      paramLines.push(`  /** ${info.doc} */`);
+    }
+    paramLines.push(`  ${name}: ${info.type};`);
+  }
+
+  return `{\n${paramLines.join('\n')}\n}`;
 }
 
 export default onHover;

@@ -4,12 +4,15 @@ import {
   AnalyzeGlobalHelpersResult,
   GlobalHelperConfig,
   GlobalHelperInfo,
-  LanguageServerSettings
+  LanguageServerSettings,
 } from '/types';
 
 // Function to extract JSDoc comment from lines above a target line
-const extractJSDocComment = (lines: string[], targetLineIndex: number): string | undefined => {
-  let jsdocLines: string[] = [];
+const extractJSDocComment = (
+  lines: string[],
+  targetLineIndex: number
+): string | undefined => {
+  const jsdocLines: string[] = [];
   let inJSDoc = false;
 
   // Look backwards from the target line
@@ -53,7 +56,7 @@ const extractJSDocCommentInRange = (
   startIndex: number,
   endIndex: number
 ): string | undefined => {
-  let jsdocLines: string[] = [];
+  const jsdocLines: string[] = [];
   let foundJSDocEnd = false;
   let foundJSDocStart = false;
 
@@ -98,10 +101,18 @@ const findFunctionDeclarationInfo = (
     }
   | undefined => {
   // Look for function declarations: function functionName(...) or const functionName = (...) =>
-  const functionDeclarationPattern1 = new RegExp(`^\\s*function\\s+${functionName}\\s*\\(`);
-  const functionDeclarationPattern2 = new RegExp(`^\\s*const\\s+${functionName}\\s*=`);
-  const functionDeclarationPattern3 = new RegExp(`^\\s*let\\s+${functionName}\\s*=`);
-  const functionDeclarationPattern4 = new RegExp(`^\\s*var\\s+${functionName}\\s*=`);
+  const functionDeclarationPattern1 = new RegExp(
+    `^\\s*function\\s+${functionName}\\s*\\(`
+  );
+  const functionDeclarationPattern2 = new RegExp(
+    `^\\s*const\\s+${functionName}\\s*=`
+  );
+  const functionDeclarationPattern3 = new RegExp(
+    `^\\s*let\\s+${functionName}\\s*=`
+  );
+  const functionDeclarationPattern4 = new RegExp(
+    `^\\s*var\\s+${functionName}\\s*=`
+  );
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
@@ -144,7 +155,9 @@ const findFunctionDeclarationInfo = (
         }
 
         // Look for function patterns
-        const arrowFunctionMatch = fullFunctionCode.match(/\(([^)]*)\)\s*(?::\s*([^=]+?))?\s*=>/);
+        const arrowFunctionMatch = fullFunctionCode.match(
+          /\(([^)]*)\)\s*(?::\s*([^=]+?))?\s*=>/
+        );
         const regularFunctionMatch = fullFunctionCode.match(
           /function\s+\w+\s*\(([^)]*)\)\s*(?::\s*([^{]+?))?/
         );
@@ -161,7 +174,10 @@ const findFunctionDeclarationInfo = (
         }
 
         // If we've closed all parentheses and found a potential end, break
-        if (openParens === 0 && (currentLine.includes(');') || currentLine.includes('})'))) {
+        if (
+          openParens === 0 &&
+          (currentLine.includes(');') || currentLine.includes('})'))
+        ) {
           break;
         }
 
@@ -182,7 +198,7 @@ const findFunctionDeclarationInfo = (
         jsdoc,
         signature,
         parameters,
-        returnType
+        returnType,
       };
     }
   }
@@ -191,7 +207,9 @@ const findFunctionDeclarationInfo = (
 };
 
 // Function to analyze a single file for global helpers
-export const analyzeFileForGlobalHelpers = (filePath: string): GlobalHelperInfo[] => {
+export const analyzeFileForGlobalHelpers = (
+  filePath: string
+): GlobalHelperInfo[] => {
   const globalHelpers: GlobalHelperInfo[] = [];
 
   try {
@@ -199,7 +217,8 @@ export const analyzeFileForGlobalHelpers = (filePath: string): GlobalHelperInfo[
     const lines = content.split('\n');
 
     // Look for Template.registerHelper calls - handle both single-line and multi-line patterns
-    const registerHelperPattern = /Template\.registerHelper\s*\(\s*['"`]([^'"`]+)['"`]\s*,\s*(.*)/;
+    const registerHelperPattern =
+      /Template\.registerHelper\s*\(\s*['"`]([^'"`]+)['"`]\s*,\s*(.*)/;
     const registerHelperStartPattern = /Template\.registerHelper\s*\(\s*$/;
     // Pattern for function reference: Template.registerHelper('name', functionName)
     const functionReferencePattern =
@@ -229,7 +248,7 @@ export const analyzeFileForGlobalHelpers = (filePath: string): GlobalHelperInfo[
             signature: functionInfo.signature || `${helperName}(...)`,
             returnType: functionInfo.returnType || '',
             parameters: functionInfo.parameters || '',
-            filePath
+            filePath,
           });
         }
 
@@ -282,7 +301,11 @@ export const analyzeFileForGlobalHelpers = (filePath: string): GlobalHelperInfo[
 
         // For multi-line patterns, if still no JSDoc found, look in the range between helper name and function
         if (!jsdoc && helperNameLine !== -1 && helperNameLine !== startLine) {
-          jsdoc = extractJSDocCommentInRange(lines, helperNameLine + 1, startLine);
+          jsdoc = extractJSDocCommentInRange(
+            lines,
+            helperNameLine + 1,
+            startLine
+          );
         }
 
         // Try to extract function signature and parameters
@@ -312,7 +335,9 @@ export const analyzeFileForGlobalHelpers = (filePath: string): GlobalHelperInfo[
           }
 
           // Look for function patterns
-          const arrowFunctionMatch = fullHelperCode.match(/\(([^)]*)\)\s*(?::\s*([^=]+?))?\s*=>/);
+          const arrowFunctionMatch = fullHelperCode.match(
+            /\(([^)]*)\)\s*(?::\s*([^=]+?))?\s*=>/
+          );
           const regularFunctionMatch = fullHelperCode.match(
             /function\s*\(([^)]*)\)\s*(?::\s*([^{]+?))?/
           );
@@ -329,7 +354,10 @@ export const analyzeFileForGlobalHelpers = (filePath: string): GlobalHelperInfo[
           }
 
           // If we've closed all parentheses and found a potential end, break
-          if (openParens === 0 && (currentLine.includes(');') || currentLine.includes('})'))) {
+          if (
+            openParens === 0 &&
+            (currentLine.includes(');') || currentLine.includes('})'))
+          ) {
             break;
           }
 
@@ -352,12 +380,15 @@ export const analyzeFileForGlobalHelpers = (filePath: string): GlobalHelperInfo[
           signature,
           returnType,
           parameters,
-          filePath
+          filePath,
         });
       }
     }
   } catch (error) {
-    console.error(`Error analyzing file for global helpers: ${filePath}`, error);
+    console.error(
+      `Error analyzing file for global helpers: ${filePath}`,
+      error
+    );
   }
 
   return globalHelpers;
@@ -406,7 +437,7 @@ export const analyzeGlobalHelpers = async (
 
   return {
     helpers: helperNames,
-    helperDetails: globalHelpers
+    helperDetails: globalHelpers,
   };
 };
 
@@ -414,9 +445,11 @@ export const analyzeGlobalHelpers = async (
  * Transforms a GlobalHelperConfig object into a GlobalHelperInfo object.
  * Builds rich documentation from the config fields.
  */
-export const transformConfigToHelperInfo = (config: GlobalHelperConfig): GlobalHelperInfo => {
+export const transformConfigToHelperInfo = (
+  config: GlobalHelperConfig
+): GlobalHelperInfo => {
   // Build JSDoc documentation
-  let markdownParts: string[] = [];
+  const markdownParts: string[] = [];
 
   // Add main documentation
   if (config.doc) {
@@ -427,10 +460,12 @@ export const transformConfigToHelperInfo = (config: GlobalHelperConfig): GlobalH
   if (config.params && config.params.length > 0) {
     markdownParts.push(''); // Empty line
     markdownParts.push('**Parameters:**');
-    config.params.forEach(param => {
+    config.params.forEach((param) => {
       let paramLine = `- \`${param.name}\``;
       if (param.type) {
-        const typeStr = Array.isArray(param.type) ? param.type.join(' | ') : param.type;
+        const typeStr = Array.isArray(param.type)
+          ? param.type.join(' | ')
+          : param.type;
         paramLine += ` *(${typeStr})*`;
       }
       if (param.optional) {
@@ -464,7 +499,7 @@ export const transformConfigToHelperInfo = (config: GlobalHelperConfig): GlobalH
     markdownParts.push(''); // Empty line
     markdownParts.push('**Examples:**');
     markdownParts.push(''); // Empty line before code block
-    config.examples.forEach(example => {
+    config.examples.forEach((example) => {
       if (example.html) {
         markdownParts.push('```handlebars');
         markdownParts.push(example.html);
@@ -478,7 +513,7 @@ export const transformConfigToHelperInfo = (config: GlobalHelperConfig): GlobalH
   let signature = config.name;
   if (config.params && config.params.length > 0) {
     const paramNames = config.params
-      .map(p => {
+      .map((p) => {
         let pName = p.name;
         if (p.optional) {
           pName += '?';
@@ -497,7 +532,7 @@ export const transformConfigToHelperInfo = (config: GlobalHelperConfig): GlobalH
   }
 
   // Extract parameters string
-  const parameters = config.params?.map(p => p.name).join(', ') || '';
+  const parameters = config.params?.map((p) => p.name).join(', ') || '';
 
   // Extract return type
   const returnType = config.return?.type || '';
@@ -508,7 +543,7 @@ export const transformConfigToHelperInfo = (config: GlobalHelperConfig): GlobalH
     signature,
     returnType,
     parameters,
-    filePath: 'settings' // Mark as coming from settings
+    filePath: 'settings', // Mark as coming from settings
   };
 };
 
@@ -524,11 +559,20 @@ export const mergeConfiguredHelpers = (
   const configuredNames: string[] = [];
 
   // Process globalHelpers.extend (new format with full documentation)
-  if (settings.globalHelpers?.extend && Array.isArray(settings.globalHelpers.extend)) {
+  if (
+    settings.globalHelpers?.extend &&
+    Array.isArray(settings.globalHelpers.extend)
+  ) {
     try {
-      settings.globalHelpers.extend.forEach(config => {
-        if (typeof config === 'object' && config !== null && typeof config.name === 'string') {
-          const helperInfo = transformConfigToHelperInfo(config as GlobalHelperConfig);
+      settings.globalHelpers.extend.forEach((config) => {
+        if (
+          typeof config === 'object' &&
+          config !== null &&
+          typeof config.name === 'string'
+        ) {
+          const helperInfo = transformConfigToHelperInfo(
+            config as GlobalHelperConfig
+          );
           configuredHelpers.push(helperInfo);
           configuredNames.push(config.name);
         }
@@ -539,9 +583,12 @@ export const mergeConfiguredHelpers = (
   }
 
   // Process legacy blazeHelpers.extend (simple format with name and doc)
-  if (settings.blazeHelpers?.extend && Array.isArray(settings.blazeHelpers.extend)) {
+  if (
+    settings.blazeHelpers?.extend &&
+    Array.isArray(settings.blazeHelpers.extend)
+  ) {
     try {
-      settings.blazeHelpers.extend.forEach(helper => {
+      settings.blazeHelpers.extend.forEach((helper) => {
         if (
           typeof helper === 'object' &&
           helper !== null &&
@@ -554,7 +601,7 @@ export const mergeConfiguredHelpers = (
             signature: `${helper.name}()`,
             returnType: '',
             parameters: '',
-            filePath: 'settings'
+            filePath: 'settings',
           });
           configuredNames.push(helper.name);
         }
@@ -566,15 +613,15 @@ export const mergeConfiguredHelpers = (
 
   // Filter out detected helpers that are overridden by configured ones
   const filteredDetectedHelpers = detectedHelpers.helperDetails.filter(
-    h => !configuredNames.includes(h.name)
+    (h) => !configuredNames.includes(h.name)
   );
   const filteredDetectedNames = detectedHelpers.helpers.filter(
-    h => !configuredNames.includes(h)
+    (h) => !configuredNames.includes(h)
   );
 
   // Merge: configured helpers first, then detected helpers
   return {
     helpers: [...configuredNames, ...filteredDetectedNames],
-    helperDetails: [...configuredHelpers, ...filteredDetectedHelpers]
+    helperDetails: [...configuredHelpers, ...filteredDetectedHelpers],
   };
 };

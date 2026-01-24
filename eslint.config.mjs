@@ -1,52 +1,53 @@
-import js from '@eslint/js';
-import typescriptEslint from '@typescript-eslint/eslint-plugin';
-import tsParser from '@typescript-eslint/parser';
+import eslint from '@eslint/js';
+import prettier from 'eslint-config-prettier/flat';
+import { defineConfig } from 'eslint/config';
+import Globals from 'globals';
+import tslint from 'typescript-eslint';
 
-export default [
-  js.configs.recommended,
+export default defineConfig(
+  eslint.configs.recommended,
+  tslint.configs.recommended,
+  prettier,
   {
-    files: ['**/*.ts'],
-    plugins: {
-      '@typescript-eslint': typescriptEslint
-    },
+    files: ['**/*.ts', './.prettierc.ts'],
     languageOptions: {
-      parser: tsParser,
       ecmaVersion: 2022,
       sourceType: 'module',
-      parserOptions: {
-        project: './tsconfig.json'
-      },
-      globals: {
-        // Node.js globals
-        console: 'readonly',
-        process: 'readonly',
-        require: 'readonly',
-        __dirname: 'readonly',
-        setTimeout: 'readonly',
-        // Browser/VS Code globals
-        Thenable: 'readonly',
-        // Test globals
-        suite: 'readonly',
-        test: 'readonly'
-      }
+      parserOptions: { project: './tsconfig.json' },
+      globals: { ...Globals.node, ...Globals.mocha },
     },
     rules: {
       '@typescript-eslint/naming-convention': [
         'warn',
         {
           selector: 'import',
-          format: ['camelCase', 'PascalCase']
-        }
+          format: ['camelCase', 'PascalCase'],
+        },
       ],
+      // Typescript handles this. If enabled, it will break ts import check
+      'import/no-unresolved': 'off',
       'no-useless-escape': 'off',
       curly: 'warn',
       eqeqeq: 'warn',
       'no-throw-literal': 'warn',
+      '@typescript-eslint/no-this-alias': 'off',
+      // '@typescript-eslint/no-explicit-any': 'error',
+      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-require-imports': 'off',
+      '@typescript-eslint/no-deprecated': 'error',
+      'one-var': ['error', 'never'],
       semi: 'warn',
       // Allow unused vars with underscore prefix
-      'no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+        },
+      ],
       // Allow empty blocks for catch statements and other intentional cases
-      'no-empty': ['error', { allowEmptyCatch: true }]
-    }
+      'no-empty': ['error', { allowEmptyCatch: true }],
+    },
   }
-];
+);

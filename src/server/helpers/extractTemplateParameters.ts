@@ -50,7 +50,9 @@ function findBlockRanges(templateContent: string): Array<{
       const params = match[1].trim();
 
       // Check if it's an each-in block
-      const eachInMatch = blockType === 'each' && params.match(/^\s*([a-zA-Z_$][\w$]*)\s+in\s+([a-zA-Z_$][\w$]*)/);
+      const eachInMatch =
+        blockType === 'each' &&
+        params.match(/^\s*([a-zA-Z_$][\w$]*)\s+in\s+([a-zA-Z_$][\w$]*)/);
 
       // Find the corresponding closing tag
       let depth = 1;
@@ -72,7 +74,7 @@ function findBlockRanges(templateContent: string): Array<{
                 start: openEnd,
                 end: closeStart,
                 alias: eachInMatch[1],
-                source: eachInMatch[2]
+                source: eachInMatch[2],
               });
             } else if (blockType === 'with' || blockType === 'each') {
               const paramMatch = params.match(/^\s*([a-zA-Z_$][\w$]*)/);
@@ -81,14 +83,14 @@ function findBlockRanges(templateContent: string): Array<{
                   type: blockType as 'with' | 'each',
                   start: openEnd,
                   end: closeStart,
-                  param: paramMatch[1]
+                  param: paramMatch[1],
                 });
               }
             } else {
               blocks.push({
                 type: blockType as 'if' | 'unless',
                 start: openEnd,
-                end: closeStart
+                end: closeStart,
               });
             }
             break;
@@ -168,7 +170,7 @@ export function extractTemplateParameters(
     'log',
     'lookup',
     // Common global helpers
-    ...globalHelpers
+    ...globalHelpers,
   ]);
 
   // First, find all block ranges
@@ -210,7 +212,10 @@ export function extractTemplateParameters(
       const enclosingBlock = findEnclosingBlock(position, blocks);
 
       // Skip if it's inside a 'with' or 'each' block unless used outside too
-      if (!enclosingBlock || (enclosingBlock.type !== 'with' && enclosingBlock.type !== 'each')) {
+      if (
+        !enclosingBlock ||
+        (enclosingBlock.type !== 'with' && enclosingBlock.type !== 'each')
+      ) {
         parameters.add(varName);
       } else {
         // Inside a with/each block - check if it's also used outside
@@ -241,7 +246,8 @@ export function extractTemplateParameters(
 
   // Pattern 3: Helper parameters {{helperName paramName}}
   // Match {{word1 word2}} or {{word1 word2 word3}} where word2+ are parameters
-  const helperParamPattern = /\{\{\s*([a-zA-Z_$][a-zA-Z0-9_$]*)\s+([a-zA-Z_$][a-zA-Z0-9_$]*)/g;
+  const helperParamPattern =
+    /\{\{\s*([a-zA-Z_$][a-zA-Z0-9_$]*)\s+([a-zA-Z_$][a-zA-Z0-9_$]*)/g;
 
   while ((match = helperParamPattern.exec(templateContent)) !== null) {
     const helperName = match[1];
@@ -249,7 +255,12 @@ export function extractTemplateParameters(
     const position = match.index;
 
     // Skip if the helper is actually a block helper keyword that we've already handled
-    if (helperName === 'if' || helperName === 'unless' || helperName === 'each' || helperName === 'with') {
+    if (
+      helperName === 'if' ||
+      helperName === 'unless' ||
+      helperName === 'each' ||
+      helperName === 'with'
+    ) {
       continue;
     }
 
@@ -271,7 +282,8 @@ export function extractTemplateParameters(
 
   // Pattern 4: Property access in conditionals (#if, #unless)
   // These should extract parameters from their conditions
-  const conditionalPattern = /\{\{#(if|unless)\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s*\}\}/g;
+  const conditionalPattern =
+    /\{\{#(if|unless)\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s*\}\}/g;
 
   while ((match = conditionalPattern.exec(templateContent)) !== null) {
     const paramName = match[2];
@@ -293,13 +305,18 @@ export function extractTemplateParameters(
   }
 
   // Pattern 5: Properties used in subexpressions like {{#if (equals paramName value)}}
-  const subexpressionPattern = /\(\s*[a-zA-Z_$][a-zA-Z0-9_$]*\s+([a-zA-Z_$][a-zA-Z0-9_$]*)/g;
+  const subexpressionPattern =
+    /\(\s*[a-zA-Z_$][a-zA-Z0-9_$]*\s+([a-zA-Z_$][a-zA-Z0-9_$]*)/g;
 
   while ((match = subexpressionPattern.exec(templateContent)) !== null) {
     const paramName = match[1];
     const position = match.index;
 
-    if (!paramName.startsWith('@') && paramName !== 'this' && !knownHelpers.has(paramName)) {
+    if (
+      !paramName.startsWith('@') &&
+      paramName !== 'this' &&
+      !knownHelpers.has(paramName)
+    ) {
       // Check if inside an each-in block
       const enclosingBlock = findEnclosingBlock(position, blocks);
 
@@ -315,7 +332,8 @@ export function extractTemplateParameters(
   }
 
   // Pattern 6: Property lookups like {{varName.property}} or {{image.url}}
-  const propertyLookupPattern = /\{\{\s*([a-zA-Z_$][a-zA-Z0-9_$]*)\.([a-zA-Z_$][a-zA-Z0-9_$]*)/g;
+  const propertyLookupPattern =
+    /\{\{\s*([a-zA-Z_$][a-zA-Z0-9_$]*)\.([a-zA-Z_$][a-zA-Z0-9_$]*)/g;
 
   while ((match = propertyLookupPattern.exec(templateContent)) !== null) {
     const varName = match[1];
@@ -340,13 +358,17 @@ export function extractTemplateParameters(
   }
 
   // Infer types for each parameter based on usage
-  const parameterTypes = inferParameterTypes(templateContent, parameters, blocks);
+  const parameterTypes = inferParameterTypes(
+    templateContent,
+    parameters,
+    blocks
+  );
 
   // Convert Set to array of ExtractedParameter objects
-  return Array.from(parameters).map(name => ({
+  return Array.from(parameters).map((name) => ({
     name,
     isOptional: false,
-    inferredType: parameterTypes.get(name) || 'string' // Default to string instead of any
+    inferredType: parameterTypes.get(name) || 'string', // Default to string instead of any
   }));
 }
 
@@ -411,9 +433,11 @@ function inferParameterTypes(
   for (const paramName of parameters) {
     // Find blocks that use this parameter
     const relevantBlocks = blocks.filter(
-      block =>
+      (block) =>
         (block.param === paramName || block.source === paramName) &&
-        (block.type === 'with' || block.type === 'each' || block.type === 'each-in')
+        (block.type === 'with' ||
+          block.type === 'each' ||
+          block.type === 'each-in')
     );
 
     if (relevantBlocks.length === 0) {
@@ -494,7 +518,8 @@ function inferObjectTypeFromBlock(
   }
 
   // Pattern 2: {{this.propertyName}} or {{alias.propertyName}}
-  const thisPropPattern = /\{\{\s*(?:this|([a-zA-Z_$][a-zA-Z0-9_$]*))\.([a-zA-Z_$][a-zA-Z0-9_$]*)/g;
+  const thisPropPattern =
+    /\{\{\s*(?:this|([a-zA-Z_$][a-zA-Z0-9_$]*))\.([a-zA-Z_$][a-zA-Z0-9_$]*)/g;
 
   while ((match = thisPropPattern.exec(blockContent)) !== null) {
     const prefix = match[1] || 'this';
@@ -507,11 +532,16 @@ function inferObjectTypeFromBlock(
   }
 
   // Pattern 3: Property access in helper calls {{helper propertyName}}
-  const helperPropPattern = /\{\{\s*[a-zA-Z_$][a-zA-Z0-9_$]*\s+([a-zA-Z_$][a-zA-Z0-9_$]*)/g;
+  const helperPropPattern =
+    /\{\{\s*[a-zA-Z_$][a-zA-Z0-9_$]*\s+([a-zA-Z_$][a-zA-Z0-9_$]*)/g;
 
   while ((match = helperPropPattern.exec(blockContent)) !== null) {
     const propName = match[1];
-    if (!propName.startsWith('@') && propName !== 'this' && propName !== alias) {
+    if (
+      !propName.startsWith('@') &&
+      propName !== 'this' &&
+      propName !== alias
+    ) {
       properties.add(propName);
     }
   }
@@ -523,10 +553,10 @@ function inferObjectTypeFromBlock(
   // Build object type string
   const propStrings = Array.from(properties)
     .sort()
-    .map(prop => `${prop}: string`)
-    .join('; ');
+    .map((prop) => `  ${prop}: string`)
+    .join('\n  ');
 
-  return `{ ${propStrings} }`;
+  return `{\n  ${propStrings}\n  }`;
 }
 
 /**
@@ -583,10 +613,10 @@ function inferArrayTypeFromBlock(
 
   const propStrings = Array.from(properties)
     .sort()
-    .map(prop => `${prop}: string`)
-    .join('; ');
+    .map((prop) => `  ${prop}: string;`)
+    .join('\n  ');
 
-  return `Array<{ ${propStrings} }>`;
+  return `{\n  ${propStrings}\n  }[]`;
 }
 
 /**
@@ -616,7 +646,7 @@ export function extractParametersFromTemplate(
     path.join(currentDir, templateName, 'template.html'),
     path.join(currentDir, templateName, `${templateName}.html`),
     // Also check parent directory
-    path.join(path.dirname(currentDir), `${templateName}.html`)
+    path.join(path.dirname(currentDir), `${templateName}.html`),
   ];
 
   for (const filePath of possiblePaths) {

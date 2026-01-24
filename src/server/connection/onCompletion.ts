@@ -6,12 +6,18 @@ import {
   CompletionItem,
   CompletionItemKind,
   MarkupKind,
-  TextDocumentPositionParams
+  TextDocumentPositionParams,
 } from 'vscode-languageserver/node';
 
 import { CurrentConnectionConfig, HelperInfo } from '../../types';
-import { analyzeGlobalHelpers, mergeConfiguredHelpers } from '../helpers/analyzeGlobalHelpers';
-import { createBlockCompletions, shouldProvideBlockCompletion } from '../helpers/autoInsertEndTags';
+import {
+  analyzeGlobalHelpers,
+  mergeConfiguredHelpers,
+} from '../helpers/analyzeGlobalHelpers';
+import {
+  createBlockCompletions,
+  shouldProvideBlockCompletion,
+} from '../helpers/autoInsertEndTags';
 import { containsMeteorTemplates } from '../helpers/containsMeteorTemplates';
 import { extractParametersFromTemplate } from '../helpers/extractTemplateParameters';
 import { findEnclosingEachInContext } from '../helpers/findEnclosingEachInContext';
@@ -22,7 +28,9 @@ import { isWithinHandlebarsExpression } from '../helpers/isWithinHandlebarsExpre
 
 const onCompletion = (config: CurrentConnectionConfig) => {
   const { connection, documents } = config;
-  return async (textDocumentPosition: TextDocumentPositionParams): Promise<CompletionItem[]> => {
+  return async (
+    textDocumentPosition: TextDocumentPositionParams
+  ): Promise<CompletionItem[]> => {
     const document = documents.get(textDocumentPosition.textDocument.uri);
     if (!document) {
       return [];
@@ -54,13 +62,19 @@ const onCompletion = (config: CurrentConnectionConfig) => {
 
     // Check if we're in a template inclusion context ({{> templateName)
     const textBeforeCursor = text.substring(0, offset);
-    const templateInclusionMatch = textBeforeCursor.match(/\{\{\s*>\s*([a-zA-Z0-9_]*)$/);
+    const templateInclusionMatch = textBeforeCursor.match(
+      /\{\{\s*>\s*([a-zA-Z0-9_]*)$/
+    );
     const isTemplateInclusion = templateInclusionMatch !== null;
-    const partialTemplateName = templateInclusionMatch ? templateInclusionMatch[1] : '';
+    const partialTemplateName = templateInclusionMatch
+      ? templateInclusionMatch[1]
+      : '';
 
     // Check if we're inside template inclusion parameters ({{> templateName [cursor is here] }})
     // Look for the most recent {{> templateName that hasn't been closed yet
-    const templateParameterMatch = textBeforeCursor.match(/\{\{\s*>\s*([a-zA-Z0-9_]+)(?:[^{}])*$/);
+    const templateParameterMatch = textBeforeCursor.match(
+      /\{\{\s*>\s*([a-zA-Z0-9_]+)(?:[^{}])*$/
+    );
 
     // Check if we're positioned after an equals sign (for value completion)
     // Match: paramName=|cursor or paramName=partial|cursor
@@ -77,7 +91,9 @@ const onCompletion = (config: CurrentConnectionConfig) => {
     // 3. We're NOT after an equals sign at all
     const isTemplateParameter =
       templateParameterMatch !== null && !isTemplateInclusion && !isAfterEquals;
-    const templateNameForParams = templateParameterMatch ? templateParameterMatch[1] : '';
+    const templateNameForParams = templateParameterMatch
+      ? templateParameterMatch[1]
+      : '';
 
     // We're in template parameter VALUE context (right of =) if:
     // 1. We're inside a template invocation
@@ -128,7 +144,10 @@ const onCompletion = (config: CurrentConnectionConfig) => {
     // Check if we should provide block completions (for {{#block}} patterns)
     const blockCompletion = shouldProvideBlockCompletion(text, offset);
     if (blockCompletion.shouldProvide) {
-      const blockCompletions = await createBlockCompletions(config, blockCompletion.trigger);
+      const blockCompletions = await createBlockCompletions(
+        config,
+        blockCompletion.trigger
+      );
 
       // For auto-triggered completions (when typing }}), return immediately
       if (blockCompletion.trigger.startsWith('complete-')) {
@@ -139,7 +158,9 @@ const onCompletion = (config: CurrentConnectionConfig) => {
 
       // If we have an exact block match (space-triggered), return focused results
       if (blockCompletion.trigger !== '#' && blockCompletions.length > 0) {
-        return blockCompletions.filter((comp: CompletionItem) => comp.preselect === true);
+        return blockCompletions.filter(
+          (comp: CompletionItem) => comp.preselect === true
+        );
       }
     }
 
@@ -157,35 +178,39 @@ const onCompletion = (config: CurrentConnectionConfig) => {
 
     if (currentTemplateName) {
       // Add helpers from analyzed files using directory-specific lookup strategies
-      const dirLookupKeys = [`${dir}/${currentTemplateName}`, `${dir}/${baseName}`].filter(Boolean);
+      const dirLookupKeys = [
+        `${dir}/${currentTemplateName}`,
+        `${dir}/${baseName}`,
+      ].filter(Boolean);
 
-      dirLookupKeys.forEach(key => {
+      dirLookupKeys.forEach((key) => {
         const helpers = config.fileAnalysis.jsHelpers.get(key as string);
 
         if (helpers) {
-          helpers.forEach(helper => {
+          helpers.forEach((helper) => {
             // Avoid duplicates
-            if (!completions.find(c => c.label === helper)) {
+            if (!completions.find((c) => c.label === helper)) {
               const sourceFile = key.split('/').pop(); // Get just the filename from the key
               completions.push({
                 label: helper,
                 kind: CompletionItemKind.Function,
                 detail: `Template helper from ${sourceFile}`,
-                documentation: `Helper function: ${helper}`
+                documentation: `Helper function: ${helper}`,
               });
             }
           });
         }
         // Add data properties from analyzed types
-        const dataProps = config.fileAnalysis.dataProperties?.get(key as string) || [];
+        const dataProps =
+          config.fileAnalysis.dataProperties?.get(key as string) || [];
         if (dataProps.length) {
-          dataProps.forEach(p => {
-            if (!completions.find(c => c.label === p)) {
+          dataProps.forEach((p) => {
+            if (!completions.find((c) => c.label === p)) {
               completions.push({
                 label: p,
                 kind: CompletionItemKind.Field,
                 detail: 'Template data property',
-                documentation: `Data property available to the template: ${p}`
+                documentation: `Data property available to the template: ${p}`,
               });
             }
           });
@@ -200,11 +225,17 @@ const onCompletion = (config: CurrentConnectionConfig) => {
 
       // Walk up the directory tree to find workspace root
       let maxIterations = 10; // Safety limit to prevent infinite loops
-      while (workspaceRoot !== path.dirname(workspaceRoot) && maxIterations > 0) {
+      while (
+        workspaceRoot !== path.dirname(workspaceRoot) &&
+        maxIterations > 0
+      ) {
         const packageJsonPath = path.join(workspaceRoot, 'package.json');
         const meteorPath = path.join(workspaceRoot, '.meteor');
 
-        if (require('fs').existsSync(packageJsonPath) || require('fs').existsSync(meteorPath)) {
+        if (
+          require('fs').existsSync(packageJsonPath) ||
+          require('fs').existsSync(meteorPath)
+        ) {
           break;
         }
 
@@ -218,20 +249,26 @@ const onCompletion = (config: CurrentConnectionConfig) => {
 
         // Add timeout to prevent hanging during tests or large projects
         const timeoutPromise = new Promise<never>((_, reject) => {
-          setTimeout(() => reject(new Error('Global helpers analysis timed out')), 5000);
+          setTimeout(
+            () => reject(new Error('Global helpers analysis timed out')),
+            5000
+          );
         });
 
         const detectedHelpers = await Promise.race([
           analyzeGlobalHelpers(workspaceRoot),
-          timeoutPromise
+          timeoutPromise,
         ]);
 
         // Merge configured helpers with detected helpers
-        const globalHelpersResult = mergeConfiguredHelpers(detectedHelpers, settings);
+        const globalHelpersResult = mergeConfiguredHelpers(
+          detectedHelpers,
+          settings
+        );
 
-        globalHelpersResult.helperDetails.forEach(helper => {
+        globalHelpersResult.helperDetails.forEach((helper) => {
           // Avoid duplicates with existing completions
-          if (!completions.find(c => c.label === helper.name)) {
+          if (!completions.find((c) => c.label === helper.name)) {
             // Prefer markdown (from config) over jsdoc (from code)
             const documentation =
               helper.markdown ||
@@ -246,8 +283,11 @@ const onCompletion = (config: CurrentConnectionConfig) => {
               detail,
               documentation:
                 helper.markdown || helper.jsdoc
-                  ? { kind: MarkupKind.Markdown, value: helper.markdown || helper.jsdoc || '' }
-                  : documentation
+                  ? {
+                      kind: MarkupKind.Markdown,
+                      value: helper.markdown || helper.jsdoc || '',
+                    }
+                  : documentation,
             });
           }
         });
@@ -256,11 +296,11 @@ const onCompletion = (config: CurrentConnectionConfig) => {
       }
 
       // Fetch config for blockConditions and blazeHelpers
-      let blockTypes = [
+      const blockTypes = [
         { type: 'if', label: 'if' },
         { type: 'each', label: 'each' },
         { type: 'unless', label: 'unless' },
-        { type: 'with', label: 'with' }
+        { type: 'with', label: 'with' },
       ];
 
       // Check if we're inside an #each block for @-prefixed helpers
@@ -278,7 +318,7 @@ const onCompletion = (config: CurrentConnectionConfig) => {
         { name: '#unless', doc: 'Inverse conditional rendering' },
         { name: '#with', doc: 'Change data context' },
         { name: '#let', doc: 'Define local variables' },
-        { name: 'this', doc: 'Current data context' }
+        { name: 'this', doc: 'Current data context' },
       ];
 
       // Only add @-prefixed helpers when inside an #each block
@@ -295,11 +335,13 @@ const onCompletion = (config: CurrentConnectionConfig) => {
       if (isInsideIfOrUnlessBlock) {
         blazeHelpers.push({
           name: 'else',
-          doc: `Alternative branch for #${ifUnlessContext.blockType} block`
+          doc: `Alternative branch for #${ifUnlessContext.blockType} block`,
         });
       }
       try {
-        const config = await connection.workspace.getConfiguration('meteorLanguageServer');
+        const config = await connection.workspace.getConfiguration(
+          'meteorLanguageServer'
+        );
         let hashColor = '#FF6B35';
         let nameColor = '#007ACC';
         if (typeof config?.blazeHelpers?.hashColor === 'string') {
@@ -315,7 +357,11 @@ const onCompletion = (config: CurrentConnectionConfig) => {
             .map((h: any) => {
               if (typeof h === 'string') {
                 return { name: h, doc: '' };
-              } else if (typeof h === 'object' && h !== null && typeof h.name === 'string') {
+              } else if (
+                typeof h === 'object' &&
+                h !== null &&
+                typeof h.name === 'string'
+              ) {
                 return { name: h.name, doc: h.doc || '' };
               }
               return null;
@@ -324,8 +370,8 @@ const onCompletion = (config: CurrentConnectionConfig) => {
         }
         blazeHelpers = [...blazeHelpers, ...extendedHelpers];
 
-        blazeHelpers.forEach(helper => {
-          let label = helper.name;
+        blazeHelpers.forEach((helper) => {
+          const label = helper.name;
           let doc = helper.doc;
           // Suggest helpers prefixed with '#' if cursor is inside empty handlebars brackets (e.g., '{{}}', '{{#}}')
           if (label.startsWith('#')) {
@@ -347,7 +393,7 @@ const onCompletion = (config: CurrentConnectionConfig) => {
             label: helper.name,
             kind: CompletionItemKind.Keyword,
             detail: 'Blaze helper',
-            documentation: { kind: MarkupKind.Markdown, value: doc }
+            documentation: { kind: MarkupKind.Markdown, value: doc },
           });
         });
 
@@ -365,21 +411,26 @@ const onCompletion = (config: CurrentConnectionConfig) => {
             continue;
           }
           // Find all block ranges
-          const blockBeginRegex = new RegExp(`\{\{\s*#${block.type}(?:\s+[^}]*)?\}\}`, 'g');
+          const blockBeginRegex = new RegExp(
+            `\{\{\s*#${block.type}(?:\s+[^}]*)?\}\}`,
+            'g'
+          );
           let match;
           while ((match = blockBeginRegex.exec(text)) !== null) {
             const start = match.index;
             const endRegex = new RegExp(`\{\{\s*\/${block.type}\s*\}\}`, 'g');
             endRegex.lastIndex = blockBeginRegex.lastIndex;
             const endMatch = endRegex.exec(text);
-            const end = endMatch ? endMatch.index + endMatch[0].length : text.length;
+            const end = endMatch
+              ? endMatch.index + endMatch[0].length
+              : text.length;
             if (offset >= start && offset <= end) {
               // Inside this block, suggest propNames
               block.propNames.forEach((p: string) => {
                 completions.push({
                   label: p,
                   kind: CompletionItemKind.Property,
-                  detail: `Custom property for block #${block.type}`
+                  detail: `Custom property for block #${block.type}`,
                 });
               });
               break;
@@ -393,9 +444,11 @@ const onCompletion = (config: CurrentConnectionConfig) => {
 
     // If we're in a single bracket context, wrap all completions with double brackets
     if (handlebarsInfo.isSingleBracket) {
-      completions.forEach(completion => {
+      completions.forEach((completion) => {
         // Calculate the range to replace (from the single bracket to the current cursor position)
-        const startPos = document.positionAt(handlebarsInfo.expressionStart - 1); // Include the single bracket
+        const startPos = document.positionAt(
+          handlebarsInfo.expressionStart - 1
+        ); // Include the single bracket
         const endPos = document.positionAt(offset); // Current cursor position
 
         // Set up the completion to replace the entire range with properly formatted handlebars
@@ -406,9 +459,9 @@ const onCompletion = (config: CurrentConnectionConfig) => {
         completion.textEdit = {
           range: {
             start: startPos,
-            end: endPos
+            end: endPos,
           },
-          newText: `{{${completionText}}}`
+          newText: `{{${completionText}}}`,
         };
 
         // Remove any insertText since we're using textEdit
@@ -431,7 +484,10 @@ async function getTemplateNameCompletions(
   try {
     const currentFilePath = currentDocument.uri.replace('file://', '');
     const currentDir = path.dirname(currentFilePath);
-    const currentBaseName = path.basename(currentFilePath, path.extname(currentFilePath));
+    const currentBaseName = path.basename(
+      currentFilePath,
+      path.extname(currentFilePath)
+    );
 
     // Find associated JS/TS file
     const associatedFile = findAssociatedJSFile(currentDir, currentBaseName);
@@ -444,20 +500,20 @@ async function getTemplateNameCompletions(
 
     // Filter by partial match and create completions
     importedTemplates
-      .filter(templateName =>
+      .filter((templateName) =>
         templateName.toLowerCase().includes(partialTemplateName.toLowerCase())
       )
-      .forEach(templateName => {
+      .forEach((templateName) => {
         completions.push({
           label: templateName,
           kind: CompletionItemKind.Module,
           detail: 'Imported template',
           documentation: {
             kind: MarkupKind.Markdown,
-            value: `Include imported template: \`{{> ${templateName}}}\`\n\nThis template is imported in the associated JavaScript/TypeScript file.`
+            value: `Include imported template: \`{{> ${templateName}}}\`\n\nThis template is imported in the associated JavaScript/TypeScript file.`,
           },
           insertText: templateName,
-          filterText: templateName
+          filterText: templateName,
         });
       });
   } catch {
@@ -468,7 +524,10 @@ async function getTemplateNameCompletions(
 }
 
 // Helper function to find the associated JS/TS file for a template
-function findAssociatedJSFile(currentDir: string, baseName: string): string | null {
+function findAssociatedJSFile(
+  currentDir: string,
+  baseName: string
+): string | null {
   const possibleExtensions = ['.ts', '.js'];
 
   // First, try exact base name match
@@ -649,7 +708,11 @@ function safelyRemoveJsonComments(content: string): string {
 }
 
 // Helper function to resolve TypeScript path aliases
-function resolveTsPath(importPath: string, tsconfig: any, projectRoot: string): string | null {
+function resolveTsPath(
+  importPath: string,
+  tsconfig: any,
+  projectRoot: string
+): string | null {
   if (!tsconfig?.compilerOptions?.paths) {
     return null;
   }
@@ -693,7 +756,8 @@ function parseTemplateImports(filePath: string): string[] {
     const tsconfig = findTsConfigForMeteorProject(path.dirname(filePath));
 
     // Find all import statements (both named and unnamed, including absolute paths)
-    const importPattern = /import\s+(?:[^'"]*\s+from\s+)?['"]((?:\.\.?\/|\/)[^'"]*)['"]/g;
+    const importPattern =
+      /import\s+(?:[^'"]*\s+from\s+)?['"]((?:\.\.?\/|\/)[^'"]*)['"]/g;
 
     let match;
     while ((match = importPattern.exec(content)) !== null) {
@@ -716,7 +780,11 @@ function parseTemplateImports(filePath: string): string[] {
           }
 
           // Try TypeScript path resolution
-          const tsResolvedPath = resolveTsPath(importPath, tsconfig, projectRoot);
+          const tsResolvedPath = resolveTsPath(
+            importPath,
+            tsconfig,
+            projectRoot
+          );
           if (tsResolvedPath) {
             fullImportPath = tsResolvedPath;
           } else {
@@ -768,7 +836,9 @@ function parseTemplateImports(filePath: string): string[] {
         const templatePattern = /Template\.([a-zA-Z_$][a-zA-Z0-9_$]*)/g;
         let templateMatch;
 
-        while ((templateMatch = templatePattern.exec(importedFileContent)) !== null) {
+        while (
+          (templateMatch = templatePattern.exec(importedFileContent)) !== null
+        ) {
           const templateName = templateMatch[1];
           if (!templates.includes(templateName)) {
             templates.push(templateName);
@@ -786,7 +856,10 @@ function parseTemplateImports(filePath: string): string[] {
             const htmlTemplatePattern = /<template\s+name=["']([^"']+)["']/g;
             let htmlTemplateMatch;
 
-            while ((htmlTemplateMatch = htmlTemplatePattern.exec(templateHtml)) !== null) {
+            while (
+              (htmlTemplateMatch = htmlTemplatePattern.exec(templateHtml)) !==
+              null
+            ) {
               const templateName = htmlTemplateMatch[1];
               if (!templates.includes(templateName)) {
                 templates.push(templateName);
@@ -807,7 +880,10 @@ function parseTemplateImports(filePath: string): string[] {
             const htmlTemplatePattern = /<template\s+name=["']([^"']+)["']/g;
             let htmlTemplateMatch;
 
-            while ((htmlTemplateMatch = htmlTemplatePattern.exec(templateHtml)) !== null) {
+            while (
+              (htmlTemplateMatch = htmlTemplatePattern.exec(templateHtml)) !==
+              null
+            ) {
               const templateName = htmlTemplateMatch[1];
               if (!templates.includes(templateName)) {
                 templates.push(templateName);
@@ -829,7 +905,10 @@ function parseTemplateImports(filePath: string): string[] {
         if (fsSync.existsSync(templateHtmlPath)) {
           try {
             const templateHtml = fsSync.readFileSync(templateHtmlPath, 'utf8');
-            const templateDefPattern = new RegExp(`<template\\s+name=["']${templateName}["']`, 'i');
+            const templateDefPattern = new RegExp(
+              `<template\\s+name=["']${templateName}["']`,
+              'i'
+            );
             if (templateDefPattern.test(templateHtml)) {
               templates.push(templateName);
             }
@@ -865,7 +944,10 @@ async function getTemplateParameterCompletions(
     const typedParams = new Map<string, { type: string; doc?: string }>();
 
     // Search through all analyzed files for the child template's data properties
-    for (const [key, dataProps] of config.fileAnalysis.dataProperties?.entries() || []) {
+    for (const [
+      key,
+      dataProps,
+    ] of config.fileAnalysis.dataProperties?.entries() || []) {
       // Check if this key is for the child template we're looking for
       // The key format is: /full/path/to/dir/templateName
       // Extract the template name from the key (everything after the last /)
@@ -875,13 +957,15 @@ async function getTemplateParameterCompletions(
         childTemplateDataProps = dataProps;
 
         // Also get the types and JSDoc for these parameters
-        const typeMap = config.fileAnalysis.dataPropertyTypesByKey?.get(key) || {};
-        const jsDocMap = config.fileAnalysis.dataPropertyJsDocsByKey?.get(key) || {};
+        const typeMap =
+          config.fileAnalysis.dataPropertyTypesByKey?.get(key) || {};
+        const jsDocMap =
+          config.fileAnalysis.dataPropertyJsDocsByKey?.get(key) || {};
 
         for (const prop of dataProps) {
           typedParams.set(prop, {
             type: typeMap[prop] || 'any',
-            doc: jsDocMap[prop]
+            doc: jsDocMap[prop],
           });
         }
         break;
@@ -894,7 +978,10 @@ async function getTemplateParameterCompletions(
 
     const currentFilePath = currentDocument.uri.replace('file://', '');
     const currentDir = path.dirname(currentFilePath);
-    const currentBaseName = path.basename(currentFilePath, path.extname(currentFilePath));
+    const currentBaseName = path.basename(
+      currentFilePath,
+      path.extname(currentFilePath)
+    );
 
     // Get global helpers to filter out from parameters
     const globalHelpers: string[] = [];
@@ -914,11 +1001,21 @@ async function getTemplateParameterCompletions(
     // If not in same file, check if it's imported
     if (!isInSameFile) {
       // Find associated JS/TS file
-      const associatedFile = findAssociatedJSFileForCompletion(currentDir, currentBaseName, fs, path);
+      const associatedFile = findAssociatedJSFileForCompletion(
+        currentDir,
+        currentBaseName,
+        fs,
+        path
+      );
 
       if (associatedFile) {
         // Find the imported template file
-        const templateInfo = findImportedTemplateFile(templateName, associatedFile, fs, path);
+        const templateInfo = findImportedTemplateFile(
+          templateName,
+          associatedFile,
+          fs,
+          path
+        );
 
         if (templateInfo) {
           childTemplateFileUri = `file://${templateInfo.file}`;
@@ -946,23 +1043,26 @@ async function getTemplateParameterCompletions(
 
     // Filter out already used parameters
     const filteredProperties = Array.from(allPropertyNames)
-      .filter(propName => !usedParameters.includes(propName))
+      .filter((propName) => !usedParameters.includes(propName))
       .sort();
 
     // Build completions for each property with type information if available
-    const allDataProperties: Array<{ name: string; type?: string; documentation?: string }> =
-      filteredProperties.map(propName => {
-        const typedInfo = typedParams.get(propName);
-        // Find the extracted param to get its inferred type
-        const extractedParam = extractedParams.find(p => p.name === propName);
-        const inferredType = extractedParam?.inferredType || 'string';
+    const allDataProperties: Array<{
+      name: string;
+      type?: string;
+      documentation?: string;
+    }> = filteredProperties.map((propName) => {
+      const typedInfo = typedParams.get(propName);
+      // Find the extracted param to get its inferred type
+      const extractedParam = extractedParams.find((p) => p.name === propName);
+      const inferredType = extractedParam?.inferredType || 'string';
 
-        return {
-          name: propName,
-          type: typedInfo?.type || inferredType,
-          documentation: typedInfo?.doc
-        };
-      });
+      return {
+        name: propName,
+        type: typedInfo?.type || inferredType,
+        documentation: typedInfo?.doc,
+      };
+    });
 
     // Create completion items
     for (const prop of allDataProperties) {
@@ -971,7 +1071,7 @@ async function getTemplateParameterCompletions(
         kind: CompletionItemKind.Property,
         detail: prop.type ? `Type: ${prop.type}` : undefined,
         documentation: prop.documentation,
-        insertText: `${prop.name}=`
+        insertText: `${prop.name}=`,
       };
       completions.push(completion);
     }
@@ -996,7 +1096,10 @@ async function getTemplateParameterValueCompletions(
   try {
     const currentFilePath = currentDocument.uri.replace('file://', '');
     const currentDir = path.dirname(currentFilePath);
-    const currentBaseName = path.basename(currentFilePath, path.extname(currentFilePath));
+    const currentBaseName = path.basename(
+      currentFilePath,
+      path.extname(currentFilePath)
+    );
 
     // Find the current template we're in
     const templateMatch = textBeforeCursor.match(
@@ -1011,68 +1114,70 @@ async function getTemplateParameterValueCompletions(
     // Get helpers and data properties from the current template's context
     const dirLookupKeys = [
       `${currentDir}/${currentTemplateName}`,
-      `${currentDir}/${currentBaseName}`
+      `${currentDir}/${currentBaseName}`,
     ];
 
     // Collect helpers from the current template
     const helpers = new Set<string>();
-    dirLookupKeys.forEach(key => {
+    dirLookupKeys.forEach((key) => {
       const templateHelpers = config.fileAnalysis.jsHelpers.get(key);
       if (templateHelpers) {
-        templateHelpers.forEach(helper => helpers.add(helper));
+        templateHelpers.forEach((helper) => helpers.add(helper));
       }
     });
 
     // Collect data properties from the current template
     const dataProps = new Set<string>();
-    dirLookupKeys.forEach(key => {
+    dirLookupKeys.forEach((key) => {
       const props = config.fileAnalysis.dataProperties?.get(key) || [];
-      props.forEach(prop => dataProps.add(prop));
+      props.forEach((prop) => dataProps.add(prop));
     });
 
     // Get detailed helper information for better documentation
     const helperDetailsMap = new Map<string, HelperInfo>();
-    dirLookupKeys.forEach(key => {
+    dirLookupKeys.forEach((key) => {
       const details = config.fileAnalysis.helperDetails.get(key);
       if (details) {
-        details.forEach(detail => {
+        details.forEach((detail) => {
           helperDetailsMap.set(detail.name, detail);
         });
       }
     });
 
     // Add helper completions
-    helpers.forEach(helper => {
+    helpers.forEach((helper) => {
       const helperDetail = helperDetailsMap.get(helper);
       completions.push({
         label: helper,
         kind: CompletionItemKind.Function,
-        detail: helperDetail?.returnType ? `Helper: ${helperDetail.returnType}` : 'Template helper',
+        detail: helperDetail?.returnType
+          ? `Helper: ${helperDetail.returnType}`
+          : 'Template helper',
         documentation: {
           kind: MarkupKind.Markdown,
           value:
             helperDetail?.jsdoc ||
-            `Helper function from the current template.\n\nUsage: \`{{> ... ${paramName}=${helper}}}\``
+            `Helper function from the current template.\n\nUsage: \`{{> ... ${paramName}=${helper}}}\``,
         },
         insertText: helper,
         filterText: helper,
-        sortText: `0${helper}` // Helpers sort first
+        sortText: `0${helper}`, // Helpers sort first
       });
     });
 
     // Add data property completions
-    dataProps.forEach(prop => {
+    dataProps.forEach((prop) => {
       completions.push({
         label: prop,
         kind: CompletionItemKind.Field,
         detail: 'Template data property',
         documentation: {
           kind: MarkupKind.Markdown,
-          value: `Data property from the current template.\n\nUsage: \`{{> ... ${paramName}=${prop}}}\``
+          value: `Data property from the current template.\n\nUsage: \`{{> ... ${paramName}=${prop}}}\``,
         },
         insertText: prop,
         filterText: prop,
-        sortText: `1${prop}` // Data properties sort after helpers
+        sortText: `1${prop}`, // Data properties sort after helpers
       });
     });
 
@@ -1080,7 +1185,7 @@ async function getTemplateParameterValueCompletions(
     const contextProperties = [
       { name: 'this', detail: 'Current template data context' },
       { name: 'true', detail: 'Boolean true value' },
-      { name: 'false', detail: 'Boolean false value' }
+      { name: 'false', detail: 'Boolean false value' },
     ];
 
     contextProperties.forEach(({ name, detail }) => {
@@ -1090,11 +1195,11 @@ async function getTemplateParameterValueCompletions(
         detail,
         documentation: {
           kind: MarkupKind.Markdown,
-          value: `${detail}\n\nUsage: \`{{> ... ${paramName}=${name}}}\``
+          value: `${detail}\n\nUsage: \`{{> ... ${paramName}=${name}}}\``,
         },
         insertText: name,
         filterText: name,
-        sortText: `2${name}` // Context properties sort last
+        sortText: `2${name}`, // Context properties sort last
       });
     });
   } catch (error) {
@@ -1153,7 +1258,7 @@ function findImportedTemplateFile(
         path.join(jsDir, importPath),
         path.join(jsDir, importPath + '.html'),
         path.join(jsDir, importPath, 'template.html'),
-        path.join(jsDir, importPath, path.basename(importPath) + '.html')
+        path.join(jsDir, importPath, path.basename(importPath) + '.html'),
       ];
 
       for (const filePath of possiblePaths) {
@@ -1184,12 +1289,17 @@ function findImportedTemplateFile(
 }
 
 // Helper function to parse already used parameters in the current template inclusion
-function parseUsedParameters(textBeforeCursor: string, templateName: string): string[] {
+function parseUsedParameters(
+  textBeforeCursor: string,
+  templateName: string
+): string[] {
   const usedParams: string[] = [];
 
   try {
     // Find the start of the current template inclusion
-    const templateInclusionPattern = new RegExp(`\\{\\{\\s*>\\s*${templateName}\\b([^}]*)$`);
+    const templateInclusionPattern = new RegExp(
+      `\\{\\{\\s*>\\s*${templateName}\\b([^}]*)$`
+    );
     const match = textBeforeCursor.match(templateInclusionPattern);
 
     if (match) {
