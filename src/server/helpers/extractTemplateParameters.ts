@@ -66,39 +66,42 @@ function findBlockRanges(templateContent: string): Array<{
       while ((closingMatch = tokenPattern.exec(templateContent)) !== null) {
         if (closingMatch[0].includes('#')) {
           depth++;
-        } else {
-          depth--;
-          if (depth === 0) {
-            const closeStart = closingMatch.index;
-
-            if (eachInMatch) {
-              blocks.push({
-                type: 'each-in',
-                start: openEnd,
-                end: closeStart,
-                alias: eachInMatch[1],
-                source: eachInMatch[2],
-              });
-            } else if (blockType === 'with' || blockType === 'each') {
-              const paramMatch = params.match(/^\s*([a-zA-Z_$][\w$]*)/);
-              if (paramMatch) {
-                blocks.push({
-                  type: blockType as 'with' | 'each',
-                  start: openEnd,
-                  end: closeStart,
-                  param: paramMatch[1],
-                });
-              }
-            } else {
-              blocks.push({
-                type: blockType as 'if' | 'unless',
-                start: openEnd,
-                end: closeStart,
-              });
-            }
-            break;
-          }
+          continue;
         }
+        depth--;
+
+        if (depth !== 0) {
+          continue;
+        }
+
+        const closeStart = closingMatch.index;
+
+        if (eachInMatch) {
+          blocks.push({
+            type: 'each-in',
+            start: openEnd,
+            end: closeStart,
+            alias: eachInMatch[1],
+            source: eachInMatch[2],
+          });
+        } else if (blockType === 'with' || blockType === 'each') {
+          const paramMatch = params.match(/^\s*([a-zA-Z_$][\w$]*)/);
+          if (paramMatch) {
+            blocks.push({
+              type: blockType as 'with' | 'each',
+              start: openEnd,
+              end: closeStart,
+              param: paramMatch[1],
+            });
+          }
+        } else {
+          blocks.push({
+            type: blockType as 'if' | 'unless',
+            start: openEnd,
+            end: closeStart,
+          });
+        }
+        break;
       }
     }
   }
