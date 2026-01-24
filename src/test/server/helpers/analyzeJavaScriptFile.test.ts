@@ -108,9 +108,6 @@ describe('analyzeJavaScriptFile', () => {
           formatNameHelper.jsdoc.includes("formats a user's name"),
           true
         );
-      } else {
-        // If JSDoc is not being extracted, we'll fix the test expectation
-        console.log('No JSDoc found for formatName helper');
       }
 
       if (formatNameHelper?.parameters) {
@@ -118,8 +115,6 @@ describe('analyzeJavaScriptFile', () => {
           formatNameHelper.parameters.includes('firstName'),
           true
         );
-      } else {
-        console.log('No parameters found for formatName helper');
       }
       assert.strictEqual(
         formatNameHelper?.parameters?.includes('lastName'),

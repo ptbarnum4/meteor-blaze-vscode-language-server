@@ -53,9 +53,6 @@ describe('extractTemplateParameters', () => {
       'userAge',
     ];
 
-    console.log('Extracted params:', paramNames);
-    console.log('Expected params:', expected);
-
     // Check that all expected parameters are present
     assert.strictEqual(
       paramNames.length,

@@ -710,17 +710,6 @@ describe('validateTextDocument', () => {
 
     await validateTextDocument(config, document);
 
-    // Debug: log any diagnostics
-    if (diagnostics.length > 0) {
-      console.log(
-        'Diagnostics found:',
-        diagnostics.map((d) => ({
-          message: d.message,
-          range: d.range,
-        }))
-      );
-    }
-
     // Should have no diagnostics - the commented div should be ignored
     assert.strictEqual(
       diagnostics.length,
@@ -772,17 +761,6 @@ describe('validateTextDocument', () => {
     });
 
     await validateTextDocument(config, document);
-
-    // Debug: log any diagnostics
-    if (diagnostics.length > 0) {
-      console.log(
-        'Diagnostics found:',
-        diagnostics.map((d) => ({
-          message: d.message,
-          range: d.range,
-        }))
-      );
-    }
 
     // Should have no diagnostics - HTML elements inside attribute strings should be ignored
     const invalidBlockDiagnostics = diagnostics.filter((d) =>
