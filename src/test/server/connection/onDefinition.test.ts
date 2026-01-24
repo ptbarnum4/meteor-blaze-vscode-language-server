@@ -8,7 +8,10 @@ import {
 } from 'vscode-languageserver/node.js';
 
 import onDefinition from '../../../server/connection/onDefinition/index.js';
-import { CurrentConnectionConfig, LanguageServerSettings } from '/types';
+import {
+  CurrentConnectionConfig,
+  LanguageServerSettings,
+} from '../../../types/index.js';
 
 /**
  * Test suite for onDefinition connection handler

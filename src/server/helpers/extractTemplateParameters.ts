@@ -16,27 +16,30 @@ export interface ExtractedParameter {
   inferredType?: string; // Inferred type based on usage patterns
 }
 
+export type BlockType = 'with' | 'each' | 'if' | 'unless' | 'each-in';
+
+export type BlockRange = {
+  /** Type of the block (with, each, if, unless, each-in) */
+  type: BlockType;
+  /** Start position of the block content */
+  start: number;
+  /** End position of the block content */
+  end: number;
+  /** Parameter name for with/each blocks */
+  param?: string;
+  /** Alias for each-in blocks */
+  alias?: string;
+  /** Source array for each-in blocks */
+  source?: string;
+};
+
 /**
  * Find all block ranges in the template content
  * @param templateContent - The HTML content of the template
  * @returns Array of block ranges with their types and positions
  */
-function findBlockRanges(templateContent: string): Array<{
-  type: 'with' | 'each' | 'each-in' | 'if' | 'unless';
-  start: number;
-  end: number;
-  param?: string;
-  alias?: string;
-  source?: string;
-}> {
-  const blocks: Array<{
-    type: 'with' | 'each' | 'each-in' | 'if' | 'unless';
-    start: number;
-    end: number;
-    param?: string;
-    alias?: string;
-    source?: string;
-  }> = [];
+function findBlockRanges(templateContent: string): BlockRange[] {
+  const blocks: BlockRange[] = [];
 
   // Find all block helpers and their closing tags
   const blockTypes = ['with', 'each', 'if', 'unless'];
@@ -84,7 +87,10 @@ function findBlockRanges(templateContent: string): Array<{
             alias: eachInMatch[1],
             source: eachInMatch[2],
           });
-        } else if (blockType === 'with' || blockType === 'each') {
+          break;
+        }
+
+        if (blockType === 'with' || blockType === 'each') {
           const paramMatch = params.match(/^\s*([a-zA-Z_$][\w$]*)/);
           if (paramMatch) {
             blocks.push({
@@ -94,13 +100,15 @@ function findBlockRanges(templateContent: string): Array<{
               param: paramMatch[1],
             });
           }
-        } else {
-          blocks.push({
-            type: blockType as 'if' | 'unless',
-            start: openEnd,
-            end: closeStart,
-          });
+          break;
         }
+
+        blocks.push({
+          type: blockType as 'if' | 'unless',
+          start: openEnd,
+          end: closeStart,
+        });
+
         break;
       }
     }
@@ -117,22 +125,8 @@ function findBlockRanges(templateContent: string): Array<{
  */
 function findEnclosingBlock(
   position: number,
-  blocks: Array<{
-    type: 'with' | 'each' | 'each-in' | 'if' | 'unless';
-    start: number;
-    end: number;
-    param?: string;
-    alias?: string;
-    source?: string;
-  }>
-): {
-  type: 'with' | 'each' | 'each-in' | 'if' | 'unless';
-  start: number;
-  end: number;
-  param?: string;
-  alias?: string;
-  source?: string;
-} | null {
+  blocks: BlockRange[]
+): BlockRange | null {
   // Find the innermost block containing the position
   let innermost = null;
   let innermostSize = Infinity;
@@ -197,47 +191,55 @@ export function extractTemplateParameters(
     }
   }
 
+  console.log('Blocks found:', blocks);
+
   // Pattern 1: Direct variable reference {{paramName}}
   // Matches {{word}} but not {{helper word}}, {{#block}}, {{/block}}, {{> include}}
   const directVarPattern = /\{\{\s*([a-zA-Z_$][a-zA-Z0-9_$]*)\s*\}\}/g;
   let match;
 
+  const knownHelpersExt = new Set([
+    ...knownHelpers.values(),
+    'this',
+    'Template',
+    'Session',
+  ]);
   while ((match = directVarPattern.exec(templateContent)) !== null) {
     const varName = match[1];
     const position = match.index;
 
-    // Exclude block helpers, closing tags, partials, and known helpers
-    if (
-      !knownHelpers.has(varName) &&
-      !varName.startsWith('@') &&
-      varName !== 'this' &&
-      varName !== 'Template' &&
-      varName !== 'Session'
-    ) {
-      // Check if this variable is inside a with/each block
-      const enclosingBlock = findEnclosingBlock(position, blocks);
+    const isKnown = knownHelpersExt.has(varName);
+    const isBlockHelper = varName.startsWith('@');
 
-      // Skip if it's inside a 'with' or 'each' block unless used outside too
-      if (
-        !enclosingBlock ||
-        (enclosingBlock.type !== 'with' && enclosingBlock.type !== 'each')
-      ) {
+    // Exclude block helpers, closing tags, partials, and known helpers
+    if (isKnown || isBlockHelper) {
+      continue;
+    }
+
+    // Check if this variable is inside a with/each block
+    const enclosingBlock = findEnclosingBlock(position, blocks);
+
+    // Skip if it's inside a 'with' or 'each' block unless used outside too
+    if (
+      !enclosingBlock ||
+      (enclosingBlock.type !== 'with' && enclosingBlock.type !== 'each')
+    ) {
+      parameters.add(varName);
+      continue;
+    }
+
+    // Inside a with/each block - check if it's also used outside
+    const outsidePattern = new RegExp(
+      `\\{\\{\\s*${varName}(?:\\s|\\.|\\}|\\))`,
+      'g'
+    );
+    let outsideMatch;
+    while ((outsideMatch = outsidePattern.exec(templateContent)) !== null) {
+      const outsidePos = outsideMatch.index;
+      const outsideBlock = findEnclosingBlock(outsidePos, blocks);
+      if (!outsideBlock || outsideBlock.start !== enclosingBlock.start) {
         parameters.add(varName);
-      } else {
-        // Inside a with/each block - check if it's also used outside
-        const outsidePattern = new RegExp(
-          `\\{\\{\\s*${varName}(?:\\s|\\.|\\}|\\))`,
-          'g'
-        );
-        let outsideMatch;
-        while ((outsideMatch = outsidePattern.exec(templateContent)) !== null) {
-          const outsidePos = outsideMatch.index;
-          const outsideBlock = findEnclosingBlock(outsidePos, blocks);
-          if (!outsideBlock || outsideBlock.start !== enclosingBlock.start) {
-            parameters.add(varName);
-            break;
-          }
-        }
+        break;
       }
     }
   }
@@ -424,14 +426,7 @@ export function findTemplateContent(
 function inferParameterTypes(
   templateContent: string,
   parameters: Set<string>,
-  blocks: Array<{
-    type: 'with' | 'each' | 'each-in' | 'if' | 'unless';
-    start: number;
-    end: number;
-    param?: string;
-    alias?: string;
-    source?: string;
-  }>
+  blocks: BlockRange[]
 ): Map<string, string> {
   const types = new Map<string, string>();
 
@@ -451,36 +446,45 @@ function inferParameterTypes(
       continue;
     }
 
+    const helperMap = {
+      with: {
+        inferType: inferObjectTypeFromBlock,
+        alias: false,
+      },
+      each: {
+        inferType: inferArrayTypeFromBlock,
+        alias: true,
+      },
+      'each-in': {
+        inferType: inferArrayTypeFromBlock,
+        alias: true,
+      },
+    } as Record<
+      BlockType,
+      {
+        inferType:
+          | typeof inferObjectTypeFromBlock
+          | typeof inferArrayTypeFromBlock;
+        alias: boolean;
+      }
+    >;
+
     // Check each block type
     for (const block of relevantBlocks) {
-      if (block.type === 'with') {
-        // Parameters used in #with are always objects
-        const objectType = inferObjectTypeFromBlock(
-          templateContent,
-          block.start,
-          block.end,
-          null // No alias for #with blocks
-        );
-        types.set(paramName, objectType);
-      } else if (block.type === 'each') {
-        // Parameters used in #each are arrays
-        const arrayType = inferArrayTypeFromBlock(
-          templateContent,
-          block.start,
-          block.end,
-          block.param || null // The iterator variable
-        );
-        types.set(paramName, arrayType);
-      } else if (block.type === 'each-in') {
-        // Parameters used in #each-in are arrays
-        const arrayType = inferArrayTypeFromBlock(
-          templateContent,
-          block.start,
-          block.end,
-          block.alias || null // The alias variable
-        );
-        types.set(paramName, arrayType);
+      const helper = helperMap[block.type];
+      if (!helper) {
+        continue;
       }
+
+      const { inferType, alias } = helper;
+      const param = block.type === 'each-in' ? block.alias : block.param;
+      const objectType = inferType(
+        templateContent,
+        block.start,
+        block.end,
+        !alias ? null : (param ?? null)
+      );
+      types.set(paramName, objectType);
     }
   }
 

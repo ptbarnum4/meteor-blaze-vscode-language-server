@@ -8,7 +8,10 @@ import {
 } from 'vscode-languageserver/node.js';
 
 import onCompletionResolve from '../../../server/connection/onCompletionResolve.js';
-import { CurrentConnectionConfig, LanguageServerSettings } from '/types';
+import {
+  CurrentConnectionConfig,
+  LanguageServerSettings,
+} from '../../../types/index.js';
 
 /**
  * Test suite for onCompletionResolve connection handler

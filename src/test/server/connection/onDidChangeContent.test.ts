@@ -7,7 +7,10 @@ import {
 } from 'vscode-languageserver/node.js';
 
 import onDidChangeContent from '../../../server/connection/onDidChangeContent.js';
-import { CurrentConnectionConfig, LanguageServerSettings } from '/types';
+import {
+  CurrentConnectionConfig,
+  LanguageServerSettings,
+} from '../../../types/index.js';
 
 /**
  * Test suite for onDidChangeContent connection handler

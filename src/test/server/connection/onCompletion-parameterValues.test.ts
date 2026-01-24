@@ -8,7 +8,7 @@ import {
   CurrentConnectionConfig,
   HelperInfo,
   LanguageServerSettings,
-} from '/types';
+} from '../../../types/index.js';
 
 /**
  * Test suite for template parameter value completion (Issue #62)

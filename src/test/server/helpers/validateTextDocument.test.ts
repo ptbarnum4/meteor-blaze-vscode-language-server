@@ -4,7 +4,10 @@ import { TextDocument } from 'vscode-languageserver-textdocument';
 import { TextDocuments } from 'vscode-languageserver/node.js';
 
 import { validateTextDocument } from '../../../server/helpers/validateTextDocument.js';
-import { CurrentConnectionConfig, LanguageServerSettings } from '/types';
+import {
+  CurrentConnectionConfig,
+  LanguageServerSettings,
+} from '../../../types/index.js';
 
 /**
  * Test suite for validateTextDocument helper function

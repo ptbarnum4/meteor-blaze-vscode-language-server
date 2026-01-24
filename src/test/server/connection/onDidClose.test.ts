@@ -7,7 +7,10 @@ import {
 } from 'vscode-languageserver/node.js';
 
 import onDidClose from '../../../server/connection/onDidClose.js';
-import { CurrentConnectionConfig, LanguageServerSettings } from '/types';
+import {
+  CurrentConnectionConfig,
+  LanguageServerSettings,
+} from '../../../types/index.js';
 
 /**
  * Test suite for onDidClose connection handler

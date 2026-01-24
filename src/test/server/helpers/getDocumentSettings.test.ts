@@ -4,7 +4,10 @@ import { TextDocument } from 'vscode-languageserver-textdocument';
 import { TextDocuments } from 'vscode-languageserver/node.js';
 
 import getDocumentSettings from '../../../server/helpers/getDocumentSettings.js';
-import { CurrentConnectionConfig, LanguageServerSettings } from '/types';
+import {
+  CurrentConnectionConfig,
+  LanguageServerSettings,
+} from '../../../types/index.js';
 
 /**
  * Test suite for getDocumentSettings helper function

@@ -4,7 +4,7 @@ import { describe, it } from 'node:test';
 import os from 'os';
 import path from 'path';
 import { analyzeFileForGlobalHelpers } from '../../../server/helpers/analyzeGlobalHelpers.js';
-import { GlobalHelperInfo } from '/types';
+import { GlobalHelperInfo } from '../../../types/index.js';
 
 describe('analyzeGlobalHelpers', () => {
   it('should extract JSDoc from above Template.registerHelper call', async () => {

@@ -11,7 +11,10 @@ import {
   onDocumentOnTypeFormatting,
   onDocumentRangeFormatting,
 } from '../../../server/connection/onFormatting.js';
-import { CurrentConnectionConfig, LanguageServerSettings } from '/types';
+import {
+  CurrentConnectionConfig,
+  LanguageServerSettings,
+} from '../../../types/index.js';
 
 /**
  * Test suite for onFormatting connection handlers

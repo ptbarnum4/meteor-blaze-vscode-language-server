@@ -7,7 +7,10 @@ import {
 } from 'vscode-languageserver/node.js';
 
 import onInitialized from '../../../server/connection/onInitialized.js';
-import { CurrentConnectionConfig, LanguageServerSettings } from '/types';
+import {
+  CurrentConnectionConfig,
+  LanguageServerSettings,
+} from '../../../types/index.js';
 
 /**
  * Test suite for onInitialized connection handler
