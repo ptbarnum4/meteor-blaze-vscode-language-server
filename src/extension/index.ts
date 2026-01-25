@@ -9,6 +9,7 @@ import { createDeactivate } from './deactivate';
 const extConfig: ExtensionConfig = {
   client: null,
   blockConditionDecorationType: null,
+  htmlElementDecorationType: null,
 };
 
 /**

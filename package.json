@@ -63,7 +63,7 @@
     "pretest": "npm run compile:tests && npm run lint",
     "check-types": "tsc --noEmit",
     "lint": "eslint src",
-    "test": "node --enable-source-maps --test out/test/server/**/*.test.js",
+    "test": "node --enable-source-maps --test 'out/test/server/**/*.test.js'",
     "test-manual": "node --enable-source-maps out/test/runTest.js",
     "prettier:check": "prettier --check \"src/**/*.ts\" \"src/test/**/*.ts\" \"*.json\""
   },
@@ -560,6 +560,58 @@
               "type": "number",
               "default": 2,
               "description": "Minimum usage count to suggest parameters inferred from template usage patterns"
+            }
+          }
+        },
+        "meteorLanguageServer.htmlElementHints": {
+          "type": "object",
+          "default": {},
+          "description": "Settings for HTML element closing tag hints.",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": true,
+              "description": "Enable/disable HTML element closing tag hints"
+            },
+            "minimumLines": {
+              "type": "number",
+              "default": 15,
+              "description": "Minimum number of lines an element must span to show closing hint"
+            },
+            "color": {
+              "type": "string",
+              "default": "#727272",
+              "description": "Color for HTML element hints. Can be a theme color name or hex color"
+            },
+            "fontStyle": {
+              "type": "string",
+              "enum": [
+                "normal",
+                "italic",
+                "bold"
+              ],
+              "default": "italic",
+              "description": "Font style for HTML element hints"
+            },
+            "margin": {
+              "type": "string",
+              "default": "0 0 0 0.75em",
+              "description": "CSS margin for HTML element hints"
+            },
+            "showClasses": {
+              "type": "boolean",
+              "default": true,
+              "description": "Include class names in the hint"
+            },
+            "showIds": {
+              "type": "boolean",
+              "default": true,
+              "description": "Include IDs in the hint"
+            },
+            "maxClassesToShow": {
+              "type": "number",
+              "default": 3,
+              "description": "Maximum number of classes to display (0 = unlimited)"
             }
           }
         }

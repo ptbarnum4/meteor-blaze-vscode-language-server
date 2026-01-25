@@ -1,0 +1,88 @@
+<template name="testHtmlHints">
+  <!-- Test 1: Element with id only (should show: div#main) -->
+  <div id="main">
+    <h1>Test Page</h1>
+    <p>This div has only an ID</p>
+    <p>Line 4</p>
+    <p>Line 5</p>
+    <p>Line 6</p>
+  </div>
+
+  <!-- Test 2: Element with classes only (should show: div.container.primary.active) -->
+  <div class="container primary active">
+    <h2>Section Title</h2>
+    <p>This div has only classes</p>
+    <p>Line 4</p>
+    <p>Line 5</p>
+    <p>Line 6</p>
+  </div>
+
+  <!-- Test 3: Element with id and classes (should show: div#header.header-main.sticky) -->
+  <div id="header" class="header-main sticky">
+    <nav>Navigation</nav>
+    <p>This div has both ID and classes</p>
+    <p>Line 4</p>
+    <p>Line 5</p>
+    <p>Line 6</p>
+  </div>
+
+  <!-- Test 4: Nested divs with same class names -->
+  <div class="outer-container">
+    <div class="inner">
+      <h3>Inner Content</h3>
+      <p>Line 1</p>
+      <p>Line 2</p>
+      <p>Line 3</p>
+      <p>Line 4</p>
+    </div>
+    <div class="inner">
+      <h3>Another Inner</h3>
+      <p>Line 1</p>
+      <p>Line 2</p>
+      <p>Line 3</p>
+      <p>Line 4</p>
+    </div>
+  </div>
+
+  <!-- Test 5: Element with many classes (should truncate to 3 by default) -->
+  <div class="class1 class2 class3 class4 class5 class6">
+    <p>This div has many classes</p>
+    <p>Should show: div.class1.class2.class3...</p>
+    <p>Line 3</p>
+    <p>Line 4</p>
+    <p>Line 5</p>
+  </div>
+
+  <!-- Test 6: Short elements (less than 5 lines) - should NOT show hints -->
+  <div class="short">
+    <p>This is short</p>
+  </div>
+
+  <!-- Test 7: Complex nested structure -->
+  <div id="main-wrapper" class="wrapper full-width">
+    <header class="site-header">
+      <div class="logo">Logo</div>
+      <nav class="main-nav">
+        <ul>
+          <li>Item 1</li>
+          <li>Item 2</li>
+        </ul>
+      </nav>
+    </header>
+    <main class="content-area">
+      <article class="post">
+        <h1>Article Title</h1>
+        <p>Article content line 1</p>
+        <p>Article content line 2</p>
+        <p>Article content line 3</p>
+        <p>Article content line 4</p>
+      </article>
+    </main>
+    <footer class="site-footer">
+      <p>Footer content</p>
+      <p>More footer</p>
+      <p>Even more</p>
+      <p>Last line</p>
+    </footer>
+  </div>
+</template>

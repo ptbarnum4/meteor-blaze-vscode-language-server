@@ -1,0 +1,182 @@
+{
+  // ============================================================
+  // HTML Element Closing Tag Hints Configuration Examples
+  // ============================================================
+  // Visual inline hints showing class names and IDs at closing tags
+  // of HTML elements that span multiple lines.
+  //
+  // Copy these settings to your VS Code settings.json file
+  // ============================================================
+
+  // ------------------------------------------------------------
+  // Example 1: Default Configuration (Recommended)
+  // ------------------------------------------------------------
+  // Shows hints for elements spanning 15+ lines
+  // with up to 3 classes displayed
+  "meteorLanguageServer.htmlElementHints": {
+    "enabled": true,
+    "minimumLines": 15,
+    "color": "#727272",
+    "fontStyle": "italic",
+    "margin": "0 0 0 0.75em",
+    "showClasses": true,
+    "showIds": true,
+    "maxClassesToShow": 3,
+  },
+
+  // ------------------------------------------------------------
+  // Example 2: Show More Classes
+  // ------------------------------------------------------------
+  // Display up to 5 classes before truncating
+  "meteorLanguageServer.htmlElementHints": {
+    "enabled": true,
+    "minimumLines": 15,
+    "maxClassesToShow": 5, // Show more classes
+    "color": "#727272",
+    "fontStyle": "italic",
+  },
+
+  // ------------------------------------------------------------
+  // Example 3: Show All Classes (No Truncation)
+  // ------------------------------------------------------------
+  // Display all classes without truncation
+  "meteorLanguageServer.htmlElementHints": {
+    "enabled": true,
+    "minimumLines": 15,
+    "maxClassesToShow": 0, // 0 = unlimited
+    "color": "#727272",
+    "fontStyle": "italic",
+  },
+
+  // ------------------------------------------------------------
+  // Example 4: Lower Threshold for Shorter Elements
+  // ------------------------------------------------------------
+  // Show hints for elements spanning just 5+ lines
+  "meteorLanguageServer.htmlElementHints": {
+    "enabled": true,
+    "minimumLines": 5, // Lower threshold
+    "maxClassesToShow": 3,
+    "color": "#727272",
+    "fontStyle": "italic",
+  },
+
+  // ------------------------------------------------------------
+  // Example 5: ID Only (No Classes)
+  // ------------------------------------------------------------
+  // Only show element IDs, hide class names
+  "meteorLanguageServer.htmlElementHints": {
+    "enabled": true,
+    "minimumLines": 15,
+    "showIds": true,
+    "showClasses": false, // Hide class names
+    "color": "#727272",
+    "fontStyle": "italic",
+  },
+
+  // ------------------------------------------------------------
+  // Example 6: Classes Only (No IDs)
+  // ------------------------------------------------------------
+  // Only show class names, hide IDs
+  "meteorLanguageServer.htmlElementHints": {
+    "enabled": true,
+    "minimumLines": 15,
+    "showIds": false, // Hide IDs
+    "showClasses": true,
+    "maxClassesToShow": 3,
+    "color": "#727272",
+    "fontStyle": "italic",
+  },
+
+  // ------------------------------------------------------------
+  // Example 7: Custom Styling (Bold Green)
+  // ------------------------------------------------------------
+  // Use bold green hints with custom spacing
+  "meteorLanguageServer.htmlElementHints": {
+    "enabled": true,
+    "minimumLines": 15,
+    "color": "#4CAF50", // Green color
+    "fontStyle": "bold", // Bold instead of italic
+    "margin": "0 0 0 1em", // More spacing
+    "maxClassesToShow": 3,
+  },
+
+  // ------------------------------------------------------------
+  // Example 8: Subtle Hints
+  // ------------------------------------------------------------
+  // Very subtle, low-contrast hints
+  "meteorLanguageServer.htmlElementHints": {
+    "enabled": true,
+    "minimumLines": 20, // Only very long elements
+    "color": "#555555", // Darker, subtle color
+    "fontStyle": "normal", // Normal text
+    "margin": "0 0 0 0.5em",
+    "maxClassesToShow": 2, // Fewer classes
+  },
+
+  // ------------------------------------------------------------
+  // Example 9: Theme-Aware Color
+  // ------------------------------------------------------------
+  // Use VS Code theme colors instead of fixed hex colors
+  "meteorLanguageServer.htmlElementHints": {
+    "enabled": true,
+    "minimumLines": 15,
+    "color": "editorCodeLens.foreground", // Use theme color
+    "fontStyle": "italic",
+    "maxClassesToShow": 3,
+  },
+
+  // ------------------------------------------------------------
+  // Example 10: Minimal Configuration
+  // ------------------------------------------------------------
+  // All defaults, just enable or adjust one setting
+  "meteorLanguageServer.htmlElementHints": {
+    "enabled": true,
+    "minimumLines": 20, // Only this changed from default
+  },
+
+  // ------------------------------------------------------------
+  // Example 11: Disabled
+  // ------------------------------------------------------------
+  // Turn off HTML element hints completely
+  "meteorLanguageServer.htmlElementHints": {
+    "enabled": false,
+  },
+
+  // ============================================================
+  // Visual Output Examples
+  // ============================================================
+  // These show what you'll see in your editor:
+  //
+  // Example with ID and classes:
+  // </div> // END: div#main.container.primary
+  //
+  // Example with classes only:
+  // </section> // END: section.hero.full-width.dark-theme
+  //
+  // Example with ID only:
+  // </article> // END: article#post-123
+  //
+  // Example with truncation:
+  // </div> // END: div.component.wrapper.container...
+  //
+  // ============================================================
+
+  // ============================================================
+  // Tips
+  // ============================================================
+  // 1. Bootstrap classes are automatically filtered out first
+  //    when truncating, keeping your custom semantic classes visible
+  //
+  // 2. Hints won't appear if you already have a comment on that line
+  //
+  // 3. Self-closing tags (<img>, <br>, etc.) never get hints
+  //
+  // 4. Use minimumLines to control how much code needs to be
+  //    inside an element before showing a hint
+  //
+  // 5. Set maxClassesToShow to 0 for unlimited class display
+  //
+  // 6. Combine with block condition hints for complete visual
+  //    context in your templates
+  // ============================================================
+}
