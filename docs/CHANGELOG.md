@@ -6,6 +6,60 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ## [Unreleased]
 
+## [0.0.13] - 2026-01-25
+
+### ✨ New Features
+
+#### HTML Element Closing Tag Hints (Issue #63)
+
+**Visual Hints for HTML Elements:**
+
+- **Closing Tag Hints**: Shows class names and IDs at closing tags of HTML elements spanning multiple lines
+- **CSS Selector Format**: Displays hints in familiar notation (e.g., `div#main.container.primary`)
+- **Smart Class Filtering**: Prioritizes custom classes over Bootstrap utility classes when truncating
+- **Configurable Threshold**: Control minimum line span for hints (default: 15 lines)
+- **Hover Tooltips**: Rich hover information showing element type and line range
+- **Respects Comments**: Won't add hints if a comment already exists on the closing tag
+
+**New Configuration Options:**
+
+```json
+{
+  "meteorLanguageServer.htmlElementHints": {
+    "enabled": true,
+    "minimumLines": 15,
+    "color": "#727272",
+    "fontStyle": "italic",
+    "margin": "0 0 0 0.75em",
+    "showClasses": true,
+    "showIds": true,
+    "maxClassesToShow": 3
+  }
+}
+```
+
+### 🎯 Enhancements
+
+- **Folding Range Provider**: Added support for folding Blaze block helpers and autoform blocks
+- **Enhanced Block Hints**: Block condition hints now include hover tooltips with line numbers
+- **Improved String Helpers**: Added `codeBlock`, `codeInline`, and `startCase` utilities for better formatting
+
+### 🐛 Bug Fixes
+
+- Fixed test script quote escaping in package.json
+
+### 📚 Documentation
+
+- Added comprehensive HTML element hints documentation to README and FEATURES.md
+- Added `example-settings-htmlElementHints.jsonc` with configuration examples
+- Updated feature documentation with visual examples
+
+### 🧪 Testing
+
+- Added unit tests for HTML tag matching (`findMatchingOpenTag`)
+- Added unit tests for attribute parsing and class filtering (`parseHtmlAttributes`)
+- Added example template file for manual testing
+
 ## [0.0.12] - 2026-01-24
 
 ### ✨ New Features
