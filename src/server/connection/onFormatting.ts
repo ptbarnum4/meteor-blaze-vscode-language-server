@@ -386,13 +386,9 @@ export const onDocumentFormatting = (config: CurrentConnectionConfig) => {
 
         if (result && Array.isArray(result)) {
           baseEdits = result;
-          connection.console.log(
-            `Base formatter returned ${baseEdits.length} edits`
-          );
+
           // Apply base formatter edits to get updated text
           workingText = applyTextEdits(workingText, baseEdits);
-        } else {
-          connection.console.log(`Base formatter returned no edits`);
         }
       } catch (error) {
         // If base formatter fails, continue with just Meteor formatting

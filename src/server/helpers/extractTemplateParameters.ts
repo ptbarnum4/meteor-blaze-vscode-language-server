@@ -191,8 +191,6 @@ export function extractTemplateParameters(
     }
   }
 
-  console.log('Blocks found:', blocks);
-
   // Pattern 1: Direct variable reference {{paramName}}
   // Matches {{word}} but not {{helper word}}, {{#block}}, {{/block}}, {{> include}}
   const directVarPattern = /\{\{\s*([a-zA-Z_$][a-zA-Z0-9_$]*)\s*\}\}/g;
