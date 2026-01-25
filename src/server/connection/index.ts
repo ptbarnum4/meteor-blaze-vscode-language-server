@@ -19,7 +19,9 @@ import { CurrentConnectionConfig } from '../../types';
 
 // Request/notification handlers
 import Logger from '../../utils/logger.js';
+import { analyzeGlobalHelpers } from '../helpers/analyzeGlobalHelpers.js';
 import { analyzeTemplateData } from '../helpers/analyzeTemplateData.js';
+import getDocumentSettings from '../helpers/getDocumentSettings.js';
 import { validateWorkspace } from '../helpers/validateWorkspace.js';
 import onCompletion from './onCompletion.js';
 import onCompletionResolve from './onCompletionResolve.js';
@@ -140,90 +142,84 @@ connection.onRequest(
         }
       >();
 
-      const processFile = (filePath: string, content: string) => {
+      // Collect global helpers once before processing templates
+      let allGlobalHelpers = new Set<string>();
+      try {
+        // Always analyze global helpers (whether scanning workspace or viewing single file)
+        // Get workspace root from the first visible file or use process.cwd()
+        let workspaceRoot = process.cwd();
+        if (visibleFileUris.length > 0) {
+          const firstUri = visibleFileUris[0];
+          // Convert file:// URI to path
+          const uriPath = firstUri.replace(/^file:\/\//, '');
+          // Get directory path and navigate up to likely workspace root
+          const path = require('path');
+          const dirPath = path.dirname(uriPath);
+          // Try to find workspace root by looking for common markers
+          // For now, just use the directory several levels up
+          const parts = dirPath.split(path.sep);
+          // Navigate up to find a reasonable workspace root (look for common project indicators)
+          workspaceRoot = dirPath;
+          for (let i = parts.length - 1; i >= 0; i--) {
+            const testPath = parts.slice(0, i + 1).join(path.sep);
+            const fs = require('fs');
+            if (
+              fs.existsSync(path.join(testPath, 'package.json')) ||
+              fs.existsSync(path.join(testPath, '.meteor'))
+            ) {
+              workspaceRoot = testPath;
+              break;
+            }
+          }
+        }
+
+        logger.log(`Analyzing global helpers in: ${workspaceRoot}`);
+
+        // Get settings for global helpers from configuration
+        const settings = await getDocumentSettings(
+          config,
+          visibleFileUris[0] || 'file:///'
+        );
+
+        // Analyze project for global helpers
+        const globalHelpersResult = await analyzeGlobalHelpers(workspaceRoot);
+        allGlobalHelpers = new Set(globalHelpersResult.helpers);
+
+        logger.log(`Found ${allGlobalHelpers.size} detected global helpers`);
+
+        // Add configured global helpers from settings
+        if (settings.globalHelpers?.extend) {
+          for (const helper of settings.globalHelpers.extend) {
+            allGlobalHelpers.add(helper.name);
+          }
+        }
+        // Also check legacy blazeHelpers.extend
+        if (settings.blazeHelpers?.extend) {
+          for (const helper of settings.blazeHelpers.extend) {
+            allGlobalHelpers.add(helper.name);
+          }
+        }
+
+        logger.log(
+          `Total global helpers (including configured): ${allGlobalHelpers.size}`
+        );
+      } catch (err) {
+        logger.error(`Error loading global helpers: ${err}`);
+      }
+
+      const processFile = async (filePath: string, content: string) => {
         const templateMatches = content.matchAll(
           /<template\s+name=["']([^"']+)["'][^>]*>/g
         );
 
         for (const match of templateMatches) {
           const templateName = match[1];
-          const templateStartIndex = match.index;
 
-          // Find the end of this template (either next <template> or </template>)
-          const nextTemplateMatch = /<template\s+name=["']/g;
-          nextTemplateMatch.lastIndex = templateStartIndex + 1;
-          const nextTemplate = nextTemplateMatch.exec(content);
-          const closeTemplateIndex = content.indexOf(
-            '</template>',
-            templateStartIndex
-          );
-
-          // Template content is from start to either close tag or next template
-          const templateEndIndex =
-            closeTemplateIndex > 0
-              ? closeTemplateIndex
-              : nextTemplate
-                ? nextTemplate.index
-                : content.length;
-          const templateContent = content.substring(
-            templateStartIndex,
-            templateEndIndex
-          );
-
-          // Extract data references from THIS template's HTML content only
-          const dataFromTemplate: string[] = [];
-
-          // First, extract variables from {{#each item in variable}} syntax
-          // and track the loop variables to exclude them
-          const eachLoopVars = new Set<string>();
-          const eachPattern =
-            /\{\{#each\s+(\w+)\s+in\s+([a-zA-Z_$][\w$]*)\}\}/g;
-          let eachMatch;
-          while ((eachMatch = eachPattern.exec(templateContent)) !== null) {
-            const loopVar = eachMatch[1];
-            const dataVar = eachMatch[2];
-            eachLoopVars.add(loopVar);
-            if (dataVar && !dataFromTemplate.includes(dataVar)) {
-              dataFromTemplate.push(dataVar);
-            }
-          }
-
-          // Then extract other data references, excluding loop variables
-          const dataPattern =
-            /\{\{(?:[#/])?(?:if|unless|with)?\s*([a-zA-Z_$][\w$]*)(?:\s|\.|\})/g;
-          let dataMatch;
-          while ((dataMatch = dataPattern.exec(templateContent)) !== null) {
-            const varName = dataMatch[1];
-            // Filter out Blaze block helpers, boolean literals, loop variables, and common keywords
-            const excludedNames = [
-              'if',
-              'unless',
-              'each',
-              'with',
-              'let',
-              'else',
-              'this',
-              'true',
-              'false',
-              'null',
-              'undefined',
-              'True',
-              'False',
-              'Null',
-              'Undefined',
-            ];
-            if (
-              varName &&
-              !excludedNames.includes(varName) &&
-              !eachLoopVars.has(varName) &&
-              !dataFromTemplate.includes(varName)
-            ) {
-              dataFromTemplate.push(varName);
-            }
-          }
+          // Only use explicitly typed data from TypeScript controller files
+          // Do NOT extract data from template HTML content
           const helpers: string[] = [];
           const events: string[] = [];
-          const dataProperties: string[] = [...dataFromTemplate];
+          const dataProperties: string[] = [];
           const lifecycle: string[] = [];
           const instanceProperties: string[] = [];
           const basePath = filePath.replace(/\.(html|hbs)$/, '');
@@ -526,10 +522,12 @@ connection.onRequest(
             }
           }
 
-          // Filter dataProperties to exclude helpers
-          const filteredDataProperties = dataProperties.filter(
-            (prop) => !helpers.includes(prop)
+          // Data properties come only from TypeScript type definitions
+          // No filtering needed since they're explicitly typed
+          logger.log(
+            `Data properties for ${templateName}: ${dataProperties.join(', ')}`
           );
+          logger.log(`Template helpers: ${helpers.join(', ')}`);
 
           templatesMap.set(templateName, {
             name: templateName,
@@ -537,9 +535,7 @@ connection.onRequest(
             events,
             file: filePath,
             dataProperties:
-              filteredDataProperties.length > 0
-                ? filteredDataProperties
-                : undefined,
+              dataProperties.length > 0 ? dataProperties : undefined,
             lifecycle: lifecycle.length > 0 ? lifecycle : undefined,
             instanceProperties:
               instanceProperties.length > 0 ? instanceProperties : undefined,
@@ -549,12 +545,12 @@ connection.onRequest(
           logger.log(
             `Template ${templateName}: ` +
               `helpers=${helpers.length}, events=${events.length}, ` +
-              `data=${filteredDataProperties.length}, ` +
+              `data=${dataProperties.length}, ` +
               `lifecycle=${lifecycle.length}, instance=${instanceProperties.length}`
           );
           logger.log(`- Helpers: ${helpers.join(', ') || 'none'}`);
           logger.log(`- Events: ${events.join(', ') || 'none'}`);
-          logger.log(`- Data: ${filteredDataProperties.join(', ') || 'none'}`);
+          logger.log(`- Data: ${dataProperties.join(', ') || 'none'}`);
           logger.log(`- Lifecycle: ${lifecycle.join(', ') || 'none'}`);
           logger.log(`- Instance: ${instanceProperties.join(', ') || 'none'}`);
           logger.log(`================================`);
@@ -599,7 +595,7 @@ connection.onRequest(
                 try {
                   const fs = require('fs');
                   const content = fs.readFileSync(file, 'utf8');
-                  processFile(file, content);
+                  await processFile(file, content);
 
                   // Log progress every 10 files or on last file
                   if ((i + 1) % 10 === 0 || i === files.length - 1) {
