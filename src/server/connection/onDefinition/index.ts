@@ -104,7 +104,14 @@ const onDefinition = (config: CurrentConnectionConfig) => {
       const helpers = config.fileAnalysis.jsHelpers.get(key as string);
       const dataProps =
         config.fileAnalysis.dataProperties?.get(key as string) || [];
-      if (helpers && helpers.includes(word)) {
+
+      // If clicking on alias in #each, redirect to source helper
+      let searchWord = word;
+      if (eachCtx && eachCtx.alias === word) {
+        searchWord = eachCtx.source;
+      }
+
+      if (helpers && helpers.includes(searchWord)) {
         try {
           // Extract filename from directory-specific key
           const keyParts = key.split('/');
@@ -130,7 +137,7 @@ const onDefinition = (config: CurrentConnectionConfig) => {
                 const line = lines[i];
                 // Updated regex to handle TypeScript method syntax with parameters: methodName(params): ReturnType
                 const helperRegex = new RegExp(
-                  `\\b${word}\\s*(?:[:=]\\s*(?:function\\s*\\(|\\([^)]*\\)\\s*=>|\\([^)]*\\)\\s*\\{)|\\([^)]*\\)\\s*(?::\\s*[^{]+)?\\s*\\{)`
+                  `\\b${searchWord}\\s*(?:[:=]\\s*(?:function\\s*\\(|\\([^)]*\\)\\s*=>|\\([^)]*\\)\\s*\\{)|\\([^)]*\\)\\s*(?::\\s*[^{]+)?\\s*\\{)`
                 );
                 const match = helperRegex.exec(line);
                 if (match) {
@@ -141,7 +148,7 @@ const onDefinition = (config: CurrentConnectionConfig) => {
                         start: { line: i, character: match.index || 0 },
                         end: {
                           line: i,
-                          character: (match.index || 0) + word.length,
+                          character: (match.index || 0) + searchWord.length,
                         },
                       },
                     },

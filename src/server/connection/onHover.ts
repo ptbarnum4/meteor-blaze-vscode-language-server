@@ -22,6 +22,7 @@ import {
 import { containsMeteorTemplates } from '../helpers/containsMeteorTemplates.js';
 import createGlobalTemplateHelperDocs from '../helpers/documents/createGlobalHelperDocs.js';
 import { extractParametersFromTemplate } from '../helpers/extractTemplateParameters.js';
+import { findEachBlockAtCursor } from '../helpers/findEachBlockAtCursor.js';
 import { findEnclosingEachInContext } from '../helpers/findEnclosingEachInContext.js';
 import getDocumentSettings from '../helpers/getDocumentSettings.js';
 import { getWordRangeAtPosition } from '../helpers/getWordRangeAtPosition.js';
@@ -346,13 +347,192 @@ const onHover = (config: CurrentConnectionConfig) => {
       );
     }
 
+    // Check if hovering over #each keyword BEFORE checking data properties
+    // This needs to be here to prevent early returns from data property checks
+    if (word === '#each') {
+      try {
+        const workspaceConfig = await connection.workspace.getConfiguration(
+          'meteorLanguageServer'
+        );
+        let hashColor = '#FF6B35';
+        let nameColor = '#007ACC';
+        if (typeof workspaceConfig?.blazeHelpers?.hashColor === 'string') {
+          hashColor = workspaceConfig.blazeHelpers.hashColor;
+        }
+        if (typeof workspaceConfig?.blazeHelpers?.nameColor === 'string') {
+          nameColor = workspaceConfig.blazeHelpers.nameColor;
+        }
+
+        const eachBlockInfo = findEachBlockAtCursor(text, offset);
+        if (eachBlockInfo) {
+          // Get type information for the source array/collection
+          // Only helpers are directly accessible in templates
+          let sourceType: string | undefined;
+
+          for (const key of dirLookupKeys) {
+            const helperDetails = config.fileAnalysis.helperDetails.get(
+              key as string
+            );
+
+            // Check if source is a helper with a return type
+            if (helperDetails) {
+              const helperInfo = helperDetails.find(
+                (h) => h.name === eachBlockInfo.source
+              );
+              if (helperInfo?.returnType) {
+                sourceType = helperInfo.returnType;
+                break;
+              }
+            }
+          }
+
+          // Derive element type from array/collection type
+          const deriveElementType = (t?: string): string | undefined => {
+            if (!t) {
+              return undefined;
+            }
+            const cleaned = t.trim().replace(/^\(|\)$/g, '');
+            const first = cleaned.split('|')[0].trim();
+            let m = first.match(/^\s*([^\[\]]+)\[\]\s*$/);
+            if (m) {
+              return m[1].trim();
+            }
+            m = first.match(
+              /^\s*(?:Array|ReadonlyArray|Set|Iterable)\s*<\s*([^,>]+)(?:\s*,[^>]+)?\s*>\s*$/
+            );
+            if (m) {
+              return m[1].trim();
+            }
+            m = first.match(/^\s*Map\s*<\s*[^,>]+,\s*([^>]+)\s*>\s*$/);
+            if (m) {
+              return m[1].trim();
+            }
+            m = first.match(/^\s*Mongo\.Cursor\s*<\s*([^>]+)\s*>\s*$/);
+            if (m) {
+              return m[1].trim();
+            }
+            return undefined;
+          };
+
+          const elementType = deriveElementType(sourceType);
+
+          // Build hover content
+          const hoverLines: string[] = [];
+          hoverLines.push(
+            `<span style='color:${hashColor}'>#</span><span style='color:${nameColor}'>each</span> - Blaze Block Helper`
+          );
+          hoverLines.push('');
+
+          if (eachBlockInfo.type === 'each-in') {
+            // {{#each val in arr}} syntax
+            hoverLines.push(
+              `Iterates over \`${eachBlockInfo.source}\` with alias \`${eachBlockInfo.alias}\``
+            );
+            hoverLines.push('');
+
+            if (sourceType) {
+              hoverLines.push(`**Source Type:** \`${sourceType}\``);
+              hoverLines.push('');
+
+              if (elementType && eachBlockInfo.alias) {
+                hoverLines.push(
+                  `**Element Type (${eachBlockInfo.alias}):** \`${elementType}\``
+                );
+                hoverLines.push('');
+              } else {
+                hoverLines.push(
+                  `**Element Type (${eachBlockInfo.alias}):** Type inference unavailable`
+                );
+                hoverLines.push('');
+              }
+            } else {
+              hoverLines.push(
+                `**Source Type:** Unable to infer type for \`${eachBlockInfo.source}\``
+              );
+              hoverLines.push('');
+              hoverLines.push(
+                `*Tip: Add type annotations to your helper or template data for better type information.*`
+              );
+              hoverLines.push('');
+            }
+
+            hoverLines.push('**Usage:**');
+            hoverLines.push('```handlebars');
+            hoverLines.push(
+              `{{#each ${eachBlockInfo.alias} in ${eachBlockInfo.source}}}`
+            );
+            if (elementType && eachBlockInfo.alias) {
+              hoverLines.push(
+                `  {{${eachBlockInfo.alias}}} <!-- Type: ${elementType} -->`
+              );
+            } else {
+              hoverLines.push(`  {{${eachBlockInfo.alias}}}`);
+            }
+            hoverLines.push('{{/each}}');
+            hoverLines.push('```');
+          } else {
+            // {{#each arr}} syntax (uses 'this')
+            hoverLines.push(
+              `Iterates over \`${eachBlockInfo.source}\` (context: \`this\`)`
+            );
+            hoverLines.push('');
+
+            if (sourceType) {
+              hoverLines.push(`**Source Type:** \`${sourceType}\``);
+              hoverLines.push('');
+
+              if (elementType) {
+                hoverLines.push(`**Element Type (this):** \`${elementType}\``);
+                hoverLines.push('');
+              } else {
+                hoverLines.push(
+                  `**Element Type (this):** Type inference unavailable`
+                );
+                hoverLines.push('');
+              }
+            } else {
+              hoverLines.push(
+                `**Source Type:** Unable to infer type for \`${eachBlockInfo.source}\``
+              );
+              hoverLines.push('');
+              hoverLines.push(
+                `*Tip: Add type annotations to your helper or template data for better type information.*`
+              );
+              hoverLines.push('');
+            }
+
+            hoverLines.push('**Usage:**');
+            hoverLines.push('```handlebars');
+            hoverLines.push(`{{#each ${eachBlockInfo.source}}}`);
+            if (elementType) {
+              hoverLines.push(`  {{this}} <!-- Type: ${elementType} -->`);
+            } else {
+              hoverLines.push(`  {{this}}`);
+            }
+            hoverLines.push('{{/each}}');
+            hoverLines.push('```');
+          }
+
+          return {
+            contents: {
+              kind: MarkupKind.Markdown,
+              value: hoverLines.join('\n'),
+            },
+            range: wordRange,
+          };
+        }
+      } catch {
+        // If config fails, continue to other checks
+      }
+    }
+
     for (const key of dirLookupKeys) {
       const helperDetails = config.fileAnalysis.helperDetails.get(
         key as string
       );
       const dataProps =
         config.fileAnalysis.dataProperties?.get(key as string) || [];
-      const typeName = config.fileAnalysis.dataTypeByKey?.get(key as string);
+      const _typeName = config.fileAnalysis.dataTypeByKey?.get(key as string);
       const typeMap =
         config.fileAnalysis.dataPropertyTypesByKey?.get(key as string) || {};
       const jsDocMap =
@@ -361,15 +541,19 @@ const onHover = (config: CurrentConnectionConfig) => {
       // #each alias hover: allow hover on alias even if it's not part of template data properties
       if (eachCtx && eachCtx.alias === word) {
         const templateFileName = path.basename(filePath);
-        let listType = typeMap[eachCtx.source];
+        let listType: string | undefined;
 
-        // If not found in data properties, check if it's a helper with a return type
-        if (!listType) {
-          const helperInfo = helperDetails?.find(
+        // Search for helper across all dirLookupKeys
+        for (const lookupKey of dirLookupKeys) {
+          const helperDetailsForKey = config.fileAnalysis.helperDetails.get(
+            lookupKey as string
+          );
+          const helperInfo = helperDetailsForKey?.find(
             (h) => h.name === eachCtx.source
           );
           if (helperInfo?.returnType) {
             listType = helperInfo.returnType;
+            break;
           }
         }
 
@@ -402,23 +586,58 @@ const onHover = (config: CurrentConnectionConfig) => {
         const aliasType: string | undefined = deriveElementType(listType);
 
         const hoverLines: string[] = [];
-        hoverLines.push(
-          `**${word}** - Each item alias in \`${eachCtx.source}\``
-        );
-        hoverLines.push('');
-        if (typeName) {
-          hoverLines.push(`From type: \`${typeName}\``);
-          hoverLines.push('');
-        }
+
+        // Display the type prominently in the title
         if (aliasType) {
-          hoverLines.push(`Type: \`${aliasType}\``);
+          hoverLines.push(`\`\`\`typescript`);
+          hoverLines.push(`const ${word}: ${aliasType}`);
+          hoverLines.push(`\`\`\``);
+        } else if (listType) {
+          // If we can't derive element type but have source type, show that
+          hoverLines.push(`\`\`\`typescript`);
+          hoverLines.push(`const ${word}: ${listType}`);
+          hoverLines.push(`\`\`\``);
           hoverLines.push('');
+          hoverLines.push('*Unable to derive element type from source type*');
+        } else {
+          // No type information available
+          hoverLines.push(`\`\`\`typescript`);
+          hoverLines.push(`const ${word}: any`);
+          hoverLines.push(`\`\`\``);
+          hoverLines.push('');
+          hoverLines.push('*No type information available*');
         }
+        hoverLines.push('');
+        hoverLines.push(`Each item in \`${eachCtx.source}\``);
+        hoverLines.push('');
+
+        // Determine source of the iterable by checking all dirLookupKeys
+        let isHelper = false;
+        for (const lookupKey of dirLookupKeys) {
+          const helperDetailsForKey = config.fileAnalysis.helperDetails.get(
+            lookupKey as string
+          );
+          if (helperDetailsForKey?.some((h) => h.name === eachCtx.source)) {
+            isHelper = true;
+            break;
+          }
+        }
+        if (isHelper) {
+          hoverLines.push(
+            `**Source:** Template helper \`${eachCtx.source}()\``
+          );
+        } else {
+          hoverLines.push(
+            `**Source:** Template data property \`${eachCtx.source}\``
+          );
+        }
+        if (listType) {
+          hoverLines.push(`**Source Type:** \`${listType}\``);
+        }
+        hoverLines.push('');
         hoverLines.push(`**Template:** ${currentTemplateName}`);
         hoverLines.push('');
         hoverLines.push(`**Template File:** ${templateFileName}`);
-        hoverLines.push('');
-        hoverLines.push(`**Usage:** \`{{${word}}}\``);
 
         return {
           contents: {
@@ -475,13 +694,13 @@ const onHover = (config: CurrentConnectionConfig) => {
           propType?.includes('undefined') || propType?.includes('| null');
         const optionalMarker = isOptional ? '?' : '';
 
-        // Format like VS Code TypeScript hover: (property) name?: type
+        // Format like TypeScript variable declaration
         const hoverLines: string[] = [];
 
-        // First line: property signature
+        // First line: const variable signature
         hoverLines.push(`\`\`\`typescript`);
         hoverLines.push(
-          `(property) ${word}${optionalMarker}: ${adjustedType || 'any'}`
+          `const ${word}${optionalMarker}: ${adjustedType || 'any'}`
         );
         hoverLines.push(`\`\`\``);
 
@@ -489,6 +708,15 @@ const onHover = (config: CurrentConnectionConfig) => {
         if (jsDoc) {
           hoverLines.push('');
           hoverLines.push(jsDoc);
+        }
+
+        // Add source information
+        hoverLines.push('');
+        const isHelper = helperDetails?.some((h) => h.name === word);
+        if (isHelper) {
+          hoverLines.push(`**Source:** Template helper \`${word}()\``);
+        } else {
+          hoverLines.push(`**Source:** Template data property`);
         }
 
         return {

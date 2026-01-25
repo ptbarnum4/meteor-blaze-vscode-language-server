@@ -20,22 +20,36 @@ describe('getDocumentSettings', () => {
   const createMockConfig = (
     hasConfigurationCapability: boolean,
     connection?: any
-  ): CurrentConnectionConfig => ({
-    logger: new Logger(connection),
-    hasConfigurationCapability,
-    globalSettings: defaultSettings,
-    documentSettings: new Map(),
-    connection: connection || null,
-    fileAnalysis: {
-      jsHelpers: new Map(),
-      helperDetails: new Map(),
-      cssClasses: new Map(),
-      templates: new Map(),
-    },
-    documents: new TextDocuments(TextDocument),
-    hasWorkspaceFolderCapability: false,
-    hasDiagnosticRelatedInformationCapability: false,
-  });
+  ): CurrentConnectionConfig => {
+    const mockConnection = connection || {
+      console: {
+        log: () => {},
+        info: () => {},
+        warn: () => {},
+        error: () => {},
+      },
+      workspace: {
+        getConfiguration: () => Promise.resolve(defaultSettings),
+      },
+    };
+
+    return {
+      logger: new Logger(mockConnection),
+      hasConfigurationCapability,
+      globalSettings: defaultSettings,
+      documentSettings: new Map(),
+      connection: mockConnection,
+      fileAnalysis: {
+        jsHelpers: new Map(),
+        helperDetails: new Map(),
+        cssClasses: new Map(),
+        templates: new Map(),
+      },
+      documents: new TextDocuments(TextDocument),
+      hasWorkspaceFolderCapability: false,
+      hasDiagnosticRelatedInformationCapability: false,
+    };
+  };
 
   it('should return global settings when configuration capability is disabled', async () => {
     const mockConfig = createMockConfig(false);
