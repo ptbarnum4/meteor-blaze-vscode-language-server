@@ -166,7 +166,7 @@ export async function validateWorkspace(
       return;
     }
 
-    const details = new WorkspaceValidationDetails(config);
+    const details = new WorkspaceValidationDetails(config).disable();
 
     details.log('Starting workspace-wide validation...');
 
@@ -186,6 +186,7 @@ export async function validateWorkspace(
 
 /** Helper class to track and log workspace validation details */
 class WorkspaceValidationDetails {
+  _disabled: boolean = false;
   private _config: CurrentConnectionConfig;
   private _LOG_KEY = '[WORKSPACE VALIDATION]' as const;
   private _STATUS = {
@@ -359,6 +360,7 @@ class WorkspaceValidationDetails {
   };
 
   private formattedLogBody(message: string): string {
+    console.clear();
     return [
       `🛠️ ${this.statusMessage} - ${message}`,
       `🟰 Total Files: ${this.totalFiles}`,
@@ -380,6 +382,9 @@ class WorkspaceValidationDetails {
   }
 
   private _log(...messages: string[]) {
+    if (this._disabled) {
+      return;
+    }
     this._config.connection.console.info(messages.join('\n'));
   }
 
@@ -436,6 +441,16 @@ class WorkspaceValidationDetails {
 
   public setStatus(status: keyof typeof this._STATUS) {
     this.status = status;
+    return this;
+  }
+  /** Disables logging */
+  public disable() {
+    this._disabled = true;
+    return this;
+  }
+  /** Enables logging */
+  public enable() {
+    this._disabled = false;
     return this;
   }
 }

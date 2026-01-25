@@ -15,6 +15,12 @@ export type TemplateInfo = {
   events: string[];
   /** The file path where the template is defined. */
   file: string;
+  /** Template data properties (from this.data in onCreated/onRendered). */
+  dataProperties?: string[];
+  /** Lifecycle methods defined for this template. */
+  lifecycle?: string[];
+  /** Template instance properties (from T parameter in TemplateStaticTyped<N, D, T>). */
+  instanceProperties?: string[];
 };
 
 /**

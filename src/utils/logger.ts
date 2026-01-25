@@ -5,6 +5,7 @@
 import { VSCodeServerConnection } from '../types';
 
 class Logger {
+  private _disabled = false;
   private connection: VSCodeServerConnection;
   private console: VSCodeServerConnection['console'];
   private _ctx: string | undefined;
@@ -49,7 +50,11 @@ class Logger {
   private logWithContext(
     level: 'log' | 'error' | 'warn' | 'info',
     ...messages: unknown[]
-  ): void {
+  ): Logger {
+    if (this._disabled) {
+      return this;
+    }
+
     const logFnMap = {
       log: this.console.log,
       error: this.console.error,
@@ -62,23 +67,33 @@ class Logger {
     const ctx = `[${Logger.now}] [${this._ctx || level}]`;
 
     logFn.call(this.console, `${ctx} ${message}`);
+    return this;
   }
 
   public ctx(str: string): Logger {
     return new Logger(this.connection, str);
   }
 
-  public log(...messages: unknown[]): void {
+  public log(...messages: unknown[]): Logger {
     return this.logWithContext('log', ...messages);
   }
-  public info(...messages: unknown[]): void {
+  public info(...messages: unknown[]): Logger {
     return this.logWithContext('info', ...messages);
   }
-  public warn(...messages: unknown[]): void {
+  public warn(...messages: unknown[]): Logger {
     return this.logWithContext('warn', ...messages);
   }
-  public error(...messages: unknown[]): void {
+  public error(...messages: unknown[]): Logger {
     return this.logWithContext('error', ...messages);
+  }
+
+  public disable(): Logger {
+    this._disabled = true;
+    return this;
+  }
+  public enable(): Logger {
+    this._disabled = false;
+    return this;
   }
 }
 

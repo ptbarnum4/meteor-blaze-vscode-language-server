@@ -10,6 +10,7 @@ export type TemplateDataAnalysis = {
   typePropertyJsDocs: Record<string, Record<string, string>>; // Type name -> property -> JSDoc comment
   typedefs: Record<string, string[]>; // JSDoc typedef name -> properties
   templateTypeMap: Record<string, string>; // template name -> data type name
+  templateInstanceTypeMap: Record<string, string>; // template name -> instance type name (T parameter)
 };
 
 // Extract properties from types and interfaces in a TypeScript file
@@ -146,20 +147,117 @@ const extractTypedefs = (content: string): Record<string, string[]> => {
   return out;
 };
 
-// Extract TemplateStaticTyped<'name', TypeName, ...>
+// Extract TemplateStaticTyped<'name', DataType, InstanceType>
+// Also extracts properties from inline object types in the third parameter
 const extractTemplateStaticTyped = (
-  content: string
-): Record<string, string> => {
-  const map: Record<string, string> = {};
+  content: string,
+  types: Record<string, string[]>
+): {
+  templateTypeMap: Record<string, string>;
+  templateInstanceTypeMap: Record<string, string>;
+} => {
+  const templateTypeMap: Record<string, string> = {};
+  const templateInstanceTypeMap: Record<string, string> = {};
+
+  // Match TemplateStaticTyped with 2 or 3 type parameters
+  // Handles:
+  // - TemplateStaticTyped<'name', DataType>
+  // - TemplateStaticTyped<'name', DataType, InstanceType> (named type)
+  // - TemplateStaticTyped<'name', DataType, { props: ... }> (inline object type)
   const regex =
-    /TemplateStaticTyped\s*<\s*['\"]([^'\"]+)['\"]\s*,\s*([A-Za-z_][A-Za-z0-9_]*)/g;
+    /TemplateStaticTyped\s*<\s*['\"]([^'\"]+)['\"]\s*,\s*([A-Za-z_][\w.]*(?:\s*\|\s*[A-Za-z_][\w.]*)*)\s*(?:,\s*(.+?))?\s*>/gs;
   let m;
   while ((m = regex.exec(content)) !== null) {
     const templateName = m[1];
-    const typeName = m[2];
-    map[templateName] = typeName;
+    const dataTypeName = m[2];
+    const instanceTypeParam = m[3]?.trim(); // May be undefined if only 2 params
+
+    console.log(
+      `[analyzeTemplateData] Found TemplateStaticTyped for ${templateName}:`,
+      {
+        dataTypeName,
+        instanceTypeParam: instanceTypeParam?.substring(0, 100),
+      }
+    );
+
+    templateTypeMap[templateName] = dataTypeName;
+
+    if (instanceTypeParam) {
+      // Check if it's an inline object type (starts with '{')
+      if (instanceTypeParam.startsWith('{')) {
+        console.log(
+          `[analyzeTemplateData] ${templateName} has inline object type`
+        );
+        // Extract properties from inline object type
+        // Create a synthetic type name for this inline type
+        const syntheticTypeName = `__${templateName}_InstanceType__`;
+
+        // Find the complete object literal by matching braces
+        let braceCount = 0;
+        let inlineTypeEnd = 0;
+        for (let i = 0; i < instanceTypeParam.length; i++) {
+          const char = instanceTypeParam[i];
+          if (char === '{') {
+            braceCount++;
+          } else if (char === '}') {
+            braceCount--;
+            if (braceCount === 0) {
+              inlineTypeEnd = i + 1;
+              break;
+            }
+          }
+        }
+
+        const inlineTypeBody = instanceTypeParam.substring(
+          1,
+          inlineTypeEnd - 1
+        );
+        console.log(
+          `[analyzeTemplateData] Inline type body for ${templateName}:`,
+          inlineTypeBody
+        );
+
+        // Extract property names and their types from the inline object type
+        const propNames: string[] = [];
+        // Updated regex to capture both property name and type
+        const propRegex =
+          /^\s*(?:\/\*\*[\s\S]*?\*\/\s*)?([a-zA-Z_$][\w$]*)\s*[?:]\s*([A-Za-z_][\w.]*)/gm;
+        let propMatch;
+        while ((propMatch = propRegex.exec(inlineTypeBody)) !== null) {
+          const propName = propMatch[1];
+          const propTypeName = propMatch[2];
+
+          // Check if this property is named 'props' and its type exists in our types map
+          if (propName === 'props' && types[propTypeName]) {
+            // Use the properties of the referenced type instead
+            const referencedProps = types[propTypeName];
+            console.log(
+              `[analyzeTemplateData] Found 'props' property with type ${propTypeName}, which has ${referencedProps.length} properties:`,
+              referencedProps
+            );
+            propNames.push(...referencedProps);
+          } else if (!propNames.includes(propName)) {
+            // Regular property
+            propNames.push(propName);
+          }
+        }
+
+        console.log(
+          `[analyzeTemplateData] Extracted ${propNames.length} props from inline type:`,
+          propNames
+        );
+
+        // Store the inline type properties
+        types[syntheticTypeName] = propNames;
+        templateInstanceTypeMap[templateName] = syntheticTypeName;
+      } else {
+        // It's a named type reference
+        templateInstanceTypeMap[templateName] = instanceTypeParam;
+      }
+    }
   }
-  return map;
+
+  return { templateTypeMap, templateInstanceTypeMap };
 };
 
 // Helper function to find tsconfig.json for TypeScript path resolution
@@ -425,6 +523,7 @@ export const analyzeTemplateData = (
   const typePropertyJsDocs: Record<string, Record<string, string>> = {};
   const typedefs: Record<string, string[]> = {};
   const templateTypeMap: Record<string, string> = {};
+  const templateInstanceTypeMap: Record<string, string> = {};
 
   const queue: string[] = [entryFilePath];
   while (queue.length) {
@@ -450,9 +549,10 @@ export const analyzeTemplateData = (
     const td = extractTypedefs(content);
     Object.assign(typedefs, td);
 
-    // TemplateStaticTyped mappings
-    const tmap = extractTemplateStaticTyped(content);
-    Object.assign(templateTypeMap, tmap);
+    // TemplateStaticTyped mappings (pass types so inline objects can be stored)
+    const tmaps = extractTemplateStaticTyped(content, types);
+    Object.assign(templateTypeMap, tmaps.templateTypeMap);
+    Object.assign(templateInstanceTypeMap, tmaps.templateInstanceTypeMap);
 
     // Follow imports (one level recursive breadth-first)
     const imported = findImportedFiles(content, filePath);
@@ -469,5 +569,6 @@ export const analyzeTemplateData = (
     typePropertyJsDocs,
     typedefs,
     templateTypeMap,
+    templateInstanceTypeMap,
   };
 };

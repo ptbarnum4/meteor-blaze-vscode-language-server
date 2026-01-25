@@ -1,22 +1,22 @@
 <template name="testParameterCompletion">
   <div class="test-container">
     {{! Test parameter completion - left side of = should show template parameters }}
-    {{> childTemplate
-      █
-    }}
+    {{> childTemplate }}
 
     {{! Test value completion - right side of = should show current template helpers/props }}
-    {{> childTemplate
-      childParam=█
-    }}
+    {{> childTemplate childParam=█ }}
 
     {{! Test multi-line formatting }}
-    {{> childTemplate childParam1=value1 childParam2=value2 childParam3=value3}}
+    {{> childTemplate
+      childParam1=value1
+      childParam2=value2
+      childParam3=value3
+    }}
 
     {{! This should auto-format to multi-line }}
     {{> anotherTemplate
       param1=someValue
-        param2=anotherValue
+      param2=anotherValue
       param3={{helper}}
     }}
   </div>
