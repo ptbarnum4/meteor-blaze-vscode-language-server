@@ -2,6 +2,7 @@ import vscode from 'vscode';
 
 import { ExtensionConfig } from '../../../types';
 
+import { codeBlock, codeInline } from '../../../server/helpers/strings';
 import { isWithinComment } from '../activate/isWithinComment';
 import { containsMeteorTemplates } from '../meteor';
 import { findEnclosingBlockForElseWithIndex } from './findEnclosingBlockForElse';
@@ -176,6 +177,8 @@ export const updateBlockConditionDecorations = (
         if (lineHasExistingComment(text, endPos)) {
           continue;
         }
+        const startLineNumber = startPos.line + 1;
+        const endLineNumber = endPos.line + 1;
 
         decorations.push({
           range: new vscode.Range(endPos, endPos),
@@ -184,6 +187,17 @@ export const updateBlockConditionDecorations = (
               contentText: `// END ${label}${propText} ${matchResult.condition}`,
             },
           },
+          hoverMessage: [
+            `Matches the opening ${codeInline(`{{#${label}${propText} ${matchResult.condition}}}`)} at line ${startLineNumber}`,
+            codeBlock(
+              'handlebars',
+              [
+                `${startLineNumber} {{#${label}${propText} ${matchResult.condition}}}`,
+                `∞    ...`,
+                `${endLineNumber} {{/${label}}`,
+              ].join('\n')
+            ),
+          ],
         });
       }
     }

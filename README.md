@@ -14,6 +14,7 @@ A VS Code extension that provides intelligent language support for Meteor/Blaze 
 - **📐 Template Parameter Completion** - Smart suggestions for template parameters and values during template invocations
 - **🎨 Auto-Formatting** - Automatically formats multi-line template invocations with proper indentation
 - **✨ Auto-Insert End Tags** - Automatically completes Blaze block tags (`{{#if}}` → `{{/if}}`)
+- **🏷️ HTML Element Hints** - Shows class names and IDs at closing tags for long HTML elements
 - **🔍 Cross-file Intelligence** - Analyzes neighboring TypeScript/JavaScript and CSS files for completions
 - **📋 Rich Hover Information** - Shows helper definitions, file locations, and documentation
 - **🎯 Go-to-Definition** - Navigate from helper usage to definition
@@ -40,7 +41,7 @@ A VS Code extension that provides intelligent language support for Meteor/Blaze 
 
    ```javascript
    Template.myTemplate.helpers({
-     helper: () => 'Hello, Meteor!'
+     helper: () => 'Hello, Meteor!',
    });
    ```
 
@@ -114,7 +115,6 @@ Basic configuration in VS Code settings:
       }
     ]
   }
-
 }
 ```
 
@@ -125,9 +125,11 @@ Basic configuration in VS Code settings:
 ### Example Configuration Files
 
 For more configuration examples, see the example files in the [docs directory](./docs/):
+
 - **[example-settings.jsonc](./docs/example-settings.jsonc)** - Basic configuration
 - **[example-settings-auto-insert.jsonc](./docs/example-settings-auto-insert.jsonc)** - Auto-insert end tags
 - **[example-settings-blazeHelpers-colors.jsonc](./docs/example-settings-blazeHelpers-colors.jsonc)** - Custom helper colors
+- **[example-settings-htmlElementHints.jsonc](./docs/example-settings-htmlElementHints.jsonc)** - HTML element closing tag hints
 - **[example-blaze-token-theme.jsonc](./docs/example-blaze-token-theme.jsonc)** - TextMate token customization
 
 📖 **For complete configuration options and advanced features, see [docs/SETUP.md](./docs/SETUP.md)**

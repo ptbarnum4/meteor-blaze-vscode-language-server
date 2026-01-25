@@ -7,9 +7,9 @@ import { ExtensionConfig } from '../types';
  */
 export const createDeactivate = (extConfig: ExtensionConfig) => {
   return (): Thenable<void> | undefined => {
-    // Dispose decoration type
-
+    // Dispose decoration types
     extConfig.blockConditionDecorationType?.dispose();
+    extConfig.htmlElementDecorationType?.dispose();
 
     if (!extConfig.client) {
       return undefined;

@@ -16,6 +16,11 @@ import {
   updateBlockConditionDecorations,
   updateDecorationType,
 } from './helpers/blockConditions/decorationType';
+import {
+  createHtmlElementDecorationType,
+  updateDecorationType as updateHtmlElementDecorationType,
+  updateHtmlElementDecorations,
+} from './helpers/htmlElements/decorationType';
 import { isMeteorProject } from './helpers/meteor';
 
 const ACTIVATE_CONFIGS = {
@@ -85,6 +90,9 @@ export const createActivate = (extConfig: ExtensionConfig) => {
     // Initialize decoration type with current settings
     extConfig.blockConditionDecorationType =
       createBlockConditionDecorationType();
+
+    // Initialize HTML element decoration type with current settings
+    extConfig.htmlElementDecorationType = createHtmlElementDecorationType();
 
     // The server is implemented in node
     const serverModule = context.asAbsolutePath(path.join('dist', 'server.js'));
@@ -305,6 +313,7 @@ export const createActivate = (extConfig: ExtensionConfig) => {
         event.document.languageId === 'handlebars'
       ) {
         updateBlockConditionDecorations(extConfig, event.document);
+        updateHtmlElementDecorations(extConfig, event.document);
       }
     });
 
@@ -317,6 +326,7 @@ export const createActivate = (extConfig: ExtensionConfig) => {
             editor.document.languageId === 'handlebars')
         ) {
           updateBlockConditionDecorations(extConfig, editor.document);
+          updateHtmlElementDecorations(extConfig, editor.document);
         }
       }
     );
@@ -324,6 +334,10 @@ export const createActivate = (extConfig: ExtensionConfig) => {
     // Update decorations for current active editor
     if (vscode.window.activeTextEditor) {
       updateBlockConditionDecorations(
+        extConfig,
+        vscode.window.activeTextEditor.document
+      );
+      updateHtmlElementDecorations(
         extConfig,
         vscode.window.activeTextEditor.document
       );
@@ -336,6 +350,11 @@ export const createActivate = (extConfig: ExtensionConfig) => {
           event.affectsConfiguration('meteorLanguageServer.blockConditions')
         ) {
           updateDecorationType(extConfig);
+        }
+        if (
+          event.affectsConfiguration('meteorLanguageServer.htmlElementHints')
+        ) {
+          updateHtmlElementDecorationType(extConfig);
         }
       }
     );

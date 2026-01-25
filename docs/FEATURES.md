@@ -9,16 +9,20 @@ The extension provides intelligent language support for Meteor/Blaze templates w
 ## Core Features
 
 ### 🎯 Smart Template Detection
+
 The extension automatically detects Meteor projects and activates only when:
+
 - A `.meteor` directory is present in the workspace
 - HTML files contain `<template name="...">` tags
 - Regular HTML files without Meteor templates remain unaffected
 
 **Testing Template Detection:**
+
 - ✅ **Meteor Project**: Extension activates and shows "Meteor/Blaze HTML Language Server activated for Meteor project!"
 - ❌ **Non-Meteor Project**: Extension remains inactive, no Blaze features available
 
 ### 🎨 Syntax Highlighting & Expression Detection
+
 Full support for Blaze templating syntax with intelligent expression detection:
 
 - **Handlebars Expressions**: `{{helper}}`, `{{{rawHtml}}}`
@@ -27,36 +31,46 @@ Full support for Blaze templating syntax with intelligent expression detection:
 - **Comments**: `{{!-- comment --}}`
 
 **Smart Expression Detection:**
+
 - Auto-completion only triggers within `{{}}` or `{{{}}}` expressions
 - Hover information shows only when cursor is inside handlebars expressions
 - No interference with regular HTML content
 
 ### 💡 Intelligent Code Completion
+
 Advanced auto-completion that analyzes neighboring files:
 
 #### Template Helpers
+
 ```javascript
 // template.js
 Template.myTemplate.helpers({
-  userName: () => "John Doe",
+  userName: () => 'John Doe',
   isActive: () => true,
-  formatDate: (date) => new Date(date).toLocaleDateString()
+  formatDate: (date) => new Date(date).toLocaleDateString(),
 });
 ```
 
 #### CSS Classes
+
 ```css
 /* styles.css */
-.user-card { border: 1px solid #ddd; }
-.active-status { color: green; }
+.user-card {
+  border: 1px solid #ddd;
+}
+.active-status {
+  color: green;
+}
 ```
 
 #### Built-in Blaze Helpers
+
 - `#each`, `#if`, `#unless`, `#with`, `#let`
 - `this`, `@index`, `@key`
 - Context-aware suggestions
 
 #### Template Inclusions (`{{> templateName}}`)
+
 Smart template inclusion with import-based filtering:
 
 ```typescript
@@ -68,20 +82,24 @@ import './userProfile/userProfile';
 ```html
 <!-- template.html -->
 <template name="test">
-  {{> }} <!-- Only suggests imported templates: nestedTemplate, userProfile -->
+  {{> }}
+  <!-- Only suggests imported templates: nestedTemplate, userProfile -->
 </template>
 ```
 
 **Features:**
+
 - Analyzes import statements in associated JS/TS files
 - Only suggests templates that are actually imported
 - Supports various import patterns (relative paths, standard Meteor patterns)
 - Provides hover information for template inclusions
 
 #### Template Parameter Completion
+
 Smart completion for template invocation parameters with context-aware suggestions:
 
 **Left Side of `=` (Parameter Names):**
+
 ```typescript
 // childTemplate.ts
 type ChildTemplateData = {
@@ -94,31 +112,33 @@ type ChildTemplateData = {
 ```html
 <!-- template.html -->
 <template name="parent">
-  {{> childTemplate
-    █  <!-- Suggests: childParam=, count=, isActive= -->
+  {{> childTemplate █
+  <!-- Suggests: childParam=, count=, isActive= -->
   }}
 </template>
 ```
 
 **Right Side of `=` (Parameter Values):**
+
 ```typescript
 // parent.ts
 Template.parent.helpers({
-  getUserName: () => "John",
+  getUserName: () => 'John',
   getCount: () => 42,
-  isActive: () => true
+  isActive: () => true,
 });
 ```
 
 ```html
 <template name="parent">
-  {{> childTemplate
-    childParam=█  <!-- Suggests: getUserName, getCount, isActive, this, true, false -->
+  {{> childTemplate childParam=█
+  <!-- Suggests: getUserName, getCount, isActive, this, true, false -->
   }}
 </template>
 ```
 
 **Features:**
+
 - **Parameter Name Completion**: Shows expected parameters from template TypeScript definitions and usage patterns
 - **Value Completion**: Shows helpers, data properties, and context values from the current template
 - **Smart Filtering**: Already-used parameters are excluded from suggestions
@@ -126,12 +146,13 @@ Template.parent.helpers({
 - **Documentation**: Shows JSDoc comments for parameters
 
 **Configuration:**
+
 ```json
 {
   "meteorLanguageServer.completion": {
-    "suggestTemplateParams": true,      // Enable parameter name suggestions
-    "suggestTemplateValues": true,       // Enable value suggestions
-    "parameterInferenceMinUsage": 2     // Min usage count for inference
+    "suggestTemplateParams": true, // Enable parameter name suggestions
+    "suggestTemplateValues": true, // Enable value suggestions
+    "parameterInferenceMinUsage": 2 // Min usage count for inference
   }
 }
 ```
@@ -143,27 +164,33 @@ Automatically inserts closing tags for Blaze block helpers, reducing errors and 
 ### How It Works
 
 #### Primary Method: Completion Within Opening Block
+
 When you have an incomplete opening block, press **Ctrl+Space** anywhere within the brackets:
 
 ```html
-{{#if condition|}}  <!-- Press Ctrl+Space here -->
+{{#if condition|}}
+<!-- Press Ctrl+Space here -->
 ```
 
 Shows completion: "Add closing {{/if}}"
 
 #### Secondary Method: Space-Triggered Completion
+
 After typing a block name with space:
 
 ```html
-{{#if   <!-- Press Ctrl+Space after space -->
+{{#if
+<!-- Press Ctrl+Space after space -->
 ```
 
 Shows full block structure completion.
 
 #### Discovery Mode
+
 Type `{{#` and press Ctrl+Space to see all available block types.
 
 ### Supported Blocks
+
 - `{{#if}}` → `{{/if}}`
 - `{{#unless}}` → `{{/unless}}`
 - `{{#each}}` → `{{/each}}`
@@ -171,15 +198,16 @@ Type `{{#` and press Ctrl+Space to see all available block types.
 - Custom blocks (configurable)
 
 ### Configuration
+
 ```json
 {
   "meteorLanguageServer.blockConditions": {
-    "autoInsertEndTags": true,  // Enable/disable globally
+    "autoInsertEndTags": true, // Enable/disable globally
     "extend": [
       {
         "type": "customBlock",
         "label": "Custom Block",
-        "autoInsertEndTag": true  // Per-block control
+        "autoInsertEndTag": true // Per-block control
       }
     ]
   }
@@ -187,6 +215,7 @@ Type `{{#` and press Ctrl+Space to see all available block types.
 ```
 
 ### Smart Behavior
+
 - Only offers completion for blocks missing closing tags
 - Works correctly with nested blocks
 - Includes snippet navigation with Tab between placeholders
@@ -199,28 +228,125 @@ Visual inline hints that show the condition for closing block tags.
 ### Visual Examples
 
 ```html
+{{#if user.isActive}}
+<div>User is active</div>
+{{/if}} // END if user.isActive {{#each items}}
+<li>{{name}}</li>
+{{/each}} // END each items
+```
+
+## 🏷️ HTML Element Closing Tag Hints
+
+Visual inline hints showing class names and IDs at the closing tags of HTML elements that span multiple lines. This feature helps you quickly identify which element is closing in deeply nested HTML structures.
+
+### Visual Examples
+
+```html
+<div id="main" class="container primary">
+  <header class="site-header">
+    <nav>Navigation content</nav>
+    <!-- many lines -->
+  </header>
+  // END: header.site-header
+
+  <div class="content-wrapper">
+    <!-- many lines of content -->
+  </div>
+  // END: div.content-wrapper
+</div>
+// END: div#main.container.primary
+```
+
+### Features
+
+- **CSS Selector Format**: Displays hints in familiar CSS notation (e.g., `div#id.class1.class2`)
+- **Smart Filtering**: Prioritizes custom classes over Bootstrap utility classes when truncating
+- **Configurable Threshold**: Only shows hints for elements spanning a minimum number of lines (default: 15)
+- **Respects Existing Comments**: Won't add hints if a comment already exists on the line
+- **Self-Closing Tags Excluded**: Automatically skips `<img>`, `<br>`, `<input>`, etc.
+- **Nested Element Support**: Properly handles deeply nested structures with same tag names
+
+### Configuration
+
+```json
+{
+  "meteorLanguageServer.htmlElementHints": {
+    "enabled": true, // Enable/disable the feature
+    "minimumLines": 15, // Minimum lines to show hint (default: 15)
+    "color": "#727272", // Hint color (hex or theme color)
+    "fontStyle": "italic", // Font style: normal, italic, or bold
+    "margin": "0 0 0 0.75em", // CSS margin for hints
+    "showClasses": true, // Include class names in hints
+    "showIds": true, // Include IDs in hints
+    "maxClassesToShow": 3 // Max classes to display (0 = unlimited)
+  }
+}
+```
+
+### Smart Class Filtering
+
+When elements have many classes, the feature intelligently filters them:
+
+```html
+<!-- Element with many classes including Bootstrap utilities -->
+<div
+  class="my-component container row d-flex justify-content-center custom-style"
+>
+  <!-- many lines -->
+</div>
+// END: div.my-component.custom-style.container...
+```
+
+**Bootstrap classes are filtered out first**, showing your custom semantic classes:
+
+- ✅ Shows: `my-component`, `custom-style`, `container`
+- ❌ Hidden: `row`, `d-flex`, `justify-content-center` (Bootstrap utilities)
+
+This keeps hints focused on the meaningful class names that identify the component.
+
+### Display Rules
+
+- ✅ Shows hints for elements spanning 15+ lines (configurable)
+- ✅ Displays id as `#id` (CSS selector style)
+- ✅ Displays classes as `.class1.class2` (CSS selector style)
+- ✅ Filters out Handlebars expressions in class/id attributes
+- ❌ No hints when comment already exists on closing tag
+- ❌ No hints for self-closing elements (`<img />`, `<br />`, etc.)
+- ❌ No hints for elements below minimum line threshold
+
+## 📋 Block Condition Hints (continued)
+
+### Visual Examples
+
+```html
 {{#if userIsActive}}
-  <p>User is active</p>
-{{else}}         <!-- NOT userIsActive (hint appears) -->
-  <p>User is inactive</p>
-{{/if}}          <!-- END if userIsActive (hint appears) -->
+<p>User is active</p>
+{{else}}
+<!-- NOT userIsActive (hint appears) -->
+<p>User is inactive</p>
+{{/if}}
+<!-- END if userIsActive (hint appears) -->
 
 {{#each item in items}}
-  <div>{{item.name}}</div>
-{{/each}}        <!-- END each item in items (hint appears) -->
+<div>{{item.name}}</div>
+{{/each}}
+<!-- END each item in items (hint appears) -->
 
 {{#unless loading}}
-  <p>Content loaded</p>
-{{/unless}}      <!-- END unless loading (hint appears) -->
+<p>Content loaded</p>
+{{/unless}}
+<!-- END unless loading (hint appears) -->
 ```
 
 ### Hint Display Rules
+
 - ✅ **Shows hints** when no existing comment on the closing tag
 - ❌ **No hints** when comment already exists: `{{/if}} <!-- custom comment -->`
 - ✅ **Context-aware** shows appropriate condition text
 - ✅ **Styled** with configurable colors and fonts
 
 ### Configuration
+
 ```json
 {
   "meteorLanguageServer.blockConditions": {
@@ -239,9 +365,11 @@ Automatic formatting for multi-line template invocations with proper indentation
 ### How It Works
 
 #### Format on Save
+
 When you save a file, template invocations are automatically formatted:
 
 **Before:**
+
 ```html
 <template name="myTemplate">
   {{> childTemplate param1=value1 param2=value2 param3=value3}}
@@ -249,30 +377,32 @@ When you save a file, template invocations are automatically formatted:
 ```
 
 **After:**
+
 ```html
 <template name="myTemplate">
-  {{> childTemplate
-    param1=value1
-    param2=value2
-    param3=value3
-  }}
+  {{> childTemplate param1=value1 param2=value2 param3=value3 }}
 </template>
 ```
 
 #### Format on Type
+
 Formatting also triggers when:
+
 - Pressing **Enter** inside a template invocation
 - Typing the closing `}}`
 
 **Example (pressing Enter):**
+
 ```html
-{{> myTemplate|  <!-- Press Enter here -->
+{{> myTemplate|
+<!-- Press Enter here -->
 ```
 
 Automatically indents the next line:
+
 ```html
-{{> myTemplate
-  █  <!-- Cursor positioned with proper indentation -->
+{{> myTemplate █
+<!-- Cursor positioned with proper indentation -->
 ```
 
 ### Formatting Rules
@@ -285,24 +415,18 @@ Automatically indents the next line:
 ### Examples
 
 **Nested in HTML:**
+
 ```html
 <div class="container">
-  {{> userCard
-    name=userName
-    email=userEmail
-    active=isActive
-  }}
+  {{> userCard name=userName email=userEmail active=isActive }}
 </div>
 ```
 
 **Complex Parameters:**
+
 ```html
-{{> templateName
-  simpleParam=value
-  helperParam=(getHelper)
-  subexpressionParam=(add 1 2)
-  stringParam="text value"
-}}
+{{> templateName simpleParam=value helperParam=(getHelper)
+subexpressionParam=(add 1 2) stringParam="text value" }}
 ```
 
 ### Configuration
@@ -310,19 +434,21 @@ Automatically indents the next line:
 ```json
 {
   "meteorLanguageServer.formatting": {
-    "enabled": true,      // Enable automatic formatting
-    "indentSize": 2       // Spaces for indentation (when using spaces)
+    "enabled": true, // Enable automatic formatting
+    "indentSize": 2 // Spaces for indentation (when using spaces)
   }
 }
 ```
 
 **VS Code Settings:**
 Your editor's formatting settings are also respected:
+
 - `editor.tabSize` - Indent size
 - `editor.insertSpaces` - Use spaces vs tabs
 - `editor.formatOnSave` - Format when saving
 
 ### Smart Behavior
+
 - ✅ Only formats multi-line invocations
 - ✅ Preserves single-line invocations when appropriate
 - ✅ Handles nested template invocations correctly
@@ -334,28 +460,31 @@ Your editor's formatting settings are also respected:
 Analyzes neighboring files in the same directory for comprehensive language support:
 
 ### File Analysis
+
 - **JavaScript/TypeScript files**: Parses `Template.templateName.helpers()` definitions
 - **CSS/LESS files**: Extracts class definitions for auto-completion
 - **Directory-scoped**: Only includes files from the same directory as the template
 
 ### Helper Analysis
+
 Supports both JavaScript and TypeScript with complex parsing:
 
 ```typescript
 // Advanced TypeScript parsing
 Template.myTemplate.helpers({
   complexHelper: (): HelperResult => {
-    const data = { nested: { braces: "work fine" } };
+    const data = { nested: { braces: 'work fine' } };
     return processData(data);
   },
 
   simpleHelper() {
-    return "Simple helper";
-  }
+    return 'Simple helper';
+  },
 });
 ```
 
 ### Benefits
+
 - **Hover Information**: Shows helper definitions, file locations, and JSDoc
 - **Go-to-Definition**: Navigate from helper usage to definition
 - **Real-time Updates**: Automatically detects file changes
@@ -366,6 +495,7 @@ Template.myTemplate.helpers({
 Intelligent validation that detects missing or mismatched Blaze block end tags:
 
 ### Validation Features
+
 - Detects missing closing tags (`{{#if}}` without `{{/if}}`)
 - Identifies mismatched block types
 - Shows clear error messages with context
@@ -387,6 +517,7 @@ You can also manually trigger workspace validation at any time:
 3. Check the Problems panel for results
 
 **Configuration:**
+
 ```json
 {
   // Enable/disable automatic validation on startup (default: true)
@@ -398,23 +529,27 @@ You can also manually trigger workspace validation at any time:
 ```
 
 **Benefits:**
+
 - ✅ Find errors across your entire project without opening each file
 - ✅ See all validation errors in one centralized Problems panel
 - ✅ Click on any error to jump directly to the problematic code
 - ✅ Particularly useful for large projects with many template files
 
 ### Error Examples
+
 ```html
 {{#if condition}}
-  <p>Content</p>
+<p>Content</p>
 <!-- Missing {{/if}} - shows validation error -->
 
 {{#each items}}
-  <div>{{this}}</div>
-{{/if}}  <!-- Mismatch: /if should be /each - shows error -->
+<div>{{this}}</div>
+{{/if}}
+<!-- Mismatch: /if should be /each - shows error -->
 ```
 
 ### Configuration
+
 ```json
 {
   "meteorLanguageServer.maxNumberOfProblems": 100,
@@ -422,7 +557,7 @@ You can also manually trigger workspace validation at any time:
     "extend": [
       {
         "type": "customBlock",
-        "requiresEndTag": true  // Enable validation for custom blocks
+        "requiresEndTag": true // Enable validation for custom blocks
       }
     ]
   }
@@ -432,6 +567,7 @@ You can also manually trigger workspace validation at any time:
 ## 🛠️ Advanced Configuration
 
 ### Custom Block Types
+
 Extend the extension with custom block helpers:
 
 ```json
@@ -441,8 +577,8 @@ Extend the extension with custom block helpers:
       {
         "type": "customHelper",
         "label": "Custom Helper Block",
-        "requiresEndTag": true,      // Validation
-        "autoInsertEndTag": true     // Auto-insertion
+        "requiresEndTag": true, // Validation
+        "autoInsertEndTag": true // Auto-insertion
       }
     ]
   }
@@ -450,6 +586,7 @@ Extend the extension with custom block helpers:
 ```
 
 ### Custom Global Helpers with Rich Documentation
+
 Define custom global helpers with complete documentation, parameter types, return types, and examples:
 
 ```json
@@ -489,12 +626,14 @@ Define custom global helpers with complete documentation, parameter types, retur
 ```
 
 **Benefits:**
+
 - **Rich Hover Information**: See full documentation with parameter types and examples
 - **Better IntelliSense**: Parameter information displayed in completions
 - **Type Safety**: Document expected types for better code quality
 - **Team Collaboration**: Share helper documentation across your team
 
 ### Custom Blaze Helpers (Legacy)
+
 Simple helper configuration with name and doc only:
 
 ```json
@@ -519,12 +658,14 @@ For more advanced documentation, use `globalHelpers` instead.
 ## 📊 Performance & Optimization
 
 ### Performance Features
+
 - **Lazy Loading**: Features activate only when needed
 - **Incremental Parsing**: Analyzes changes incrementally
 - **Directory Scoping**: Limits analysis to relevant files
 - **Caching**: Caches parsed results for better performance
 
 ### Optimization Tips
+
 1. **Limit Problem Count**: Reduce `maxNumberOfProblems` for large projects
 2. **Disable Tracing**: Set `trace.server` to `"off"` in production
 3. **Organize Files**: Keep template-related files in the same directory
@@ -535,32 +676,41 @@ For more advanced documentation, use `globalHelpers` instead.
 To test all features are working correctly:
 
 ### 1. Template Detection Test
+
 - Open a Meteor project (with `.meteor` directory)
 - Verify activation message appears
 - Open HTML file with `<template name="...">` tags
 
 ### 2. Auto-completion Test
+
 ```html
 <template name="test">
-  {{  <!-- Type and press Ctrl+Space - should show helpers -->
+  {{
+  <!-- Type and press Ctrl+Space - should show helpers -->
 </template>
 ```
 
 ### 3. Block Hints Test
+
 ```html
 {{#if someCondition}}
-  <p>Content</p>
-{{/if}}  <!-- Should show: END if someCondition -->
+<p>Content</p>
+{{/if}}
+<!-- Should show: END if someCondition -->
 ```
 
 ### 4. Auto-insert Test
+
 ```html
-{{#if condition  <!-- Press Ctrl+Space - should offer closing tag -->
+{{#if condition
+<!-- Press Ctrl+Space - should offer closing tag -->
 ```
 
 ### 5. Template Inclusion Test
+
 ```html
-{{>   <!-- Press Ctrl+Space - should show imported templates only -->
+{{>
+<!-- Press Ctrl+Space - should show imported templates only -->
 ```
 
 ## Related Documentation

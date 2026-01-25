@@ -225,6 +225,9 @@ export type ExtensionConfig = {
   /** Decoration type for block-condition hints
    * - created dynamically based on settings */
   blockConditionDecorationType: vscode.TextEditorDecorationType | null;
+  /** Decoration type for HTML element closing tag hints
+   * - created dynamically based on settings */
+  htmlElementDecorationType: vscode.TextEditorDecorationType | null;
 };
 
 export type GlobalHelperInfo = {
