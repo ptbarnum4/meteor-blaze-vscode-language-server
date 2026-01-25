@@ -43,6 +43,19 @@ class Logger {
       .join('\n');
     return messageStrings;
   }
+  private static get timestamp(): string {
+    const now = new Date();
+
+    const date = now.toISOString().split('T')[0];
+    const time = now
+      .toTimeString()
+      .split(' ')[0]
+      .split(':')
+      .map((v) => v.padStart(2, '0'))
+      .join(':');
+
+    return `${date} ${time}`;
+  }
   private static get now(): string {
     return new Date().toISOString();
   }
@@ -64,7 +77,7 @@ class Logger {
     const logFn = logFnMap[level];
 
     const message = Logger.toMsgString(...messages);
-    const ctx = `[${Logger.now}] [${this._ctx || level}]`;
+    const ctx = `[${Logger.timestamp}] [${this._ctx || level}]`;
 
     logFn.call(this.console, `${ctx} ${message}`);
     return this;

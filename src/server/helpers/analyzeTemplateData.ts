@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import * as ts from 'typescript';
+import ts from 'typescript';
 import { TsConfig } from '../../types';
 import { safeParse } from './strings.js';
 
@@ -172,22 +172,22 @@ const extractTemplateStaticTyped = (
     const dataTypeName = m[2];
     const instanceTypeParam = m[3]?.trim(); // May be undefined if only 2 params
 
-    console.log(
-      `[analyzeTemplateData] Found TemplateStaticTyped for ${templateName}:`,
-      {
-        dataTypeName,
-        instanceTypeParam: instanceTypeParam?.substring(0, 100),
-      }
-    );
+    // console.log(
+    //   `[analyzeTemplateData] Found TemplateStaticTyped for ${templateName}:`,
+    //   {
+    //     dataTypeName,
+    //     instanceTypeParam: instanceTypeParam?.substring(0, 100),
+    //   }
+    // );
 
     templateTypeMap[templateName] = dataTypeName;
 
     if (instanceTypeParam) {
       // Check if it's an inline object type (starts with '{')
       if (instanceTypeParam.startsWith('{')) {
-        console.log(
-          `[analyzeTemplateData] ${templateName} has inline object type`
-        );
+        // console.log(
+        //   `[analyzeTemplateData] ${templateName} has inline object type`
+        // );
         // Extract properties from inline object type
         // Create a synthetic type name for this inline type
         const syntheticTypeName = `__${templateName}_InstanceType__`;
@@ -212,10 +212,10 @@ const extractTemplateStaticTyped = (
           1,
           inlineTypeEnd - 1
         );
-        console.log(
-          `[analyzeTemplateData] Inline type body for ${templateName}:`,
-          inlineTypeBody
-        );
+        // console.log(
+        //   `[analyzeTemplateData] Inline type body for ${templateName}:`,
+        //   inlineTypeBody
+        // );
 
         // Extract property names and their types from the inline object type
         const propNames: string[] = [];
@@ -231,10 +231,10 @@ const extractTemplateStaticTyped = (
           if (propName === 'props' && types[propTypeName]) {
             // Use the properties of the referenced type instead
             const referencedProps = types[propTypeName];
-            console.log(
-              `[analyzeTemplateData] Found 'props' property with type ${propTypeName}, which has ${referencedProps.length} properties:`,
-              referencedProps
-            );
+            // console.log(
+            //   `[analyzeTemplateData] Found 'props' property with type ${propTypeName}, which has ${referencedProps.length} properties:`,
+            //   referencedProps
+            // );
             propNames.push(...referencedProps);
           } else if (!propNames.includes(propName)) {
             // Regular property
@@ -242,10 +242,10 @@ const extractTemplateStaticTyped = (
           }
         }
 
-        console.log(
-          `[analyzeTemplateData] Extracted ${propNames.length} props from inline type:`,
-          propNames
-        );
+        // console.log(
+        //   `[analyzeTemplateData] Extracted ${propNames.length} props from inline type:`,
+        //   propNames
+        // );
 
         // Store the inline type properties
         types[syntheticTypeName] = propNames;
@@ -525,6 +525,10 @@ export const analyzeTemplateData = (
   const templateTypeMap: Record<string, string> = {};
   const templateInstanceTypeMap: Record<string, string> = {};
 
+  // Store file contents for second pass
+  const fileContents: Map<string, string> = new Map();
+
+  // FIRST PASS: Collect all files and extract ALL types
   const queue: string[] = [entryFilePath];
   while (queue.length) {
     const filePath = queue.shift()!;
@@ -539,6 +543,9 @@ export const analyzeTemplateData = (
       continue;
     }
 
+    // Store content for second pass
+    fileContents.set(filePath, content);
+
     // Extract types and interfaces from the entire file using TypeScript AST
     const extracted = extractTypesFromFile(content);
     Object.assign(types, extracted.types);
@@ -549,11 +556,6 @@ export const analyzeTemplateData = (
     const td = extractTypedefs(content);
     Object.assign(typedefs, td);
 
-    // TemplateStaticTyped mappings (pass types so inline objects can be stored)
-    const tmaps = extractTemplateStaticTyped(content, types);
-    Object.assign(templateTypeMap, tmaps.templateTypeMap);
-    Object.assign(templateInstanceTypeMap, tmaps.templateInstanceTypeMap);
-
     // Follow imports (one level recursive breadth-first)
     const imported = findImportedFiles(content, filePath);
     for (const f of imported) {
@@ -561,6 +563,13 @@ export const analyzeTemplateData = (
         queue.push(f);
       }
     }
+  }
+
+  // SECOND PASS: Now that we have ALL types, extract TemplateStaticTyped with type resolution
+  for (const [_filePath, content] of fileContents.entries()) {
+    const tmaps = extractTemplateStaticTyped(content, types);
+    Object.assign(templateTypeMap, tmaps.templateTypeMap);
+    Object.assign(templateInstanceTypeMap, tmaps.templateInstanceTypeMap);
   }
 
   return {

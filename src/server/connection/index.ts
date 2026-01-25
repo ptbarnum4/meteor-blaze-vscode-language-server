@@ -55,7 +55,7 @@ const documents: TextDocuments<TextDocument> = new TextDocuments(TextDocument);
  * can read and update these fields to maintain server state.
  */
 const config: CurrentConnectionConfig = {
-  logger: new Logger(connection).disable(),
+  logger: new Logger(connection), //.disable(),
   globalSettings: { maxNumberOfProblems: 1000 },
   documentSettings: new Map(),
   fileAnalysis: {
@@ -105,12 +105,16 @@ connection.onRequest(
   async (
     params: { scanWorkspace?: boolean; visibleFileUris?: string[] } = {}
   ) => {
+    const logger = config.logger.ctx('SIDEBAR');
+
     try {
       const scanWorkspace = params.scanWorkspace ?? false;
       const visibleFileUris = params.visibleFileUris ?? [];
-      config.logger.log(
-        `[Sidebar] Analyzing workspace (scanWorkspace: ${scanWorkspace}, visibleFiles: ${visibleFileUris.length})...`
-      );
+      logger.log(`========================================`);
+      logger.log(`ANALYZE WORKSPACE REQUEST RECEIVED`);
+      logger.log(`scanWorkspace: ${scanWorkspace}`);
+      logger.log(`visibleFiles: ${visibleFileUris.length}`);
+      logger.log(`========================================`);
 
       const templates: Array<{
         name: string;
@@ -168,42 +172,53 @@ connection.onRequest(
 
           // Extract data references from THIS template's HTML content only
           const dataFromTemplate: string[] = [];
-          const dataPatterns = [
-            // {{variable}} or {{variable.prop}}
-            /\{\{(?:[#/])?(?:if|unless|each|with)?\s*([a-zA-Z_$][\w$]*)(?:\s|\.|\})/g,
-            // {{#each item in variable}}
-            /\{\{#each\s+\w+\s+in\s+([a-zA-Z_$][\w$]*)\}\}/g,
-          ];
 
-          for (const pattern of dataPatterns) {
-            let dataMatch;
-            while ((dataMatch = pattern.exec(templateContent)) !== null) {
-              const varName = dataMatch[1];
-              // Filter out Blaze block helpers, boolean literals, and common keywords
-              const excludedNames = [
-                'if',
-                'unless',
-                'each',
-                'with',
-                'let',
-                'else',
-                'this',
-                'true',
-                'false',
-                'null',
-                'undefined',
-                'True',
-                'False',
-                'Null',
-                'Undefined',
-              ];
-              if (
-                varName &&
-                !excludedNames.includes(varName) &&
-                !dataFromTemplate.includes(varName)
-              ) {
-                dataFromTemplate.push(varName);
-              }
+          // First, extract variables from {{#each item in variable}} syntax
+          // and track the loop variables to exclude them
+          const eachLoopVars = new Set<string>();
+          const eachPattern =
+            /\{\{#each\s+(\w+)\s+in\s+([a-zA-Z_$][\w$]*)\}\}/g;
+          let eachMatch;
+          while ((eachMatch = eachPattern.exec(templateContent)) !== null) {
+            const loopVar = eachMatch[1];
+            const dataVar = eachMatch[2];
+            eachLoopVars.add(loopVar);
+            if (dataVar && !dataFromTemplate.includes(dataVar)) {
+              dataFromTemplate.push(dataVar);
+            }
+          }
+
+          // Then extract other data references, excluding loop variables
+          const dataPattern =
+            /\{\{(?:[#/])?(?:if|unless|with)?\s*([a-zA-Z_$][\w$]*)(?:\s|\.|\})/g;
+          let dataMatch;
+          while ((dataMatch = dataPattern.exec(templateContent)) !== null) {
+            const varName = dataMatch[1];
+            // Filter out Blaze block helpers, boolean literals, loop variables, and common keywords
+            const excludedNames = [
+              'if',
+              'unless',
+              'each',
+              'with',
+              'let',
+              'else',
+              'this',
+              'true',
+              'false',
+              'null',
+              'undefined',
+              'True',
+              'False',
+              'Null',
+              'Undefined',
+            ];
+            if (
+              varName &&
+              !excludedNames.includes(varName) &&
+              !eachLoopVars.has(varName) &&
+              !dataFromTemplate.includes(varName)
+            ) {
+              dataFromTemplate.push(varName);
             }
           }
           const helpers: string[] = [];
@@ -213,12 +228,32 @@ connection.onRequest(
           const instanceProperties: string[] = [];
           const basePath = filePath.replace(/\.(html|hbs)$/, '');
 
+          config.logger.log(
+            `[Sidebar] Looking for JS/TS files for template ${templateName} at basePath: ${basePath}`
+          );
+
           // Look for corresponding JS/TS file and extract helpers, events, and data types
+          // Try both the filename-based path (e.g., template.ts) and template-name-based path (e.g., alumniList.ts)
+          const path = require('path');
+          const dirPath = path.dirname(basePath);
+          const candidatePaths: string[] = [];
+
+          // Add filename-based paths (e.g., template.ts)
           for (const ext of ['.js', '.ts', '.jsx', '.tsx']) {
-            const jsPath = basePath + ext;
+            candidatePaths.push(basePath + ext);
+          }
+
+          // Add template-name-based paths (e.g., alumniList.ts)
+          for (const ext of ['.js', '.ts', '.jsx', '.tsx']) {
+            candidatePaths.push(path.join(dirPath, templateName + ext));
+          }
+
+          for (const jsPath of candidatePaths) {
+            config.logger.log(`[Sidebar] Checking for file: ${jsPath}`);
             try {
               const fs = require('fs');
               if (fs.existsSync(jsPath)) {
+                config.logger.log(`[Sidebar] Found companion file: ${jsPath}`);
                 const jsContent = fs.readFileSync(jsPath, 'utf8');
 
                 // Extract TypeScript type definition for template data
@@ -249,9 +284,7 @@ connection.onRequest(
                 }
 
                 if (typeDefMatch) {
-                  config.logger.log(
-                    `[Sidebar] Found type definition for ${templateName}`
-                  );
+                  logger.log(`Found type definition for ${templateName}`);
                   // Use brace matching to extract the complete type body
                   const startIndex =
                     typeDefMatch.index + typeDefMatch[0].length - 1;
@@ -272,9 +305,7 @@ connection.onRequest(
                     startIndex + 1,
                     endIndex - 1
                   );
-                  config.logger.log(
-                    `[Sidebar] Type body length: ${typeBody.length}`
-                  );
+                  logger.log(`Type body length: ${typeBody.length}`);
 
                   // Extract property names from type definition
                   const propMatches = typeBody.matchAll(
@@ -309,15 +340,11 @@ connection.onRequest(
                       !dataProperties.includes(propName)
                     ) {
                       dataProperties.push(propName);
-                      config.logger.log(
-                        `[Sidebar] Found data property from type: ${propName}`
-                      );
+                      logger.log(`Found data property from type: ${propName}`);
                     }
                   }
                 } else {
-                  config.logger.log(
-                    `[Sidebar] No type definition found for ${templateName}`
-                  );
+                  logger.log(`No type definition found for ${templateName}`);
                 }
 
                 // Extract helpers from Template.templateName.helpers({ ... })
@@ -347,28 +374,50 @@ connection.onRequest(
                     startIndex + 1,
                     endIndex - 1
                   );
-                  // Extract helper names (method names or properties)
-                  const helperMatches = helpersBlock.matchAll(
-                    /(?:^|,)\s*(?:\/\*\*[\s\S]*?\*\/\s*)?(\w+)\s*[:(/]/gm
-                  );
-                  for (const helperMatch of helperMatches) {
-                    const helperName = helperMatch[1];
-                    // Filter out common JS keywords that aren't helpers
-                    if (
-                      helperName &&
-                      ![
-                        'if',
-                        'for',
-                        'while',
-                        'return',
-                        'const',
-                        'let',
-                        'var',
-                      ].includes(helperName)
-                    ) {
-                      helpers.push(helperName);
+                  // Extract helper names at the top level only by tracking brace depth
+                  // We need to match helper names BEFORE their function bodies increase the depth
+                  const lines = helpersBlock.split('\n');
+                  const topLevelHelpers = new Set<string>();
+                  let depth = 0;
+
+                  for (const line of lines) {
+                    // Check if this line starts a helper definition at depth 0
+                    if (depth === 0) {
+                      const match = line.match(
+                        /^\s*(?:\/\*\*[\s\S]*?\*\/\s*)?(\w+)\s*[:(/]/
+                      );
+                      if (match) {
+                        const helperName = match[1];
+                        if (
+                          helperName &&
+                          ![
+                            'if',
+                            'for',
+                            'while',
+                            'return',
+                            'const',
+                            'let',
+                            'var',
+                            'function',
+                            'async',
+                          ].includes(helperName)
+                        ) {
+                          topLevelHelpers.add(helperName);
+                        }
+                      }
+                    }
+
+                    // Update depth for this line
+                    for (const char of line) {
+                      if (char === '{' || char === '[' || char === '(') {
+                        depth++;
+                      } else if (char === '}' || char === ']' || char === ')') {
+                        depth--;
+                      }
                     }
                   }
+
+                  helpers.push(...topLevelHelpers);
                 }
 
                 // Extract events from Template.templateName.events({ ... })
@@ -420,8 +469,12 @@ connection.onRequest(
                   }
                 }
 
-                config.logger.log(
-                  `[Sidebar] After lifecycle extraction for ${templateName}: ${lifecycle.join(', ')}`
+                logger.log(
+                  `After lifecycle extraction for ${templateName}: ${lifecycle.join(', ')}`
+                );
+
+                logger.log(
+                  `${templateName} lifecycle count: ${lifecycle.length}`
                 );
 
                 // Extract data properties (this.data.xxx or Template.currentData().xxx)
@@ -435,12 +488,11 @@ connection.onRequest(
                   }
                 }
 
-                config.logger.log(
-                  `[Sidebar] After runtime data extraction for ${templateName}: ${dataProperties.join(', ')}`
+                logger.log(
+                  `After runtime data extraction for ${templateName}: ${dataProperties.join(', ')}`
                 );
 
                 // Extract instance properties from TemplateStaticTyped<N, D, T>
-                const instanceProperties: string[] = [];
                 try {
                   const dataAnalysis = analyzeTemplateData(jsPath);
 
@@ -453,18 +505,18 @@ connection.onRequest(
                   ) {
                     const instanceProps = dataAnalysis.types[instanceTypeName];
                     instanceProperties.push(...instanceProps);
-                    config.logger.log(
-                      `[Sidebar] Found instance type ${instanceTypeName} for ${templateName} with ${instanceProps.length} properties`
+                    logger.log(
+                      `Found instance type ${instanceTypeName} for ${templateName} with ${instanceProps.length} properties`
                     );
                   }
                 } catch (err) {
-                  config.logger.error(
-                    `[Sidebar] Error analyzing template data for ${templateName}: ${err}`
+                  logger.error(
+                    `Error analyzing template data for ${templateName}: ${err}`
                   );
                 }
 
-                config.logger.log(
-                  `[Sidebar] Instance properties for ${templateName}: ${instanceProperties.join(', ')}`
+                logger.log(
+                  `Instance properties for ${templateName}: ${instanceProperties.join(', ')}`
                 );
 
                 break;
@@ -474,36 +526,55 @@ connection.onRequest(
             }
           }
 
+          // Filter dataProperties to exclude helpers
+          const filteredDataProperties = dataProperties.filter(
+            (prop) => !helpers.includes(prop)
+          );
+
           templatesMap.set(templateName, {
             name: templateName,
             helpers,
             events,
             file: filePath,
             dataProperties:
-              dataProperties.length > 0 ? dataProperties : undefined,
+              filteredDataProperties.length > 0
+                ? filteredDataProperties
+                : undefined,
             lifecycle: lifecycle.length > 0 ? lifecycle : undefined,
             instanceProperties:
               instanceProperties.length > 0 ? instanceProperties : undefined,
           });
 
-          config.logger.log(
-            `[Sidebar] Template ${templateName}: ` +
+          logger.log(`===== FINAL TEMPLATE ${templateName} =====`);
+          logger.log(
+            `Template ${templateName}: ` +
               `helpers=${helpers.length}, events=${events.length}, ` +
-              `data=${dataProperties.length}, ` +
+              `data=${filteredDataProperties.length}, ` +
               `lifecycle=${lifecycle.length}, instance=${instanceProperties.length}`
           );
+          logger.log(`- Helpers: ${helpers.join(', ') || 'none'}`);
+          logger.log(`- Events: ${events.join(', ') || 'none'}`);
+          logger.log(`- Data: ${filteredDataProperties.join(', ') || 'none'}`);
+          logger.log(`- Lifecycle: ${lifecycle.join(', ') || 'none'}`);
+          logger.log(`- Instance: ${instanceProperties.join(', ') || 'none'}`);
+          logger.log(`================================`);
         }
       };
 
       if (scanWorkspace) {
+        logger.log(`Starting workspace scan...`);
         const glob = require('glob');
         const workspaceFolders =
           await connection.workspace.getWorkspaceFolders();
 
+        logger.log(`Found ${workspaceFolders?.length || 0} workspace folders`);
+
         if (workspaceFolders && workspaceFolders.length > 0) {
           for (const folder of workspaceFolders) {
             const folderPath = folder.uri.replace('file://', '');
+            logger.log(`Scanning folder: ${folderPath}`);
             const pattern = `${folderPath}/**/*.{html,hbs}`;
+            logger.log(`Using glob pattern: ${pattern}`);
 
             try {
               const files: string[] = await new Promise((resolve, reject) => {
@@ -521,7 +592,7 @@ connection.onRequest(
               });
 
               const totalFiles = files.length;
-              config.logger.log(`[Sidebar] Scanning ${totalFiles} files...`);
+              logger.log(`Scanning ${totalFiles} files...`);
 
               for (let i = 0; i < files.length; i++) {
                 const file = files[i];
@@ -533,8 +604,8 @@ connection.onRequest(
                   // Log progress every 10 files or on last file
                   if ((i + 1) % 10 === 0 || i === files.length - 1) {
                     const percent = Math.round(((i + 1) / totalFiles) * 100);
-                    config.logger.log(
-                      `[Sidebar] Progress: ${percent}% (${i + 1}/${totalFiles})`
+                    logger.log(
+                      `Progress: ${percent}% (${i + 1}/${totalFiles})`
                     );
                   }
                 } catch (err) {
@@ -554,22 +625,20 @@ connection.onRequest(
 
         // First, process all tracked documents
         const documents = config.documents.all();
-        config.logger.log(
-          `[Sidebar] Processing ${documents.length} tracked document(s)`
-        );
+        logger.log(`Processing ${documents.length} tracked document(s)`);
 
         for (const document of documents) {
           const text = document.getText();
           const filePath = document.uri.replace('file://', '');
           processedFiles.add(filePath);
-          config.logger.log(`[Sidebar] Processing tracked file: ${filePath}`);
+          logger.log(`Processing tracked file: ${filePath}`);
           processFile(filePath, text);
         }
 
         // Then, process any visible files that weren't already tracked
         if (visibleFileUris.length > 0) {
-          config.logger.log(
-            `[Sidebar] Processing ${visibleFileUris.length} visible file URI(s)`
+          logger.log(
+            `Processing ${visibleFileUris.length} visible file URI(s)`
           );
 
           for (const uri of visibleFileUris) {
@@ -589,9 +658,7 @@ connection.onRequest(
               const fs = require('fs');
               if (fs.existsSync(filePath)) {
                 const content = fs.readFileSync(filePath, 'utf8');
-                config.logger.log(
-                  `[Sidebar] Processing visible file: ${filePath}`
-                );
+                logger.log(`Processing visible file: ${filePath}`);
                 processFile(filePath, content);
                 processedFiles.add(filePath);
               }
@@ -606,7 +673,7 @@ connection.onRequest(
 
       templates.push(...templatesMap.values());
 
-      config.logger.log(`[Sidebar] Found ${templates.length} templates`);
+      logger.log(`Found ${templates.length} templates`);
 
       return {
         templates,
