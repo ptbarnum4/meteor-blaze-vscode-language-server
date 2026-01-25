@@ -26,6 +26,7 @@ import onDefinition from './onDefinition/index.js';
 import onDidChangeConfiguration from './onDidChangeConfiguration.js';
 import onDidChangeContent from './onDidChangeContent.js';
 import onDidClose from './onDidClose.js';
+import onFoldingRanges from './onFoldingRanges.js';
 import {
   onDocumentFormatting,
   onDocumentOnTypeFormatting,
@@ -80,6 +81,7 @@ connection.onCompletion(onCompletion(config));
 connection.onCompletionResolve(onCompletionResolve(config));
 connection.onHover(onHover(config));
 connection.onDefinition(onDefinition(config));
+connection.onFoldingRanges(onFoldingRanges(config));
 
 // Register formatting handlers
 connection.onDocumentFormatting(onDocumentFormatting(config));

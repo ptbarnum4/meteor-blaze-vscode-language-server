@@ -37,6 +37,7 @@ const onInitialize = (config: CurrentConnectionConfig) => {
           firstTriggerCharacter: '\n',
           moreTriggerCharacter: ['}'],
         },
+        foldingRangeProvider: true,
       },
     };
 
