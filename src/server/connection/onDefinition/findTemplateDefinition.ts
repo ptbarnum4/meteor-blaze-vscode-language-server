@@ -1,51 +1,83 @@
 import fs from 'fs';
 import path from 'path';
-import { Location } from 'vscode-languageserver/node';
-import { VSCodeServerConnection } from '/types';
+import { Location } from 'vscode-languageserver/node.js';
+import { TsConfig, VSCodeServerConnection } from '../../../types';
 
 // Helper function to find template definition (template.html file)
 const findTemplateDefinition = (
   templateName: string,
   currentDir: string,
-  _connection: VSCodeServerConnection
+  _connection: VSCodeServerConnection,
+  currentFileUri?: string
 ): Location[] | null => {
   try {
-    // First, try to find the template through import analysis (same approach as hover)
-    const associatedFile = findAssociatedJSFileForDefinition(currentDir, fs, path);
+    // FIRST: Check if the template is in the current file (same file navigation)
+    if (currentFileUri) {
+      const currentFilePath = currentFileUri.replace('file://', '');
+      if (fs.existsSync(currentFilePath)) {
+        const content = fs.readFileSync(currentFilePath, 'utf8');
+        const templateRegex = new RegExp(
+          `<template\\s+name=["']${templateName}["'][^>]*>`
+        );
+        const match = templateRegex.exec(content);
+
+        if (match) {
+          const lines = content.substring(0, match.index).split('\n');
+          const line = lines.length - 1;
+          const character =
+            match.index - content.lastIndexOf('\n', match.index) - 1;
+
+          return [
+            {
+              uri: currentFileUri,
+              range: {
+                start: { line, character },
+                end: { line, character: character + templateName.length },
+              },
+            },
+          ];
+        }
+      }
+    }
+
+    // Second, try to find the template through import analysis (same approach as hover)
+    const associatedFile = findAssociatedJSFileForDefinition(currentDir);
 
     if (associatedFile) {
       // Parse imports to see if this template is imported
-      const importedTemplates = parseTemplateImportsForDefinition(associatedFile, fs, path);
+      const importedTemplates =
+        parseTemplateImportsForDefinition(associatedFile);
 
       if (importedTemplates.includes(templateName)) {
         // Find the actual template file using import resolution
         const templateInfo = findImportedTemplateFileForDefinition(
           templateName,
-          associatedFile,
-          fs,
-          path
+          associatedFile
         );
 
         if (templateInfo) {
           const content = fs.readFileSync(templateInfo.file, 'utf8');
 
           // Find the template tag in the HTML file
-          const templateRegex = new RegExp(`<template\\s+name=["']${templateName}["'][^>]*>`);
+          const templateRegex = new RegExp(
+            `<template\\s+name=["']${templateName}["'][^>]*>`
+          );
           const match = templateRegex.exec(content);
 
           if (match) {
             const lines = content.substring(0, match.index).split('\n');
             const line = lines.length - 1;
-            const character = match.index - content.lastIndexOf('\n', match.index) - 1;
+            const character =
+              match.index - content.lastIndexOf('\n', match.index) - 1;
 
             return [
               {
                 uri: `file://${templateInfo.file}`,
                 range: {
                   start: { line, character },
-                  end: { line, character: character + templateName.length }
-                }
-              }
+                  end: { line, character: character + templateName.length },
+                },
+              },
             ];
           }
         }
@@ -59,7 +91,7 @@ const findTemplateDefinition = (
       path.join(currentDir, `${templateName}.html`),
       // Also check parent directories
       path.join(path.dirname(currentDir), templateName, 'template.html'),
-      path.join(path.dirname(currentDir), templateName, `${templateName}.html`)
+      path.join(path.dirname(currentDir), templateName, `${templateName}.html`),
     ];
 
     for (const templatePath of possiblePaths) {
@@ -67,35 +99,41 @@ const findTemplateDefinition = (
         const content = fs.readFileSync(templatePath, 'utf8');
 
         // Find the template tag in the HTML file
-        const templateRegex = new RegExp(`<template\\s+name=["']${templateName}["'][^>]*>`);
+        const templateRegex = new RegExp(
+          `<template\\s+name=["']${templateName}["'][^>]*>`
+        );
         const match = templateRegex.exec(content);
 
         if (match) {
           const lines = content.substring(0, match.index).split('\n');
           const line = lines.length - 1;
-          const character = match.index - content.lastIndexOf('\n', match.index) - 1;
+          const character =
+            match.index - content.lastIndexOf('\n', match.index) - 1;
 
           return [
             {
               uri: `file://${templatePath}`,
               range: {
                 start: { line, character },
-                end: { line, character: character + templateName.length }
-              }
-            }
+                end: { line, character: character + templateName.length },
+              },
+            },
           ];
         }
       }
     }
   } catch (error) {
-    console.error(`Error finding template definition for ${templateName}:`, error);
+    console.error(
+      `Error finding template definition for ${templateName}:`,
+      error
+    );
   }
 
   return null;
 };
 
 // Helper function to find the associated JS/TS file for definition
-function findAssociatedJSFileForDefinition(currentDir: string, fs: any, path: any): string | null {
+function findAssociatedJSFileForDefinition(currentDir: string): string | null {
   const baseName = path.basename(currentDir);
   const possibleExtensions = ['.ts', '.js'];
 
@@ -150,16 +188,17 @@ function findAssociatedJSFileForDefinition(currentDir: string, fs: any, path: an
 }
 
 // Helper function to parse template imports for definition
-function parseTemplateImportsForDefinition(filePath: string, fs: any, path: any): string[] {
+function parseTemplateImportsForDefinition(filePath: string): string[] {
   try {
     const content = fs.readFileSync(filePath, 'utf8');
     const templates: string[] = [];
 
     // Find tsconfig.json for this Meteor project (same as hover)
-    const tsconfig = findTsConfigForMeteorProject(path.dirname(filePath), fs, path);
+    const tsconfig = findTsConfigForMeteorProject(path.dirname(filePath));
 
     // Find all import statements (both named and unnamed, including absolute paths)
-    const importPattern = /import\s+(?:[^'"]*\s+from\s+)?['"]((?:\.\.?\/|\/)[^'"]*)['"]/g;
+    const importPattern =
+      /import\s+(?:[^'"]*\s+from\s+)?['"]((?:\.\.?\/|\/)[^'"]*)['"]/g;
 
     let match;
     while ((match = importPattern.exec(content)) !== null) {
@@ -182,7 +221,11 @@ function parseTemplateImportsForDefinition(filePath: string, fs: any, path: any)
           }
 
           // Try TypeScript path resolution
-          const tsResolvedPath = resolveTsPath(importPath, tsconfig, projectRoot, path);
+          const tsResolvedPath = resolveTsPath(
+            importPath,
+            tsconfig,
+            projectRoot
+          );
 
           if (tsResolvedPath) {
             fullImportPath = tsResolvedPath;
@@ -235,7 +278,9 @@ function parseTemplateImportsForDefinition(filePath: string, fs: any, path: any)
         const templatePattern = /Template\.([a-zA-Z_$][a-zA-Z0-9_$]*)/g;
         let templateMatch;
 
-        while ((templateMatch = templatePattern.exec(importedFileContent)) !== null) {
+        while (
+          (templateMatch = templatePattern.exec(importedFileContent)) !== null
+        ) {
           const templateName = templateMatch[1];
           if (!templates.includes(templateName)) {
             templates.push(templateName);
@@ -269,7 +314,10 @@ function parseTemplateImportsForDefinition(filePath: string, fs: any, path: any)
 
     return templates;
   } catch (error) {
-    console.error(`Error parsing template imports for definition from ${filePath}:`, error);
+    console.error(
+      `Error parsing template imports for definition from ${filePath}:`,
+      error
+    );
     return [];
   }
 }
@@ -277,9 +325,7 @@ function parseTemplateImportsForDefinition(filePath: string, fs: any, path: any)
 // Helper function to find the imported template file for definition
 function findImportedTemplateFileForDefinition(
   templateName: string,
-  associatedFile: string,
-  fs: any,
-  path: any
+  associatedFile: string
 ): { file: string; content: string } | null {
   try {
     const content = fs.readFileSync(associatedFile, 'utf8');
@@ -320,13 +366,12 @@ function findImportedTemplateFileForDefinition(
         fullImportPath = path.resolve(associatedDir, importPath);
       }
 
-      // Try to find template.html in the import directory
-      let templateHtmlPath;
-
       // For imports like './nestedTemplate/nestedTemplate' or '/imports/ui/template2/nestedTemplate2/nestedTemplate2'
       // the template.html is in the nestedTemplate or nestedTemplate2 directory
       const importDir = path.dirname(fullImportPath);
-      templateHtmlPath = path.join(importDir, 'template.html');
+
+      // Try to find template.html in the import directory
+      const templateHtmlPath = path.join(importDir, 'template.html');
 
       try {
         if (fs.existsSync(templateHtmlPath)) {
@@ -356,7 +401,7 @@ function findImportedTemplateFileForDefinition(
 }
 
 // Helper function to find tsconfig.json in the same directory as .meteor (for definition)
-function findTsConfigForMeteorProject(startPath: string, fs: any, path: any): any {
+function findTsConfigForMeteorProject(startPath: string): TsConfig | null {
   let currentDir = startPath;
 
   // Walk up the directory tree to find .meteor directory
@@ -369,17 +414,28 @@ function findTsConfigForMeteorProject(startPath: string, fs: any, path: any): an
         try {
           const tsconfigContent = fs.readFileSync(tsconfigPath, 'utf8');
 
-          // Try parsing as-is first (in case it's valid JSON without comments)
+          // Try multiple parsing strategies
+          // Strategy 1: Parse as-is (valid JSON without comments)
           try {
             return JSON.parse(tsconfigContent);
           } catch {
-            // If that fails, try safer comment removal
-            const cleanContent = safelyRemoveJsonComments(tsconfigContent);
-            return JSON.parse(cleanContent);
+            // Strategy 2: Remove comments and try again
+            try {
+              const cleanContent = safelyRemoveJsonComments(tsconfigContent);
+              return JSON.parse(cleanContent);
+            } catch {
+              // Strategy 3: Remove comments AND trailing commas
+              try {
+                let cleaned = safelyRemoveJsonComments(tsconfigContent);
+                cleaned = cleaned.replace(/,(\s*[}\]])/g, '$1');
+                return JSON.parse(cleaned);
+              } catch {
+                // Silently fail - tsconfig is not critical
+                return null;
+              }
+            }
           }
-        } catch (e) {
-          console.error('Error parsing tsconfig.json:', e);
-          console.error('File path:', tsconfigPath);
+        } catch {
           return null;
         }
       }
@@ -397,14 +453,15 @@ function safelyRemoveJsonComments(content: string): string {
   let inString = false;
   let inLineComment = false;
   let inBlockComment = false;
+  let escapeNext = false;
   let i = 0;
 
   while (i < content.length) {
     const char = content[i];
     const nextChar = i + 1 < content.length ? content[i + 1] : '';
 
-    // Handle block comments
-    if (inBlockComment) {
+    // Handle block comments (not inside strings)
+    if (!inString && inBlockComment) {
       if (char === '*' && nextChar === '/') {
         inBlockComment = false;
         i += 2; // Skip the */
@@ -414,8 +471,8 @@ function safelyRemoveJsonComments(content: string): string {
       continue;
     }
 
-    // Handle line comments
-    if (inLineComment) {
+    // Handle line comments (not inside strings)
+    if (!inString && inLineComment) {
       if (char === '\n') {
         inLineComment = false;
         result.push(char); // Keep the newline
@@ -424,8 +481,24 @@ function safelyRemoveJsonComments(content: string): string {
       continue;
     }
 
-    // Handle strings (don't process comments inside strings)
-    if (char === '"' && (i === 0 || content[i - 1] !== '\\')) {
+    // Handle escape sequences in strings
+    if (inString && escapeNext) {
+      result.push(char);
+      escapeNext = false;
+      i++;
+      continue;
+    }
+
+    // Check for escape character in strings
+    if (inString && char === '\\') {
+      result.push(char);
+      escapeNext = true;
+      i++;
+      continue;
+    }
+
+    // Handle string delimiters
+    if (char === '"') {
       inString = !inString;
       result.push(char);
       i++;
@@ -455,9 +528,8 @@ function safelyRemoveJsonComments(content: string): string {
 // TypeScript path resolution function (for definition)
 function resolveTsPath(
   importPath: string,
-  tsconfig: any,
-  projectRoot: string,
-  path: any
+  tsconfig: TsConfig,
+  projectRoot: string
 ): string | null {
   if (!tsconfig?.compilerOptions?.paths) {
     return null;
@@ -467,7 +539,10 @@ function resolveTsPath(
   const basePath = path.resolve(projectRoot, baseUrl);
 
   // Try to match the import path against tsconfig paths
-  for (const [pattern, mappings] of Object.entries(paths) as [string, string[]][]) {
+  for (const [pattern, mappings] of Object.entries(paths) as [
+    string,
+    string[],
+  ][]) {
     // Convert glob pattern to regex
     const regexPattern = pattern
       .replace(/\*/g, '([^/]*)') // Replace * with capture group

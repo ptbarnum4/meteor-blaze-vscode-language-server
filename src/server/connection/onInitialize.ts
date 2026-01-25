@@ -1,10 +1,10 @@
 import {
   InitializeParams,
   InitializeResult,
-  TextDocumentSyncKind
-} from 'vscode-languageserver/node';
+  TextDocumentSyncKind,
+} from 'vscode-languageserver/node.js';
 
-import { CurrentConnectionConfig } from '/types';
+import { CurrentConnectionConfig } from '../../types';
 
 const onInitialize = (config: CurrentConnectionConfig) => {
   return (params: InitializeParams) => {
@@ -27,18 +27,24 @@ const onInitialize = (config: CurrentConnectionConfig) => {
         textDocumentSync: TextDocumentSyncKind.Incremental,
         completionProvider: {
           resolveProvider: true,
-          triggerCharacters: ['{', '"', "'", '.', ' ', '}']
+          triggerCharacters: ['{', '"', "'", '.', ' ', '}', '\n'],
         },
         hoverProvider: true,
-        definitionProvider: true
-      }
+        definitionProvider: true,
+        documentFormattingProvider: true,
+        documentRangeFormattingProvider: true,
+        documentOnTypeFormattingProvider: {
+          firstTriggerCharacter: '\n',
+          moreTriggerCharacter: ['}'],
+        },
+      },
     };
 
     if (config.hasWorkspaceFolderCapability) {
       result.capabilities.workspace = {
         workspaceFolders: {
-          supported: true
-        }
+          supported: true,
+        },
       };
     }
 

@@ -1,10 +1,18 @@
 import assert from 'assert';
 import { describe, it } from 'node:test';
 import { TextDocument } from 'vscode-languageserver-textdocument';
-import { InitializeParams, TextDocuments, TextDocumentSyncKind } from 'vscode-languageserver/node';
+import {
+  InitializeParams,
+  TextDocuments,
+  TextDocumentSyncKind,
+} from 'vscode-languageserver/node.js';
 
-import onInitialize from '../../../server/connection/onInitialize';
-import { CurrentConnectionConfig, LanguageServerSettings } from '../../../types';
+import onInitialize from '../../../server/connection/onInitialize.js';
+import {
+  CurrentConnectionConfig,
+  LanguageServerSettings,
+} from '../../../types/index.js';
+import Logger from '../../../utils/logger.js';
 
 /**
  * Test suite for onInitialize connection handler
@@ -14,27 +22,28 @@ describe('connection/onInitialize', () => {
 
   const createMockConnection = () => ({
     console: {
-      log: () => {} // Mock console log
-    }
+      log: () => {}, // Mock console log
+    },
   });
 
   const createMockConfig = (
     overrides?: Partial<CurrentConnectionConfig>
   ): CurrentConnectionConfig => ({
+    logger: new Logger(createMockConnection() as any),
     globalSettings: mockSettings,
     documentSettings: new Map(),
     fileAnalysis: {
       jsHelpers: new Map(),
       helperDetails: new Map(),
       cssClasses: new Map(),
-      templates: new Map()
+      templates: new Map(),
     },
     documents: new TextDocuments(TextDocument),
     connection: createMockConnection() as any,
     hasConfigurationCapability: false,
     hasWorkspaceFolderCapability: false,
     hasDiagnosticRelatedInformationCapability: false,
-    ...overrides
+    ...overrides,
   });
 
   it('should return initialize handler function', () => {
@@ -52,27 +61,29 @@ describe('connection/onInitialize', () => {
       rootUri: null,
       capabilities: {
         workspace: {},
-        textDocument: {}
-      }
+        textDocument: {},
+      },
     };
 
     const result = handler(params);
 
     assert.ok(result.capabilities, 'Should have capabilities');
-    assert.strictEqual(result.capabilities.textDocumentSync, TextDocumentSyncKind.Incremental);
-    assert.ok(result.capabilities.completionProvider, 'Should have completion provider');
+    assert.strictEqual(
+      result.capabilities.textDocumentSync,
+      TextDocumentSyncKind.Incremental
+    );
+    assert.ok(
+      result.capabilities.completionProvider,
+      'Should have completion provider'
+    );
     assert.ok(
       result.capabilities.completionProvider?.resolveProvider,
       'Should resolve completions'
     );
-    assert.deepStrictEqual(result.capabilities.completionProvider?.triggerCharacters, [
-      '{',
-      '"',
-      "'",
-      '.',
-      ' ',
-      '}'
-    ]);
+    assert.deepStrictEqual(
+      result.capabilities.completionProvider?.triggerCharacters,
+      ['{', '"', "'", '.', ' ', '}', '\n']
+    );
     assert.strictEqual(result.capabilities.hoverProvider, true);
     assert.strictEqual(result.capabilities.definitionProvider, true);
   });
@@ -86,10 +97,10 @@ describe('connection/onInitialize', () => {
       rootUri: null,
       capabilities: {
         workspace: {
-          configuration: true
+          configuration: true,
         },
-        textDocument: {}
-      }
+        textDocument: {},
+      },
     };
 
     handler(params);
@@ -106,10 +117,10 @@ describe('connection/onInitialize', () => {
       rootUri: null,
       capabilities: {
         workspace: {
-          workspaceFolders: true
+          workspaceFolders: true,
         },
-        textDocument: {}
-      }
+        textDocument: {},
+      },
     };
 
     const result = handler(params);
@@ -129,10 +140,10 @@ describe('connection/onInitialize', () => {
         workspace: {},
         textDocument: {
           publishDiagnostics: {
-            relatedInformation: true
-          }
-        }
-      }
+            relatedInformation: true,
+          },
+        },
+      },
     };
 
     handler(params);
@@ -147,7 +158,7 @@ describe('connection/onInitialize', () => {
     const params: InitializeParams = {
       processId: null,
       rootUri: null,
-      capabilities: {}
+      capabilities: {},
     };
 
     const result = handler(params);
@@ -168,14 +179,14 @@ describe('connection/onInitialize', () => {
       capabilities: {
         workspace: {
           configuration: true,
-          workspaceFolders: true
+          workspaceFolders: true,
         },
         textDocument: {
           publishDiagnostics: {
-            relatedInformation: true
-          }
-        }
-      }
+            relatedInformation: true,
+          },
+        },
+      },
     };
 
     const result = handler(params);

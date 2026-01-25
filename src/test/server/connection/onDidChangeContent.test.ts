@@ -1,10 +1,17 @@
 import assert from 'assert';
 import { describe, it } from 'node:test';
 import { TextDocument } from 'vscode-languageserver-textdocument';
-import { TextDocumentChangeEvent, TextDocuments } from 'vscode-languageserver/node';
+import {
+  TextDocumentChangeEvent,
+  TextDocuments,
+} from 'vscode-languageserver/node.js';
 
-import onDidChangeContent from '../../../server/connection/onDidChangeContent';
-import { CurrentConnectionConfig, LanguageServerSettings } from '../../../types';
+import onDidChangeContent from '../../../server/connection/onDidChangeContent.js';
+import {
+  CurrentConnectionConfig,
+  LanguageServerSettings,
+} from '../../../types/index.js';
+import Logger from '../../../utils/logger.js';
 
 /**
  * Test suite for onDidChangeContent connection handler
@@ -14,31 +21,32 @@ describe('connection/onDidChangeContent', () => {
 
   const createMockConnection = () => ({
     console: {
-      log: () => {} // Mock console log
+      log: () => {}, // Mock console log
     },
     sendDiagnostics: () => {}, // Mock sendDiagnostics
     workspace: {
-      getConfiguration: () => Promise.resolve(mockSettings)
-    }
+      getConfiguration: () => Promise.resolve(mockSettings),
+    },
   });
 
   const createMockConfig = (
     overrides?: Partial<CurrentConnectionConfig>
   ): CurrentConnectionConfig => ({
+    logger: new Logger(createMockConnection() as any),
     globalSettings: mockSettings,
     documentSettings: new Map(),
     fileAnalysis: {
       jsHelpers: new Map(),
       helperDetails: new Map(),
       cssClasses: new Map(),
-      templates: new Map()
+      templates: new Map(),
     },
     documents: new TextDocuments(TextDocument),
     connection: createMockConnection() as any,
     hasConfigurationCapability: false,
     hasWorkspaceFolderCapability: false,
     hasDiagnosticRelatedInformationCapability: false,
-    ...overrides
+    ...overrides,
   });
 
   it('should return change content handler function', () => {
@@ -52,10 +60,15 @@ describe('connection/onDidChangeContent', () => {
     const handler = onDidChangeContent(config);
 
     const content = '<template name="test"><div>{{helper}}</div></template>';
-    const document = TextDocument.create('file:///test.html', 'html', 1, content);
+    const document = TextDocument.create(
+      'file:///test.html',
+      'html',
+      1,
+      content
+    );
 
     const changeEvent: TextDocumentChangeEvent<TextDocument> = {
-      document
+      document,
     };
 
     // Should not throw when processing the change
@@ -69,10 +82,15 @@ describe('connection/onDidChangeContent', () => {
     const handler = onDidChangeContent(config);
 
     const content = '<template name="test"><div>{{helper}}</div></template>';
-    const document = TextDocument.create('file:///test.hbs', 'handlebars', 1, content);
+    const document = TextDocument.create(
+      'file:///test.hbs',
+      'handlebars',
+      1,
+      content
+    );
 
     const changeEvent: TextDocumentChangeEvent<TextDocument> = {
-      document
+      document,
     };
 
     // Should not throw when processing the change
@@ -86,10 +104,15 @@ describe('connection/onDidChangeContent', () => {
     const handler = onDidChangeContent(config);
 
     const content = '<div>Regular HTML content</div>';
-    const document = TextDocument.create('file:///test.html', 'html', 1, content);
+    const document = TextDocument.create(
+      'file:///test.html',
+      'html',
+      1,
+      content
+    );
 
     const changeEvent: TextDocumentChangeEvent<TextDocument> = {
-      document
+      document,
     };
 
     // Should not throw even without templates
@@ -107,10 +130,15 @@ describe('connection/onDidChangeContent', () => {
         <div>{{helper}}</div>
       </template>
     `;
-    const document = TextDocument.create('file:///test.html', 'html', 1, content);
+    const document = TextDocument.create(
+      'file:///test.html',
+      'html',
+      1,
+      content
+    );
 
     const changeEvent: TextDocumentChangeEvent<TextDocument> = {
-      document
+      document,
     };
 
     // Should process templates without throwing
@@ -124,10 +152,15 @@ describe('connection/onDidChangeContent', () => {
     const handler = onDidChangeContent(config);
 
     const content = '';
-    const document = TextDocument.create('file:///test.html', 'html', 1, content);
+    const document = TextDocument.create(
+      'file:///test.html',
+      'html',
+      1,
+      content
+    );
 
     const changeEvent: TextDocumentChangeEvent<TextDocument> = {
-      document
+      document,
     };
 
     // Should handle empty content
@@ -147,10 +180,15 @@ describe('connection/onDidChangeContent', () => {
         }
       });
     `;
-    const document = TextDocument.create('file:///test.js', 'javascript', 1, content);
+    const document = TextDocument.create(
+      'file:///test.js',
+      'javascript',
+      1,
+      content
+    );
 
     const changeEvent: TextDocumentChangeEvent<TextDocument> = {
-      document
+      document,
     };
 
     // Should handle JS files (though they're not HTML/handlebars)
@@ -170,10 +208,15 @@ describe('connection/onDidChangeContent', () => {
         }
       });
     `;
-    const document = TextDocument.create('file:///test.ts', 'typescript', 1, content);
+    const document = TextDocument.create(
+      'file:///test.ts',
+      'typescript',
+      1,
+      content
+    );
 
     const changeEvent: TextDocumentChangeEvent<TextDocument> = {
-      document
+      document,
     };
 
     // Should handle TS files
@@ -193,7 +236,7 @@ describe('connection/onDidChangeContent', () => {
     const document = TextDocument.create('file:///test.css', 'css', 1, content);
 
     const changeEvent: TextDocumentChangeEvent<TextDocument> = {
-      document
+      document,
     };
 
     // Should handle CSS files
@@ -207,10 +250,15 @@ describe('connection/onDidChangeContent', () => {
     const handler = onDidChangeContent(config);
 
     const content = '<template name="test"><div>{{unclosed handlebars</div>';
-    const document = TextDocument.create('file:///test.html', 'html', 1, content);
+    const document = TextDocument.create(
+      'file:///test.html',
+      'html',
+      1,
+      content
+    );
 
     const changeEvent: TextDocumentChangeEvent<TextDocument> = {
-      document
+      document,
     };
 
     // Should handle malformed content gracefully
@@ -224,12 +272,18 @@ describe('connection/onDidChangeContent', () => {
     const handler = onDidChangeContent(config);
 
     // Create a large document
-    const templateContent = '<template name="test"><div>{{helper}}</div></template>';
+    const templateContent =
+      '<template name="test"><div>{{helper}}</div></template>';
     const content = templateContent.repeat(1000);
-    const document = TextDocument.create('file:///test.html', 'html', 1, content);
+    const document = TextDocument.create(
+      'file:///test.html',
+      'html',
+      1,
+      content
+    );
 
     const changeEvent: TextDocumentChangeEvent<TextDocument> = {
-      document
+      document,
     };
 
     // Should handle large documents
@@ -246,10 +300,15 @@ describe('connection/onDidChangeContent', () => {
     const handler = onDidChangeContent(config);
 
     const content = '<template name="test"><div>{{helper}}</div></template>';
-    const document = TextDocument.create('file:///test.html', 'html', 1, content);
+    const document = TextDocument.create(
+      'file:///test.html',
+      'html',
+      1,
+      content
+    );
 
     const changeEvent: TextDocumentChangeEvent<TextDocument> = {
-      document
+      document,
     };
 
     // The fact that this doesn't throw indicates the functions are called

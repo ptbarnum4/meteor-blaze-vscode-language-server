@@ -8,10 +8,14 @@ import vscode from 'vscode';
 export const checkHasAnyConfigsSet = (): boolean => {
   try {
     const editorConfig = vscode.workspace.getConfiguration('editor');
-    const meteorConfig = vscode.workspace.getConfiguration('meteorLanguageServer');
+    const meteorConfig = vscode.workspace.getConfiguration(
+      'meteorLanguageServer'
+    );
 
     // Check for semantic token color customizations
-    const semanticTokenRules = editorConfig.get('semanticTokenColorCustomizations.rules');
+    const semanticTokenRules = editorConfig.get(
+      'semanticTokenColorCustomizations.rules'
+    );
     const hasSemanticTokenRules =
       semanticTokenRules &&
       typeof semanticTokenRules === 'object' &&
@@ -27,12 +31,17 @@ export const checkHasAnyConfigsSet = (): boolean => {
     const blockConditionsConfig = meteorConfig.get('blockConditions') ?? {};
     const blazeHelpersConfig = meteorConfig.has('blazeHelpers') ?? {};
 
-    const hasBlockConditionsConfig = !!Object.keys(blockConditionsConfig).length;
+    const hasBlockConditionsConfig = !!Object.keys(blockConditionsConfig)
+      .length;
 
     const hasBlazeHelpersConfig = !!Object.keys(blazeHelpersConfig).length;
 
     // Return true if any of the configurations are set
-    return !!hasSemanticTokenRules || hasBlockConditionsConfig || hasBlazeHelpersConfig;
+    return (
+      !!hasSemanticTokenRules ||
+      hasBlockConditionsConfig ||
+      hasBlazeHelpersConfig
+    );
   } catch (error) {
     console.error('Error checking configurations:', error);
     return false; // If we can't read configs, assume no configs are set
@@ -42,20 +51,25 @@ export const checkHasAnyConfigsSet = (): boolean => {
 const LINKS = {
   CONFIGURATION: {
     text: 'Open Configuration Guide',
-    url: 'https://github.com/ptbarnum4/meteor-blaze-vscode-language-server/blob/main/docs/SETUP.md'
-  }
+    url: 'https://github.com/ptbarnum4/meteor-blaze-vscode-language-server/blob/main/docs/SETUP.md',
+  },
 };
 
-const getLinkByName = (name: keyof typeof LINKS): { text: string; url: string } | undefined => {
+const getLinkByName = (
+  name: keyof typeof LINKS
+): { text: string; url: string } | undefined => {
   return LINKS[name] || undefined;
 };
-const getLinkByText = (text: string): { text: string; url: string } | undefined => {
-  return Object.values(LINKS).find(link => link.text === text);
+const getLinkByText = (
+  text: string
+): { text: string; url: string } | undefined => {
+  return Object.values(LINKS).find((link) => link.text === text);
 };
 
 const openExternalLink = (urlNameOrText: string) => {
   const linkInfo =
-    getLinkByName(urlNameOrText as keyof typeof LINKS) || getLinkByText(urlNameOrText);
+    getLinkByName(urlNameOrText as keyof typeof LINKS) ||
+    getLinkByText(urlNameOrText);
   if (!linkInfo || !linkInfo.url) {
     console.error(`No URL found for ${urlNameOrText}`);
     return;

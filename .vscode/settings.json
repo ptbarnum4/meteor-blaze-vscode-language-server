@@ -12,5 +12,11 @@
   "typescript.tsc.autoDetect": "off",
   "editor.codeActionsOnSave": {
     "source.organizeImports": "explicit"
+  },
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.formatOnSave": true,
+  "cSpell.words": ["prettierc"],
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
   }
 }

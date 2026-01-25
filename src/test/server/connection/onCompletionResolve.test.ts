@@ -1,10 +1,18 @@
 import assert from 'assert';
 import { describe, it } from 'node:test';
 import { TextDocument } from 'vscode-languageserver-textdocument';
-import { CompletionItem, CompletionItemKind, TextDocuments } from 'vscode-languageserver/node';
+import {
+  CompletionItem,
+  CompletionItemKind,
+  TextDocuments,
+} from 'vscode-languageserver/node.js';
 
-import onCompletionResolve from '../../../server/connection/onCompletionResolve';
-import { CurrentConnectionConfig, LanguageServerSettings } from '../../../types';
+import onCompletionResolve from '../../../server/connection/onCompletionResolve.js';
+import {
+  CurrentConnectionConfig,
+  LanguageServerSettings,
+} from '../../../types/index.js';
+import Logger from '../../../utils/logger.js';
 
 /**
  * Test suite for onCompletionResolve connection handler
@@ -14,27 +22,28 @@ describe('connection/onCompletionResolve', () => {
 
   const createMockConnection = () => ({
     console: {
-      log: () => {} // Mock console log
-    }
+      log: () => {}, // Mock console log
+    },
   });
 
   const createMockConfig = (
     overrides?: Partial<CurrentConnectionConfig>
   ): CurrentConnectionConfig => ({
+    logger: new Logger(createMockConnection() as any),
     globalSettings: mockSettings,
     documentSettings: new Map(),
     fileAnalysis: {
       jsHelpers: new Map(),
       helperDetails: new Map(),
       cssClasses: new Map(),
-      templates: new Map()
+      templates: new Map(),
     },
     documents: new TextDocuments(TextDocument),
     connection: createMockConnection() as any,
     hasConfigurationCapability: false,
     hasWorkspaceFolderCapability: false,
     hasDiagnosticRelatedInformationCapability: false,
-    ...overrides
+    ...overrides,
   });
 
   it('should return completion resolve handler function', () => {
@@ -51,7 +60,7 @@ describe('connection/onCompletionResolve', () => {
       label: 'testHelper',
       kind: CompletionItemKind.Function,
       detail: 'Test helper function',
-      documentation: 'This is a test helper'
+      documentation: 'This is a test helper',
     };
 
     const result = handler(completionItem);
@@ -69,7 +78,7 @@ describe('connection/onCompletionResolve', () => {
     const handler = onCompletionResolve(config);
 
     const completionItem: CompletionItem = {
-      label: 'simpleHelper'
+      label: 'simpleHelper',
     };
 
     const result = handler(completionItem);
@@ -88,7 +97,8 @@ describe('connection/onCompletionResolve', () => {
       detail: 'Complex helper function',
       documentation: {
         kind: 'markdown',
-        value: '# Complex Helper\n\nThis is a complex helper with markdown documentation.'
+        value:
+          '# Complex Helper\n\nThis is a complex helper with markdown documentation.',
       },
       sortText: '0001',
       filterText: 'complexHelper',
@@ -97,9 +107,9 @@ describe('connection/onCompletionResolve', () => {
       additionalTextEdits: [],
       command: {
         title: 'Test Command',
-        command: 'test.command'
+        command: 'test.command',
       },
-      data: { customData: 'test' }
+      data: { customData: 'test' },
     };
 
     const result = handler(completionItem);
@@ -111,7 +121,8 @@ describe('connection/onCompletionResolve', () => {
     assert.strictEqual(result.detail, 'Complex helper function');
     assert.deepStrictEqual(result.documentation, {
       kind: 'markdown',
-      value: '# Complex Helper\n\nThis is a complex helper with markdown documentation.'
+      value:
+        '# Complex Helper\n\nThis is a complex helper with markdown documentation.',
     });
     assert.strictEqual(result.sortText, '0001');
     assert.strictEqual(result.filterText, 'complexHelper');
@@ -120,7 +131,7 @@ describe('connection/onCompletionResolve', () => {
     assert.deepStrictEqual(result.additionalTextEdits, []);
     assert.deepStrictEqual(result.command, {
       title: 'Test Command',
-      command: 'test.command'
+      command: 'test.command',
     });
     assert.deepStrictEqual(result.data, { customData: 'test' });
   });
@@ -135,13 +146,13 @@ describe('connection/onCompletionResolve', () => {
       CompletionItemKind.Class,
       CompletionItemKind.Method,
       CompletionItemKind.Property,
-      CompletionItemKind.Keyword
+      CompletionItemKind.Keyword,
     ];
 
     kinds.forEach((kind, index) => {
       const completionItem: CompletionItem = {
         label: `item${index}`,
-        kind: kind
+        kind: kind,
       };
 
       const result = handler(completionItem);
@@ -159,7 +170,7 @@ describe('connection/onCompletionResolve', () => {
       label: 'testHelper',
       kind: undefined,
       detail: undefined,
-      documentation: undefined
+      documentation: undefined,
     };
 
     const result = handler(completionItem);
@@ -181,8 +192,8 @@ describe('connection/onCompletionResolve', () => {
         type: 'meteor-helper',
         templateName: 'myTemplate',
         filePath: '/path/to/file.js',
-        customProperty: { nested: { value: 'test' } }
-      }
+        customProperty: { nested: { value: 'test' } },
+      },
     };
 
     const result = handler(completionItem);
@@ -192,7 +203,7 @@ describe('connection/onCompletionResolve', () => {
       type: 'meteor-helper',
       templateName: 'myTemplate',
       filePath: '/path/to/file.js',
-      customProperty: { nested: { value: 'test' } }
+      customProperty: { nested: { value: 'test' } },
     });
   });
 
@@ -211,15 +222,15 @@ describe('connection/onCompletionResolve', () => {
     const configs = [
       createMockConfig({ hasConfigurationCapability: true }),
       createMockConfig({ hasWorkspaceFolderCapability: true }),
-      createMockConfig({ hasDiagnosticRelatedInformationCapability: true })
+      createMockConfig({ hasDiagnosticRelatedInformationCapability: true }),
     ];
 
-    configs.forEach(config => {
+    configs.forEach((config) => {
       const handler = onCompletionResolve(config);
 
       const completionItem: CompletionItem = {
         label: 'testHelper',
-        kind: CompletionItemKind.Function
+        kind: CompletionItemKind.Function,
       };
 
       const result = handler(completionItem);

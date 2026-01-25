@@ -1,5 +1,5 @@
 import { TextDocument } from 'vscode-languageserver-textdocument';
-import { Position, Range } from 'vscode-languageserver/node';
+import { Position, Range } from 'vscode-languageserver/node.js';
 
 export const getWordRangeAtPosition = (
   document: TextDocument,
@@ -28,6 +28,6 @@ export const getWordRangeAtPosition = (
 
   return {
     start: document.positionAt(start),
-    end: document.positionAt(end)
+    end: document.positionAt(end),
   };
 };

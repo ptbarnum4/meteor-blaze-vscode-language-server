@@ -1,16 +1,19 @@
 import path from 'path';
 
-import { DefinitionParams, Location } from 'vscode-languageserver/node';
+import { DefinitionParams, Location } from 'vscode-languageserver/node.js';
 
 import { CurrentConnectionConfig } from '../../../types';
-import { analyzeGlobalHelpers, mergeConfiguredHelpers } from '../../helpers/analyzeGlobalHelpers';
-import { containsMeteorTemplates } from '../../helpers/containsMeteorTemplates';
-import { findEnclosingEachInContext } from '../../helpers/findEnclosingEachInContext';
-import getDocumentSettings from '../../helpers/getDocumentSettings';
-import { getWordRangeAtPosition } from '../../helpers/getWordRangeAtPosition';
-import { isWithinComment } from '../../helpers/isWithinComment';
-import { isWithinHandlebarsExpression } from '../../helpers/isWithinHandlebarsExpression';
-import handleTemplateInclusionDefinition from './handleTemplateInclusionDefinition';
+import {
+  analyzeGlobalHelpers,
+  mergeConfiguredHelpers,
+} from '../../helpers/analyzeGlobalHelpers.js';
+import { containsMeteorTemplates } from '../../helpers/containsMeteorTemplates.js';
+import { findEnclosingEachInContext } from '../../helpers/findEnclosingEachInContext.js';
+import getDocumentSettings from '../../helpers/getDocumentSettings.js';
+import { getWordRangeAtPosition } from '../../helpers/getWordRangeAtPosition.js';
+import { isWithinComment } from '../../helpers/isWithinComment.js';
+import { isWithinHandlebarsExpression } from '../../helpers/isWithinHandlebarsExpression.js';
+import handleTemplateInclusionDefinition from './handleTemplateInclusionDefinition.js';
 
 const onDefinition = (config: CurrentConnectionConfig) => {
   const { connection, documents } = config;
@@ -83,19 +86,32 @@ const onDefinition = (config: CurrentConnectionConfig) => {
       offset,
       word,
       dir,
-      connection
+      document.uri,
+      connection,
+      config
     );
     if (templateInclusionResult) {
       return templateInclusionResult;
     }
 
     // Look for this helper or data property in analyzed files using directory-specific keys
-    const dirLookupKeys = [`${dir}/${currentTemplateName}`, `${dir}/${baseName}`].filter(Boolean);
+    const dirLookupKeys = [
+      `${dir}/${currentTemplateName}`,
+      `${dir}/${baseName}`,
+    ].filter(Boolean);
 
     for (const key of dirLookupKeys) {
       const helpers = config.fileAnalysis.jsHelpers.get(key as string);
-      const dataProps = config.fileAnalysis.dataProperties?.get(key as string) || [];
-      if (helpers && helpers.includes(word)) {
+      const dataProps =
+        config.fileAnalysis.dataProperties?.get(key as string) || [];
+
+      // If clicking on alias in #each, redirect to source helper
+      let searchWord = word;
+      if (eachCtx && eachCtx.alias === word) {
+        searchWord = eachCtx.source;
+      }
+
+      if (helpers && helpers.includes(searchWord)) {
         try {
           // Extract filename from directory-specific key
           const keyParts = key.split('/');
@@ -108,7 +124,7 @@ const onDefinition = (config: CurrentConnectionConfig) => {
             path.join(dir, `${currentTemplateName}.js`),
             path.join(dir, `${currentTemplateName}.ts`),
             path.join(dir, `${baseName}.js`),
-            path.join(dir, `${baseName}.ts`)
+            path.join(dir, `${baseName}.ts`),
           ];
 
           for (const file of possibleFiles) {
@@ -121,7 +137,7 @@ const onDefinition = (config: CurrentConnectionConfig) => {
                 const line = lines[i];
                 // Updated regex to handle TypeScript method syntax with parameters: methodName(params): ReturnType
                 const helperRegex = new RegExp(
-                  `\\b${word}\\s*(?:[:=]\\s*(?:function\\s*\\(|\\([^)]*\\)\\s*=>|\\([^)]*\\)\\s*\\{)|\\([^)]*\\)\\s*(?::\\s*[^{]+)?\\s*\\{)`
+                  `\\b${searchWord}\\s*(?:[:=]\\s*(?:function\\s*\\(|\\([^)]*\\)\\s*=>|\\([^)]*\\)\\s*\\{)|\\([^)]*\\)\\s*(?::\\s*[^{]+)?\\s*\\{)`
                 );
                 const match = helperRegex.exec(line);
                 if (match) {
@@ -130,9 +146,12 @@ const onDefinition = (config: CurrentConnectionConfig) => {
                       uri: `file://${file}`,
                       range: {
                         start: { line: i, character: match.index || 0 },
-                        end: { line: i, character: (match.index || 0) + word.length }
-                      }
-                    }
+                        end: {
+                          line: i,
+                          character: (match.index || 0) + searchWord.length,
+                        },
+                      },
+                    },
                   ];
                 }
               }
@@ -165,7 +184,7 @@ const onDefinition = (config: CurrentConnectionConfig) => {
                 path.join(dir, `${currentTemplateName}.js`),
                 path.join(dir, `${currentTemplateName}.ts`),
                 path.join(dir, `${baseName}.js`),
-                path.join(dir, `${baseName}.ts`)
+                path.join(dir, `${baseName}.ts`),
               ];
 
               for (const file of possibleFiles) {
@@ -187,17 +206,20 @@ const onDefinition = (config: CurrentConnectionConfig) => {
                             start: { line: i, character: match.index || 0 },
                             end: {
                               line: i,
-                              character: (match.index || 0) + sourceHelperName.length
-                            }
-                          }
-                        }
+                              character:
+                                (match.index || 0) + sourceHelperName.length,
+                            },
+                          },
+                        },
                       ];
                     }
                   }
                 }
               }
             } catch (error) {
-              connection.console.error(`Error finding helper definition for alias: ${error}`);
+              connection.console.error(
+                `Error finding helper definition for alias: ${error}`
+              );
             }
           }
         }
@@ -212,10 +234,12 @@ const onDefinition = (config: CurrentConnectionConfig) => {
             path.join(dir, `${currentTemplateName}.ts`),
             path.join(dir, `${currentTemplateName}.js`),
             path.join(dir, `${baseName}.ts`),
-            path.join(dir, `${baseName}.js`)
+            path.join(dir, `${baseName}.js`),
           ];
 
-          const typeName = config.fileAnalysis.dataTypeByKey?.get(key as string);
+          const typeName = config.fileAnalysis.dataTypeByKey?.get(
+            key as string
+          );
 
           // If we're on the alias in an each-in block, redirect to the element type of the source list
           let targetPropName = word;
@@ -233,9 +257,18 @@ const onDefinition = (config: CurrentConnectionConfig) => {
           };
 
           // Search a specific type/interface block for property
-          const findPropInNamedType = (content: string, tName: string): { idx: number } | null => {
-            const typeRe = new RegExp(`type\\s+${tName}\\s*=\\s*\\{([\\s\\S]*?)\\}`, 'g');
-            const ifaceRe = new RegExp(`interface\\s+${tName}\\s*\\{([\\s\\S]*?)\\}`, 'g');
+          const findPropInNamedType = (
+            content: string,
+            tName: string
+          ): { idx: number } | null => {
+            const typeRe = new RegExp(
+              `type\\s+${tName}\\s*=\\s*\\{([\\s\\S]*?)\\}`,
+              'g'
+            );
+            const ifaceRe = new RegExp(
+              `interface\\s+${tName}\\s*\\{([\\s\\S]*?)\\}`,
+              'g'
+            );
             let m = typeRe.exec(content);
             if (!m) {
               m = ifaceRe.exec(content);
@@ -255,7 +288,9 @@ const onDefinition = (config: CurrentConnectionConfig) => {
           };
 
           // Search any type/interface block for property
-          const findPropInAnyType = (content: string): { idx: number } | null => {
+          const findPropInAnyType = (
+            content: string
+          ): { idx: number } | null => {
             const anyTypeRe =
               /(type\s+\w+\s*=\s*\{([\s\S]*?)\})|(interface\s+\w+\s*\{([\s\S]*?)\})/g;
             let m;
@@ -273,8 +308,12 @@ const onDefinition = (config: CurrentConnectionConfig) => {
           };
 
           // Search JSDoc typedef blocks
-          const findPropInTypedef = (content: string, tName?: string): { idx: number } | null => {
-            const tdRe = /\/\*\*[\s\S]*?@typedef\s+\{Object\}\s+(\w+)[\s\S]*?\*\//g;
+          const findPropInTypedef = (
+            content: string,
+            tName?: string
+          ): { idx: number } | null => {
+            const tdRe =
+              /\/\*\*[\s\S]*?@typedef\s+\{Object\}\s+(\w+)[\s\S]*?\*\//g;
             let m;
             while ((m = tdRe.exec(content)) !== null) {
               const foundName = m[1];
@@ -282,7 +321,9 @@ const onDefinition = (config: CurrentConnectionConfig) => {
                 continue;
               }
               const block = m[0];
-              const propRe = new RegExp(`@property\\s+\\{[^}]+\\}\\s+${targetPropName}\\b`);
+              const propRe = new RegExp(
+                `@property\\s+\\{[^}]+\\}\\s+${targetPropName}\\b`
+              );
               const pm = propRe.exec(block);
               if (pm) {
                 const idx = (m.index || 0) + pm.index;
@@ -311,9 +352,12 @@ const onDefinition = (config: CurrentConnectionConfig) => {
                     uri: `file://${file}`,
                     range: {
                       start: { line, character },
-                      end: { line, character: character + targetPropName.length }
-                    }
-                  }
+                      end: {
+                        line,
+                        character: character + targetPropName.length,
+                      },
+                    },
+                  },
                 ];
               }
 
@@ -326,15 +370,19 @@ const onDefinition = (config: CurrentConnectionConfig) => {
                     uri: `file://${file}`,
                     range: {
                       start: { line, character },
-                      end: { line, character: character + targetPropName.length }
-                    }
-                  }
+                      end: {
+                        line,
+                        character: character + targetPropName.length,
+                      },
+                    },
+                  },
                 ];
               }
             }
 
             // If we don't know the type, search any type/interface
-            const inAny = findPropInAnyType(content) || findPropInTypedef(content);
+            const inAny =
+              findPropInAnyType(content) || findPropInTypedef(content);
             if (inAny) {
               const { line, character } = toLineChar(content, inAny.idx);
               return [
@@ -342,9 +390,9 @@ const onDefinition = (config: CurrentConnectionConfig) => {
                   uri: `file://${file}`,
                   range: {
                     start: { line, character },
-                    end: { line, character: character + targetPropName.length }
-                  }
-                }
+                    end: { line, character: character + targetPropName.length },
+                  },
+                },
               ];
             }
 
@@ -361,15 +409,17 @@ const onDefinition = (config: CurrentConnectionConfig) => {
                     uri: `file://${file}`,
                     range: {
                       start: { line, character },
-                      end: { line, character: character + typeName.length }
-                    }
-                  }
+                      end: { line, character: character + typeName.length },
+                    },
+                  },
                 ];
               }
             }
           }
         } catch (error) {
-          connection.console.error(`Error finding data property definition: ${error}`);
+          connection.console.error(
+            `Error finding data property definition: ${error}`
+          );
         }
       }
     }
@@ -397,7 +447,10 @@ const onDefinition = (config: CurrentConnectionConfig) => {
         const packageJsonPath = path.join(workspaceRoot, 'package.json');
         const meteorPath = path.join(workspaceRoot, '.meteor');
 
-        if (require('fs').existsSync(packageJsonPath) || require('fs').existsSync(meteorPath)) {
+        if (
+          require('fs').existsSync(packageJsonPath) ||
+          require('fs').existsSync(meteorPath)
+        ) {
           break;
         }
 
@@ -413,7 +466,10 @@ const onDefinition = (config: CurrentConnectionConfig) => {
 
         // Add timeout to prevent hanging during tests or large projects
         const timeoutPromise = new Promise<never>((_, reject) => {
-          setTimeout(() => reject(new Error('Global helpers analysis timed out')), 5000);
+          setTimeout(
+            () => reject(new Error('Global helpers analysis timed out')),
+            5000
+          );
         });
 
         // Get document settings to access configured global helpers
@@ -421,14 +477,17 @@ const onDefinition = (config: CurrentConnectionConfig) => {
 
         const detectedHelpers = await Promise.race([
           analyzeGlobalHelpers(workspaceRoot),
-          timeoutPromise
+          timeoutPromise,
         ]);
 
         // Merge configured helpers with detected helpers
-        const globalHelpersResult = mergeConfiguredHelpers(detectedHelpers, settings);
+        const globalHelpersResult = mergeConfiguredHelpers(
+          detectedHelpers,
+          settings
+        );
 
         const globalHelper = globalHelpersResult.helperDetails.find(
-          (helper: any) => helper.name === word
+          (helper) => helper.name === word
         );
         if (globalHelper) {
           // Skip definition for helpers configured in settings (they don't have a real file)
@@ -436,7 +495,10 @@ const onDefinition = (config: CurrentConnectionConfig) => {
             return null;
           }
           // Read the file and find the Template.registerHelper line
-          const content = require('fs').readFileSync(globalHelper.filePath, 'utf8');
+          const content = require('fs').readFileSync(
+            globalHelper.filePath,
+            'utf8'
+          );
           const lines = content.split('\n');
 
           for (let i = 0; i < lines.length; i++) {
@@ -455,29 +517,39 @@ const onDefinition = (config: CurrentConnectionConfig) => {
                     start: { line: i, character: singleLineMatch.index || 0 },
                     end: {
                       line: i,
-                      character: (singleLineMatch.index || 0) + singleLineMatch[0].length
-                    }
-                  }
-                }
+                      character:
+                        (singleLineMatch.index || 0) +
+                        singleLineMatch[0].length,
+                    },
+                  },
+                },
               ];
             }
 
             // Then try multiline pattern: Template.registerHelper(\n  'name',
-            const multiLineStart = /Template\.registerHelper\s*\(\s*$/.exec(line);
+            const multiLineStart = /Template\.registerHelper\s*\(\s*$/.exec(
+              line
+            );
             if (multiLineStart) {
               // Look for the helper name in the next few lines
               for (let j = i + 1; j < Math.min(i + 5, lines.length); j++) {
                 const nextLine = lines[j];
-                const nameMatch = new RegExp(`^\\s*['"\`]${word}['"\`]\\s*,?\\s*$`).exec(nextLine);
+                const nameMatch = new RegExp(
+                  `^\\s*['"\`]${word}['"\`]\\s*,?\\s*$`
+                ).exec(nextLine);
                 if (nameMatch) {
                   return [
                     {
                       uri: `file://${globalHelper.filePath}`,
                       range: {
                         start: { line: j, character: nameMatch.index || 0 },
-                        end: { line: j, character: (nameMatch.index || 0) + nameMatch[0].length }
-                      }
-                    }
+                        end: {
+                          line: j,
+                          character:
+                            (nameMatch.index || 0) + nameMatch[0].length,
+                        },
+                      },
+                    },
                   ];
                 }
               }
@@ -488,7 +560,9 @@ const onDefinition = (config: CurrentConnectionConfig) => {
         connection.console.error(`Error analyzing global helpers: ${error}`);
       }
     } catch (error) {
-      connection.console.error(`Error finding global helper definition: ${error}`);
+      connection.console.error(
+        `Error finding global helper definition: ${error}`
+      );
     }
 
     return null;

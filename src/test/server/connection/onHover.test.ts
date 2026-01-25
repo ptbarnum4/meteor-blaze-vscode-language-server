@@ -1,10 +1,18 @@
 import assert from 'assert';
 import { describe, it } from 'node:test';
 import { TextDocument } from 'vscode-languageserver-textdocument';
-import { Position, TextDocumentPositionParams, TextDocuments } from 'vscode-languageserver/node';
+import {
+  Position,
+  TextDocumentPositionParams,
+  TextDocuments,
+} from 'vscode-languageserver/node.js';
 
-import onHover from '../../../server/connection/onHover';
-import { CurrentConnectionConfig, LanguageServerSettings } from '../../../types';
+import onHover from '../../../server/connection/onHover.js';
+import {
+  CurrentConnectionConfig,
+  LanguageServerSettings,
+} from '../../../types/index.js';
+import Logger from '../../../utils/logger.js';
 
 /**
  * Test suite for onHover connection handler
@@ -14,27 +22,28 @@ describe('connection/onHover', () => {
 
   const createMockConnection = () => ({
     console: {
-      log: () => {} // Mock console log
-    }
+      log: () => {}, // Mock console log
+    },
   });
 
   const createMockConfig = (
     overrides?: Partial<CurrentConnectionConfig>
   ): CurrentConnectionConfig => ({
+    logger: new Logger(createMockConnection() as any),
     globalSettings: mockSettings,
     documentSettings: new Map(),
     fileAnalysis: {
       jsHelpers: new Map(),
       helperDetails: new Map(),
       cssClasses: new Map(),
-      templates: new Map()
+      templates: new Map(),
     },
     documents: new TextDocuments(TextDocument),
     connection: createMockConnection() as any,
     hasConfigurationCapability: false,
     hasWorkspaceFolderCapability: false,
     hasDiagnosticRelatedInformationCapability: false,
-    ...overrides
+    ...overrides,
   });
 
   it('should return hover handler function', () => {
@@ -49,7 +58,7 @@ describe('connection/onHover', () => {
 
     const params: TextDocumentPositionParams = {
       textDocument: { uri: 'file:///nonexistent.html' },
-      position: Position.create(0, 0)
+      position: Position.create(0, 0),
     };
 
     const result = await handler(params);
@@ -62,14 +71,19 @@ describe('connection/onHover', () => {
 
     // Create a document without templates
     const content = '<div>Regular HTML content</div>';
-    const document = TextDocument.create('file:///test.html', 'html', 1, content);
+    const document = TextDocument.create(
+      'file:///test.html',
+      'html',
+      1,
+      content
+    );
     documents.get = () => document;
 
     const handler = onHover(config);
 
     const params: TextDocumentPositionParams = {
       textDocument: { uri: 'file:///test.html' },
-      position: Position.create(0, 5)
+      position: Position.create(0, 5),
     };
 
     const result = await handler(params);
@@ -81,15 +95,21 @@ describe('connection/onHover', () => {
     const documents = config.documents;
 
     // Create a document with templates but cursor outside template
-    const content = '<div>Before</div><template name="test"><div>{{helper}}</div></template>';
-    const document = TextDocument.create('file:///test.html', 'html', 1, content);
+    const content =
+      '<div>Before</div><template name="test"><div>{{helper}}</div></template>';
+    const document = TextDocument.create(
+      'file:///test.html',
+      'html',
+      1,
+      content
+    );
     documents.get = () => document;
 
     const handler = onHover(config);
 
     const params: TextDocumentPositionParams = {
       textDocument: { uri: 'file:///test.html' },
-      position: Position.create(0, 10) // Position in 'Before' div
+      position: Position.create(0, 10), // Position in 'Before' div
     };
 
     const result = await handler(params);
@@ -102,14 +122,19 @@ describe('connection/onHover', () => {
 
     // Create a document with cursor on whitespace inside template
     const content = '<template name="test"><div>  </div></template>';
-    const document = TextDocument.create('file:///test.html', 'html', 1, content);
+    const document = TextDocument.create(
+      'file:///test.html',
+      'html',
+      1,
+      content
+    );
     documents.get = () => document;
 
     const handler = onHover(config);
 
     const params: TextDocumentPositionParams = {
       textDocument: { uri: 'file:///test.html' },
-      position: Position.create(0, 28) // Position on whitespace
+      position: Position.create(0, 28), // Position on whitespace
     };
 
     const result = await handler(params);
@@ -121,15 +146,21 @@ describe('connection/onHover', () => {
     const documents = config.documents;
 
     // Create a document with built-in helper
-    const content = '<template name="test"><div>{{#if condition}}</div></template>';
-    const document = TextDocument.create('file:///test.html', 'html', 1, content);
+    const content =
+      '<template name="test"><div>{{#if condition}}</div></template>';
+    const document = TextDocument.create(
+      'file:///test.html',
+      'html',
+      1,
+      content
+    );
     documents.get = () => document;
 
     const handler = onHover(config);
 
     const params: TextDocumentPositionParams = {
       textDocument: { uri: 'file:///test.html' },
-      position: Position.create(0, 29) // Position on '#if'
+      position: Position.create(0, 29), // Position on '#if'
     };
 
     const result = await handler(params);
@@ -147,8 +178,14 @@ describe('connection/onHover', () => {
     const documents = config.documents;
 
     // Create a document with custom helper
-    const content = '<template name="myTemplate"><div>{{customHelper}}</div></template>';
-    const document = TextDocument.create('file:///test.html', 'html', 1, content);
+    const content =
+      '<template name="myTemplate"><div>{{customHelper}}</div></template>';
+    const document = TextDocument.create(
+      'file:///test.html',
+      'html',
+      1,
+      content
+    );
     documents.get = () => document;
 
     // Add custom helper to file analysis using correct key format
@@ -159,15 +196,15 @@ describe('connection/onHover', () => {
         jsdoc: 'This is a custom helper that does something useful',
         returnType: 'string',
         parameters: 'value: number',
-        signature: 'customHelper(value: number): string'
-      }
+        signature: 'customHelper(value: number): string',
+      },
     ]);
 
     const handler = onHover(config);
 
     const params: TextDocumentPositionParams = {
       textDocument: { uri: 'file:///test.html' },
-      position: Position.create(0, 35) // Position on 'customHelper'
+      position: Position.create(0, 35), // Position on 'customHelper'
     };
 
     const result = await handler(params);
@@ -185,8 +222,14 @@ describe('connection/onHover', () => {
     const documents = config.documents;
 
     // Create a document with CSS class reference
-    const content = '<template name="test"><div class="{{btn}}"></div></template>';
-    const document = TextDocument.create('file:///test.html', 'html', 1, content);
+    const content =
+      '<template name="test"><div class="{{btn}}"></div></template>';
+    const document = TextDocument.create(
+      'file:///test.html',
+      'html',
+      1,
+      content
+    );
     documents.get = () => document;
 
     // Add CSS classes to file analysis
@@ -196,7 +239,7 @@ describe('connection/onHover', () => {
 
     const params: TextDocumentPositionParams = {
       textDocument: { uri: 'file:///test.html' },
-      position: Position.create(0, 37) // Position on 'btn'
+      position: Position.create(0, 37), // Position on 'btn'
     };
 
     const result = await handler(params);
@@ -213,8 +256,14 @@ describe('connection/onHover', () => {
     const documents = config.documents;
 
     // Create a document with template helper
-    const content = '<template name="myTemplate"><div>{{templateHelper}}</div></template>';
-    const document = TextDocument.create('file:///test.html', 'html', 1, content);
+    const content =
+      '<template name="myTemplate"><div>{{templateHelper}}</div></template>';
+    const document = TextDocument.create(
+      'file:///test.html',
+      'html',
+      1,
+      content
+    );
     documents.get = () => document;
 
     // Add template helper to file analysis
@@ -223,15 +272,15 @@ describe('connection/onHover', () => {
       {
         name: 'templateHelper',
         jsdoc: 'Template-specific helper function',
-        returnType: 'boolean'
-      }
+        returnType: 'boolean',
+      },
     ]);
 
     const handler = onHover(config);
 
     const params: TextDocumentPositionParams = {
       textDocument: { uri: 'file:///test.html' },
-      position: Position.create(0, 40) // Position on 'templateHelper'
+      position: Position.create(0, 40), // Position on 'templateHelper'
     };
 
     const result = await handler(params);
@@ -250,14 +299,19 @@ describe('connection/onHover', () => {
     // Create a document with @ prefixed helper (like @index in #each)
     const content =
       '<template name="test"><div>{{#each items}}{{@index}}{{/each}}</div></template>';
-    const document = TextDocument.create('file:///test.html', 'html', 1, content);
+    const document = TextDocument.create(
+      'file:///test.html',
+      'html',
+      1,
+      content
+    );
     documents.get = () => document;
 
     const handler = onHover(config);
 
     const params: TextDocumentPositionParams = {
       textDocument: { uri: 'file:///test.html' },
-      position: Position.create(0, 47) // Position on '@index'
+      position: Position.create(0, 47), // Position on '@index'
     };
 
     const result = await handler(params);
@@ -274,15 +328,21 @@ describe('connection/onHover', () => {
     const documents = config.documents;
 
     // Create a document with template inclusion syntax
-    const content = '<template name="test"><div>{{> nestedTemplate}}</div></template>';
-    const document = TextDocument.create('file:///test.html', 'html', 1, content);
+    const content =
+      '<template name="test"><div>{{> nestedTemplate}}</div></template>';
+    const document = TextDocument.create(
+      'file:///test.html',
+      'html',
+      1,
+      content
+    );
     documents.get = () => document;
 
     const handler = onHover(config);
 
     const params: TextDocumentPositionParams = {
       textDocument: { uri: 'file:///test.html' },
-      position: Position.create(0, 45) // Position on 'nestedTemplate'
+      position: Position.create(0, 45), // Position on 'nestedTemplate'
     };
 
     const result = await handler(params);

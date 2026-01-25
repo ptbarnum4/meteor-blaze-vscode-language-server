@@ -1,10 +1,17 @@
 import assert from 'assert';
 import { describe, it } from 'node:test';
 import { TextDocument } from 'vscode-languageserver-textdocument';
-import { TextDocumentChangeEvent, TextDocuments } from 'vscode-languageserver/node';
+import {
+  TextDocumentChangeEvent,
+  TextDocuments,
+} from 'vscode-languageserver/node.js';
 
-import onDidClose from '../../../server/connection/onDidClose';
-import { CurrentConnectionConfig, LanguageServerSettings } from '../../../types';
+import onDidClose from '../../../server/connection/onDidClose.js';
+import {
+  CurrentConnectionConfig,
+  LanguageServerSettings,
+} from '../../../types/index.js';
+import Logger from '../../../utils/logger.js';
 
 /**
  * Test suite for onDidClose connection handler
@@ -14,25 +21,28 @@ describe('connection/onDidClose', () => {
 
   const createMockConnection = () => ({
     console: {
-      log: () => {} // Mock console log
-    }
+      log: () => {}, // Mock console log
+    },
   });
 
-  const createMockConfig = (overrides?: Partial<CurrentConnectionConfig>): CurrentConnectionConfig => ({
+  const createMockConfig = (
+    overrides?: Partial<CurrentConnectionConfig>
+  ): CurrentConnectionConfig => ({
+    logger: new Logger(createMockConnection() as any),
     globalSettings: mockSettings,
     documentSettings: new Map(),
     fileAnalysis: {
       jsHelpers: new Map(),
       helperDetails: new Map(),
       cssClasses: new Map(),
-      templates: new Map()
+      templates: new Map(),
     },
     documents: new TextDocuments(TextDocument),
     connection: createMockConnection() as any,
     hasConfigurationCapability: false,
     hasWorkspaceFolderCapability: false,
     hasDiagnosticRelatedInformationCapability: false,
-    ...overrides
+    ...overrides,
   });
 
   it('should return close handler function', () => {
@@ -52,9 +62,14 @@ describe('connection/onDidClose', () => {
 
     const handler = onDidClose(config);
 
-    const document = TextDocument.create(documentUri, 'html', 1, '<div>test</div>');
+    const document = TextDocument.create(
+      documentUri,
+      'html',
+      1,
+      '<div>test</div>'
+    );
     const event: TextDocumentChangeEvent<TextDocument> = {
-      document
+      document,
     };
 
     handler(event);
@@ -73,9 +88,14 @@ describe('connection/onDidClose', () => {
 
     const handler = onDidClose(config);
 
-    const document = TextDocument.create(documentUri, 'html', 1, '<div>test</div>');
+    const document = TextDocument.create(
+      documentUri,
+      'html',
+      1,
+      '<div>test</div>'
+    );
     const event: TextDocumentChangeEvent<TextDocument> = {
-      document
+      document,
     };
 
     // Should not throw when trying to delete non-existent settings
@@ -98,9 +118,14 @@ describe('connection/onDidClose', () => {
 
     const handler = onDidClose(config);
 
-    const document1 = TextDocument.create(documentUri1, 'html', 1, '<div>test1</div>');
+    const document1 = TextDocument.create(
+      documentUri1,
+      'html',
+      1,
+      '<div>test1</div>'
+    );
     const event: TextDocumentChangeEvent<TextDocument> = {
-      document: document1
+      document: document1,
     };
 
     handler(event);
@@ -121,9 +146,14 @@ describe('connection/onDidClose', () => {
 
     const handler = onDidClose(config);
 
-    const document = TextDocument.create(documentUri, 'html', 1, '<div>test</div>');
+    const document = TextDocument.create(
+      documentUri,
+      'html',
+      1,
+      '<div>test</div>'
+    );
     const event: TextDocumentChangeEvent<TextDocument> = {
-      document
+      document,
     };
 
     // First close
@@ -146,11 +176,11 @@ describe('connection/onDidClose', () => {
       { uri: 'file:///test.hbs', languageId: 'handlebars' },
       { uri: 'file:///test.js', languageId: 'javascript' },
       { uri: 'file:///test.ts', languageId: 'typescript' },
-      { uri: 'file:///test.css', languageId: 'css' }
+      { uri: 'file:///test.css', languageId: 'css' },
     ];
 
     // Add settings for all documents
-    documents.forEach(doc => {
+    documents.forEach((doc) => {
       config.documentSettings.set(doc.uri, Promise.resolve(mockSettings));
     });
     assert.strictEqual(config.documentSettings.size, documents.length);
@@ -158,10 +188,15 @@ describe('connection/onDidClose', () => {
     const handler = onDidClose(config);
 
     // Close each document
-    documents.forEach(docInfo => {
-      const document = TextDocument.create(docInfo.uri, docInfo.languageId, 1, 'content');
+    documents.forEach((docInfo) => {
+      const document = TextDocument.create(
+        docInfo.uri,
+        docInfo.languageId,
+        1,
+        'content'
+      );
       const event: TextDocumentChangeEvent<TextDocument> = {
-        document
+        document,
       };
 
       assert.doesNotThrow(() => {
@@ -175,7 +210,8 @@ describe('connection/onDidClose', () => {
 
   it('should handle documents with complex URIs', () => {
     const config = createMockConfig();
-    const complexUri = 'file:///very/long/path/with/spaces%20and%20special%20chars/test.html';
+    const complexUri =
+      'file:///very/long/path/with/spaces%20and%20special%20chars/test.html';
 
     // Add settings for complex URI
     config.documentSettings.set(complexUri, Promise.resolve(mockSettings));
@@ -183,9 +219,14 @@ describe('connection/onDidClose', () => {
 
     const handler = onDidClose(config);
 
-    const document = TextDocument.create(complexUri, 'html', 1, '<div>test</div>');
+    const document = TextDocument.create(
+      complexUri,
+      'html',
+      1,
+      '<div>test</div>'
+    );
     const event: TextDocumentChangeEvent<TextDocument> = {
-      document
+      document,
     };
 
     handler(event);

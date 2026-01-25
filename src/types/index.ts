@@ -1,7 +1,8 @@
 import vscode from 'vscode';
 import { LanguageClient } from 'vscode-languageclient/node';
 import { TextDocument } from 'vscode-languageserver-textdocument';
-import { createConnection, TextDocuments } from 'vscode-languageserver/node';
+import { _Connection, TextDocuments } from 'vscode-languageserver/node';
+import Logger from '../utils/logger';
 /**
  * Represents information about a Meteor template.
  */
@@ -50,6 +51,8 @@ export type FileAnalysis = {
   dataTypeByKey?: Map<string, string>;
   /** Map of data property types by key (property -> type string). */
   dataPropertyTypesByKey?: Map<string, Record<string, string>>;
+  /** Map of data property JSDoc comments by key (property -> JSDoc string). */
+  dataPropertyJsDocsByKey?: Map<string, Record<string, string>>;
 };
 
 /**
@@ -108,6 +111,38 @@ export type GlobalHelperConfig = {
 export type LanguageServerSettings = {
   /** Maximum number of problems to report. */
   maxNumberOfProblems: number;
+  /** Automatically validate all template files in the workspace on startup. */
+  validateWorkspaceOnStartup?: boolean;
+  /** Trace communication between VS Code and the language server. */
+  trace?: {
+    server?: 'off' | 'messages' | 'verbose';
+  };
+  /** Settings for block condition hints and auto-insertion. */
+  blockConditions?: {
+    /** Enable inline condition hints for Blaze block helpers. */
+    enabled?: boolean;
+    /** Automatically insert closing tags when typing opening Blaze block tags. */
+    autoInsertEndTags?: boolean;
+    /** Color for inline condition hints (hex or theme color name). */
+    color?: string;
+    /** Font style for inline condition hints. */
+    fontStyle?: 'normal' | 'italic' | 'bold';
+    /** CSS margin for inline condition hints. */
+    margin?: string;
+    /** Extend block condition hints to custom block types. */
+    extend?: Array<{
+      /** Block type name. */
+      type: string;
+      /** Display label for the block. */
+      label: string;
+      /** Optional array of prop names for the block type. */
+      propNames?: string[];
+      /** Whether this block type requires an end tag for validation. */
+      requiresEndTag?: boolean;
+      /** Whether to automatically insert end tags for this custom block type. */
+      autoInsertEndTag?: boolean;
+    }>;
+  };
   /** Settings for global helpers. */
   globalHelpers?: {
     /** Array of custom global helper configurations. */
@@ -120,18 +155,52 @@ export type LanguageServerSettings = {
       name: string;
       doc: string;
     }>;
+    /** Custom color for the '#' in Blaze helpers (e.g., #if, #each). */
+    hashColor?: string;
+    /** Custom color for the helper name in Blaze helpers. */
+    nameColor?: string;
+    /** Custom color for the brackets '{{' and '}}' in Blaze helpers. */
+    bracketColor?: string;
+  };
+  /** Settings for formatting. */
+  formatting?: {
+    /** Whether formatting is enabled. */
+    enabled?: boolean;
+    /** Base formatter to chain with (e.g., 'vscode.html-language-features'). */
+    baseFormatter?: string | null;
+    /** Indent size for formatting. */
+    indentSize?: number;
+  };
+  /** Settings for template parameter completion. */
+  completion?: {
+    /** Suggest template parameter names when typing inside template invocations (left of =). */
+    suggestTemplateParams?: boolean;
+    /** Suggest template helpers and data properties as values when typing after = in template invocations. */
+    suggestTemplateValues?: boolean;
+    /** Minimum usage count to suggest parameters inferred from template usage patterns. */
+    parameterInferenceMinUsage?: number;
   };
 };
 
 /**
  * Represents the connection to the VS Code server.
  */
-export type VSCodeServerConnection = ReturnType<typeof createConnection>;
-
+// export type VSCodeServerConnection = ReturnType<typeof createConnection>;
+export type VSCodeServerConnection = _Connection<
+  unknown,
+  unknown,
+  unknown,
+  unknown,
+  unknown,
+  unknown,
+  unknown,
+  unknown
+>;
 /**
  * Represents the configuration for the current connection.
  */
 export type CurrentConnectionConfig = {
+  logger: Logger;
   /** Global settings for the language server. */
   globalSettings: LanguageServerSettings;
   /** Map of document-specific settings. */
@@ -173,4 +242,46 @@ export type GlobalHelperInfo = {
 export type AnalyzeGlobalHelpersResult = {
   helpers: string[];
   helperDetails: GlobalHelperInfo[];
+};
+
+/**
+ * Type-safe wrappers for Node.js fs module
+ */
+export type FileSystem = typeof import('fs');
+
+/**
+ * Type-safe wrappers for Node.js path module
+ */
+export type PathModule = typeof import('path');
+
+/**
+ * Represents a Blaze helper configuration that can be a string or object
+ */
+export type BlazeHelperConfig =
+  | string
+  | {
+      name: string;
+      doc?: string;
+      usage?: string;
+    };
+
+/**
+ * Represents parsed Blaze helper information
+ */
+export type BlazeHelperInfo = {
+  name: string;
+  doc: string;
+  usage: string;
+};
+
+/**
+ * TypeScript configuration object structure
+ */
+export type TsConfig = {
+  compilerOptions?: {
+    baseUrl?: string;
+    paths?: Record<string, string[]>;
+    [key: string]: unknown;
+  };
+  [key: string]: unknown;
 };

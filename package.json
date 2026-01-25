@@ -2,7 +2,7 @@
   "name": "meteor-blaze-vscode-language-server",
   "displayName": "Meteor/Blaze HTML Language Server",
   "description": "A language server for the Meteor framework providing syntax highlighting, diagnostics, and code completion",
-  "version": "0.0.11",
+  "version": "0.0.12",
   "publisher": "ptbarnum4",
   "author": "ptbarnum4",
   "license": "MIT",
@@ -57,27 +57,31 @@
     "publish:patch": "npm run clean-attrs && npm run package && npx @vscode/vsce publish patch",
     "publish:minor": "npm run clean-attrs && npm run package && npx @vscode/vsce publish minor",
     "publish:major": "npm run clean-attrs && npm run package && npx @vscode/vsce publish major",
-    "compile-tests": "tsc -p . --outDir out",
-    "watch-tests": "tsc -p . -w --outDir out",
-    "pretest": "npm run compile-tests && npm run compile && npm run lint",
+    "compile:tests": "node esbuild.js",
+    "watch-tests": "node esbuild.js --watch",
+    "compile:all": "npm run compile && npm run compile:tests",
+    "pretest": "npm run compile:tests && npm run lint",
     "check-types": "tsc --noEmit",
     "lint": "eslint src",
-    "test": "node --test out/test/server/**/*.test.js",
-    "test-manual": "node out/test/runTest.js"
+    "test": "node --enable-source-maps --test out/test/server/**/*.test.js",
+    "test-manual": "node --enable-source-maps out/test/runTest.js",
+    "prettier:check": "prettier --check \"src/**/*.ts\" \"src/test/**/*.ts\" \"*.json\""
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",
     "@types/mocha": "^10.0.1",
-    "@types/node": "^25.0.8",
+    "@types/node": "^25.0.10",
     "@types/vscode": "^1.108.1",
-    "@typescript-eslint/eslint-plugin": "^8.53.0",
-    "@typescript-eslint/parser": "^8.53.0",
     "@vscode/test-electron": "^2.5.2",
     "esbuild": "^0.27.2",
     "eslint": "^9.39.2",
+    "eslint-config-prettier": "^10.1.8",
     "mocha": "^11.7.5",
     "npm-run-all": "^4.1.5",
-    "typescript": "^5.9.3"
+    "prettier": "^3.8.1",
+    "source-map-support": "^0.5.21",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.53.1"
   },
   "dependencies": {
     "glob": "^13.0.0",
@@ -497,6 +501,65 @@
                   "name"
                 ]
               }
+            }
+          }
+        },
+        "meteorLanguageServer.formatting": {
+          "type": "object",
+          "default": {
+            "enabled": true,
+            "indentSize": 2,
+            "baseFormatter": null
+          },
+          "description": "Settings for automatic formatting of template invocations.",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": true,
+              "description": "Enable automatic formatting of multi-line template invocations"
+            },
+            "indentSize": {
+              "type": "number",
+              "default": 2,
+              "description": "Number of spaces for indentation in template invocations (applies when using spaces)"
+            },
+            "baseFormatter": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "default": null,
+              "description": "Base formatter to apply before Meteor-specific formatting. Example: 'vscode.html-language-features' to chain with VS Code's built-in HTML formatter. Set to null to disable.",
+              "examples": [
+                "vscode.html-language-features",
+                "esbenp.prettier-vscode"
+              ]
+            }
+          }
+        },
+        "meteorLanguageServer.completion": {
+          "type": "object",
+          "default": {
+            "suggestTemplateParams": true,
+            "suggestTemplateValues": true,
+            "parameterInferenceMinUsage": 2
+          },
+          "description": "Settings for template parameter completion.",
+          "properties": {
+            "suggestTemplateParams": {
+              "type": "boolean",
+              "default": true,
+              "description": "Suggest template parameter names when typing inside template invocations (left of =)"
+            },
+            "suggestTemplateValues": {
+              "type": "boolean",
+              "default": true,
+              "description": "Suggest template helpers and data properties as values when typing after = in template invocations"
+            },
+            "parameterInferenceMinUsage": {
+              "type": "number",
+              "default": 2,
+              "description": "Minimum usage count to suggest parameters inferred from template usage patterns"
             }
           }
         }

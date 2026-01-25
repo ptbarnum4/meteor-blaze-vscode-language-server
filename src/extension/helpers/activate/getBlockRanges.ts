@@ -17,7 +17,10 @@ const getBlockRanges = (text: string): { start: number; end: number }[] => {
     let endMatch;
     while ((endMatch = blockEndRegex.exec(text)) !== null) {
       if (endMatch[1] === blockType) {
-        blockRanges.push({ start: startIdx, end: endMatch.index + endMatch[0].length });
+        blockRanges.push({
+          start: startIdx,
+          end: endMatch.index + endMatch[0].length,
+        });
         break;
       }
     }

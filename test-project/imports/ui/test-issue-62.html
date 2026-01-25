@@ -1,0 +1,65 @@
+<template name="testParameterCompletion">
+  <div class="test-container">
+    {{! Test parameter completion - left side of = should show template parameters }}
+    {{> childTemplate
+      █
+    }}
+
+    {{! Test value completion - right side of = should show current template helpers/props }}
+    {{> childTemplate
+      childParam=█
+    }}
+
+    {{! Test multi-line formatting }}
+    {{> childTemplate childParam1=value1 childParam2=value2 childParam3=value3}}
+
+    {{! This should auto-format to multi-line }}
+    {{> anotherTemplate
+      param1=someValue
+        param2=anotherValue
+      param3={{helper}}
+    }}
+  </div>
+</template>
+
+<template name="childTemplate">
+  <div>
+    <p>{{childParam}}</p>
+    <p>{{childParam2}}</p>
+    <p>{{childParam3}}</p>
+  </div>
+</template>
+
+<template name="anotherTemplate">
+  <div>
+    <span>{{param1}}</span>
+    <span>{{param2}}</span>
+    <span>{{param3}}</span>
+  </div>
+</template>
+{{! Test same-named parameters with different types in parent vs child }}
+<template name="parentTemplate">
+  <div class="pagination-test">
+    {{!
+      Hover behavior test:
+      - Hovering on "page" (left of =) should show PaginatorData.page type/docs
+      - Hovering on "page" (right of =) should show ParentTemplateData.page or page() helper type/docs
+      - Same for perPage, total, etc.
+    }}
+    {{> paginatorTemplate
+      page=page
+      perPage=perPage
+      total=totalResults
+      disabled=isLoading
+      fixed=true
+    }}
+  </div>
+</template>
+
+<template name="paginatorTemplate">
+  <div class="paginator">
+    <button disabled="{{disabled}}">Previous</button>
+    <span>Page {{page}} of {{total}}</span>
+    <button disabled="{{disabled}}">Next</button>
+  </div>
+</template>

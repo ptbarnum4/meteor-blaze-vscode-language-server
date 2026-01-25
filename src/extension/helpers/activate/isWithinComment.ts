@@ -1,6 +1,11 @@
 // Check if offset position is within any type of comment (client-side version)
 
-type CommentType = 'html' | 'handlebars-block' | 'handlebars-inline' | 'javascript-line' | 'javascript-block';
+type CommentType =
+  | 'html'
+  | 'handlebars-block'
+  | 'handlebars-inline'
+  | 'javascript-line'
+  | 'javascript-block';
 
 type IsWithinCommentResult = {
   isWithin: boolean;
@@ -12,7 +17,10 @@ type IsWithinCommentResult = {
 /**
  * Client-side version of comment detection for semantic token filtering
  */
-export const isWithinComment = (text: string, offset: number): IsWithinCommentResult => {
+export const isWithinComment = (
+  text: string,
+  offset: number
+): IsWithinCommentResult => {
   // Check for HTML comments: <!-- -->
   const htmlCommentResult = checkHtmlComment(text, offset);
   if (htmlCommentResult.isWithin) {
@@ -35,7 +43,7 @@ export const isWithinComment = (text: string, offset: number): IsWithinCommentRe
     isWithin: false,
     commentType: null,
     commentStart: -1,
-    commentEnd: -1
+    commentEnd: -1,
   };
 };
 
@@ -50,7 +58,12 @@ function checkHtmlComment(text: string, offset: number): IsWithinCommentResult {
   }
 
   if (htmlCommentStart === -1) {
-    return { isWithin: false, commentType: null, commentStart: -1, commentEnd: -1 };
+    return {
+      isWithin: false,
+      commentType: null,
+      commentStart: -1,
+      commentEnd: -1,
+    };
   }
 
   // Look for the end
@@ -70,7 +83,7 @@ function checkHtmlComment(text: string, offset: number): IsWithinCommentResult {
         isWithin: true,
         commentType: 'html',
         commentStart: htmlCommentStart,
-        commentEnd: text.length
+        commentEnd: text.length,
       };
     }
   } else if (offset >= htmlCommentStart && offset < htmlCommentEnd) {
@@ -78,14 +91,22 @@ function checkHtmlComment(text: string, offset: number): IsWithinCommentResult {
       isWithin: true,
       commentType: 'html',
       commentStart: htmlCommentStart,
-      commentEnd: htmlCommentEnd
+      commentEnd: htmlCommentEnd,
     };
   }
 
-  return { isWithin: false, commentType: null, commentStart: -1, commentEnd: -1 };
+  return {
+    isWithin: false,
+    commentType: null,
+    commentStart: -1,
+    commentEnd: -1,
+  };
 }
 
-function checkHandlebarsComment(text: string, offset: number): IsWithinCommentResult {
+function checkHandlebarsComment(
+  text: string,
+  offset: number
+): IsWithinCommentResult {
   // Check for block comment {{!-- --}}
   let blockCommentStart = -1;
   for (let i = offset; i >= 5; i--) {
@@ -112,7 +133,7 @@ function checkHandlebarsComment(text: string, offset: number): IsWithinCommentRe
           isWithin: true,
           commentType: 'handlebars-block',
           commentStart: blockCommentStart,
-          commentEnd: text.length
+          commentEnd: text.length,
         };
       }
     } else if (offset >= blockCommentStart && offset < blockCommentEnd) {
@@ -120,7 +141,7 @@ function checkHandlebarsComment(text: string, offset: number): IsWithinCommentRe
         isWithin: true,
         commentType: 'handlebars-block',
         commentStart: blockCommentStart,
-        commentEnd: blockCommentEnd
+        commentEnd: blockCommentEnd,
       };
     }
   }
@@ -154,7 +175,7 @@ function checkHandlebarsComment(text: string, offset: number): IsWithinCommentRe
           isWithin: true,
           commentType: 'handlebars-inline',
           commentStart: inlineCommentStart,
-          commentEnd: text.length
+          commentEnd: text.length,
         };
       }
     } else if (offset >= inlineCommentStart && offset < inlineCommentEnd) {
@@ -162,15 +183,23 @@ function checkHandlebarsComment(text: string, offset: number): IsWithinCommentRe
         isWithin: true,
         commentType: 'handlebars-inline',
         commentStart: inlineCommentStart,
-        commentEnd: inlineCommentEnd
+        commentEnd: inlineCommentEnd,
       };
     }
   }
 
-  return { isWithin: false, commentType: null, commentStart: -1, commentEnd: -1 };
+  return {
+    isWithin: false,
+    commentType: null,
+    commentStart: -1,
+    commentEnd: -1,
+  };
 }
 
-function checkJavaScriptComment(text: string, offset: number): IsWithinCommentResult {
+function checkJavaScriptComment(
+  text: string,
+  offset: number
+): IsWithinCommentResult {
   // Check for line comment //
   let lineCommentStart = -1;
   for (let i = offset; i >= 2; i--) {
@@ -199,7 +228,7 @@ function checkJavaScriptComment(text: string, offset: number): IsWithinCommentRe
         isWithin: true,
         commentType: 'javascript-line',
         commentStart: lineCommentStart,
-        commentEnd: lineCommentEnd
+        commentEnd: lineCommentEnd,
       };
     }
   }
@@ -230,7 +259,7 @@ function checkJavaScriptComment(text: string, offset: number): IsWithinCommentRe
           isWithin: true,
           commentType: 'javascript-block',
           commentStart: blockCommentStart,
-          commentEnd: text.length
+          commentEnd: text.length,
         };
       }
     } else if (offset >= blockCommentStart && offset < blockCommentEnd) {
@@ -238,10 +267,15 @@ function checkJavaScriptComment(text: string, offset: number): IsWithinCommentRe
         isWithin: true,
         commentType: 'javascript-block',
         commentStart: blockCommentStart,
-        commentEnd: blockCommentEnd
+        commentEnd: blockCommentEnd,
       };
     }
   }
 
-  return { isWithin: false, commentType: null, commentStart: -1, commentEnd: -1 };
+  return {
+    isWithin: false,
+    commentType: null,
+    commentStart: -1,
+    commentEnd: -1,
+  };
 }

@@ -1,4 +1,4 @@
-import connectionConfig from './connection';
+import connectionConfig from './connection/index.js';
 
 const { documents, connection } = connectionConfig;
 

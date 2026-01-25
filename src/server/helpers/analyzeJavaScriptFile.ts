@@ -1,6 +1,6 @@
 import fs from 'fs';
 
-import { HelperInfo } from '/types';
+import { HelperInfo } from '../../types';
 
 type MethodBlock = {
   name: string;
@@ -16,7 +16,9 @@ type AnalyzeJavaScriptFileResult = {
   templateName?: string;
 };
 
-export const analyzeJavaScriptFile = (filePath: string): AnalyzeJavaScriptFileResult => {
+export const analyzeJavaScriptFile = (
+  filePath: string
+): AnalyzeJavaScriptFileResult => {
   try {
     const content = fs.readFileSync(filePath, 'utf8');
     const helpers: string[] = [];
@@ -70,7 +72,7 @@ export const analyzeJavaScriptFile = (filePath: string): AnalyzeJavaScriptFileRe
         'export',
         'from',
         'as',
-        'with'
+        'with',
       ];
 
       // Enhanced regex patterns for different method definitions (optimized for helpers content)
@@ -86,7 +88,7 @@ export const analyzeJavaScriptFile = (filePath: string): AnalyzeJavaScriptFileRe
         // Arrow function without JSDoc: methodName: (params) => { ... }
         /(\w+)\s*:\s*\(([^)]*)\)\s*=>\s*\{/g,
         // Function property without JSDoc: methodName: function(params) { ... }
-        /(\w+)\s*:\s*function\s*\(([^)]*)\)\s*\{/g
+        /(\w+)\s*:\s*function\s*\(([^)]*)\)\s*\{/g,
       ];
 
       patterns.forEach((pattern, index) => {
@@ -118,7 +120,7 @@ export const analyzeJavaScriptFile = (filePath: string): AnalyzeJavaScriptFileRe
           }
 
           // Skip if we already found this method (prefer JSDoc version)
-          if (methods.some(m => m.name === methodName)) {
+          if (methods.some((m) => m.name === methodName)) {
             continue;
           }
 
@@ -134,7 +136,7 @@ export const analyzeJavaScriptFile = (filePath: string): AnalyzeJavaScriptFileRe
             jsdoc: jsdoc?.trim(),
             signature,
             returnType: returnType?.trim(),
-            parameters: parameters?.trim()
+            parameters: parameters?.trim(),
           });
         }
       });
@@ -192,16 +194,22 @@ export const analyzeJavaScriptFile = (filePath: string): AnalyzeJavaScriptFileRe
               }
 
               // Extract @returns tag
-              const returnsMatch = jsdoc.match(/@returns?\s+\{([^}]+)\}\s*([^@*]*)/);
+              const returnsMatch = jsdoc.match(
+                /@returns?\s+\{([^}]+)\}\s*([^@*]*)/
+              );
               if (returnsMatch && !extractedReturnType) {
                 extractedReturnType = returnsMatch[1];
                 if (returnsMatch[2].trim()) {
-                  parsedJSDoc += (parsedJSDoc ? ' ' : '') + `Returns: ${returnsMatch[2].trim()}`;
+                  parsedJSDoc +=
+                    (parsedJSDoc ? ' ' : '') +
+                    `Returns: ${returnsMatch[2].trim()}`;
                 }
               }
 
               // Extract @param tags
-              const paramMatches = jsdoc.matchAll(/@param\s+\{([^}]+)\}\s+(\w+)\s*([^@*]*)/g);
+              const paramMatches = jsdoc.matchAll(
+                /@param\s+\{([^}]+)\}\s+(\w+)\s*([^@*]*)/g
+              );
               const paramDescriptions: string[] = [];
               for (const paramMatch of paramMatches) {
                 const paramType = paramMatch[1];
@@ -223,7 +231,7 @@ export const analyzeJavaScriptFile = (filePath: string): AnalyzeJavaScriptFileRe
               parameters: extractedParameters?.trim() || undefined,
               signature: `${name}(${extractedParameters || ''})${
                 extractedReturnType ? `: ${extractedReturnType}` : ''
-              }`
+              }`,
             };
 
             helperDetails.push(helperInfo);
@@ -235,7 +243,7 @@ export const analyzeJavaScriptFile = (filePath: string): AnalyzeJavaScriptFileRe
           /(\w+)\s*\([^)]*\)\s*\{/g,
           /(\w+)\s*:\s*function\s*\([^)]*\)\s*\{/g,
           /(\w+)\s*:\s*\([^)]*\)\s*=>\s*[\{\.]/g,
-          /(\w+)\s*:\s*\w+\s*=>\s*[\{\.]/g
+          /(\w+)\s*:\s*\w+\s*=>\s*[\{\.]/g,
         ];
 
         // Same JavaScript keywords list for fallback patterns
@@ -282,10 +290,10 @@ export const analyzeJavaScriptFile = (filePath: string): AnalyzeJavaScriptFileRe
           'export',
           'from',
           'as',
-          'with'
+          'with',
         ];
 
-        simplePatterns.forEach(pattern => {
+        simplePatterns.forEach((pattern) => {
           let helperMatch;
           while ((helperMatch = pattern.exec(helpersContent)) !== null) {
             const helperName = helperMatch[1];
@@ -299,7 +307,7 @@ export const analyzeJavaScriptFile = (filePath: string): AnalyzeJavaScriptFileRe
               helpers.push(helperName);
               helperDetails.push({
                 name: helperName,
-                signature: `${helperName}()`
+                signature: `${helperName}()`,
               });
             }
           }
@@ -309,7 +317,10 @@ export const analyzeJavaScriptFile = (filePath: string): AnalyzeJavaScriptFileRe
 
     return { helpers, helperDetails, templateName: extractedTemplateName };
   } catch (error) {
-    console.error(`Error analyzing JavaScript/TypeScript file ${filePath}:`, error);
+    console.error(
+      `Error analyzing JavaScript/TypeScript file ${filePath}:`,
+      error
+    );
     return { helpers: [], helperDetails: [] };
   }
 };

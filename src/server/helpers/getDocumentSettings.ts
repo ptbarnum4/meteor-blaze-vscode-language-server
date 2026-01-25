@@ -11,7 +11,7 @@ const getDocumentSettings = (
   if (!result) {
     result = config.connection.workspace.getConfiguration({
       scopeUri: resource,
-      section: 'meteorLanguageServer'
+      section: 'meteorLanguageServer',
     });
     config.documentSettings.set(resource, result);
   }

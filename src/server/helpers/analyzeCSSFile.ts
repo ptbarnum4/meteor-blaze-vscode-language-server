@@ -12,7 +12,9 @@ export const analyzeCSSFile = (filePath: string): string[] => {
     }
 
     // Extract LESS/SCSS nested classes (  .class-name {)
-    const nestedMatches = content.matchAll(/\s+\.([a-zA-Z][a-zA-Z0-9_-]*)\s*\{/g);
+    const nestedMatches = content.matchAll(
+      /\s+\.([a-zA-Z][a-zA-Z0-9_-]*)\s*\{/g
+    );
     for (const match of nestedMatches) {
       if (!classes.includes(match[1])) {
         classes.push(match[1]);

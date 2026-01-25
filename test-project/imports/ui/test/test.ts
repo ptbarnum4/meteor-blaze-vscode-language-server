@@ -53,7 +53,7 @@ const Template = _Template as TestTemplate;
 
 Template.test.onCreated(function () {
   this.props = {
-    count: new ReactiveVar(60)
+    count: new ReactiveVar(60),
   };
 });
 
@@ -94,7 +94,7 @@ Template.test.helpers({
     }
     return num.toString().padStart(3, '0');
   },
-  externalFunction
+  externalFunction,
 });
 
 Template.test.events({
@@ -104,9 +104,9 @@ Template.test.events({
     const currentCount = instance.props.count.get();
     instance.props.count.set(currentCount + 1);
     console.info('Count incremented to:', instance.props.count.get());
-  }
+  },
 });
 
 function externalFunction(arg1: string) {
-  console.log('This is an external function', arg1);
+  console.info('This is an external function', arg1);
 }

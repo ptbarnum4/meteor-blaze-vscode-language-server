@@ -2,13 +2,16 @@
   "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
   "name": "Meteor HTML",
   "scopeName": "text.html.meteor",
-  "patterns": [{ "include": "#template-blocks" }, { "include": "text.html.handlebars" }],
-    "semanticTokenColors": {
-      "blazeBlockName": {
-        "foreground": "#f07dff",
-        "fontStyle": "italic bold"
-      }
-    },
+  "patterns": [
+    { "include": "#template-blocks" },
+    { "include": "text.html.handlebars" }
+  ],
+  "semanticTokenColors": {
+    "blazeBlockName": {
+      "foreground": "#f07dff",
+      "fontStyle": "italic bold"
+    }
+  },
   "repository": {
     "template-blocks": {
       "patterns": [
@@ -19,7 +22,9 @@
           "beginCaptures": {
             "1": { "name": "punctuation.definition.tag.begin.html" },
             "2": { "name": "punctuation.definition.string.begin.html" },
-            "3": { "name": "string.quoted.double.html entity.name.tag.template.meteor" },
+            "3": {
+              "name": "string.quoted.double.html entity.name.tag.template.meteor"
+            },
             "4": { "name": "punctuation.definition.string.end.html" },
             "5": { "name": "punctuation.definition.tag.end.html" }
           },
@@ -51,9 +56,7 @@
             "2": { "name": "entity.name.tag.meteor keyword.control.meteor" },
             "3": { "name": "punctuation.definition.tag.end.meteor" }
           },
-          "patterns": [
-            { "include": "text.html.handlebars" }
-          ]
+          "patterns": [{ "include": "text.html.handlebars" }]
         },
         {
           "name": "meta.helper.expression.meteor",

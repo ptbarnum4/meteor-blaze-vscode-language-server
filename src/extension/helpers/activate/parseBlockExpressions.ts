@@ -18,13 +18,17 @@ const parseBlockExpressions = (
   if (expressionContent === 'else') {
     const contentStart = startPos.character + 2;
     const leadingWhitespace = match[0].slice(2).match(/^\s*/);
-    const elseStart = leadingWhitespace ? contentStart + leadingWhitespace[0].length : contentStart;
+    const elseStart = leadingWhitespace
+      ? contentStart + leadingWhitespace[0].length
+      : contentStart;
     tokensBuilder.push(startPos.line, elseStart, 4, 2); // blazeBlockName (same as block names)
     return;
   }
 
   // Handle other expressions
-  const tokens = expressionContent.split(/\s+/).filter(token => token.length > 0);
+  const tokens = expressionContent
+    .split(/\s+/)
+    .filter((token) => token.length > 0);
 
   if (!tokens.length) {
     // No valid tokens to process

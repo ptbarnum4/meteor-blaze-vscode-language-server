@@ -1,10 +1,14 @@
 import assert from 'assert';
 import { describe, it } from 'node:test';
 import { TextDocument } from 'vscode-languageserver-textdocument';
-import { TextDocuments } from 'vscode-languageserver/node';
+import { TextDocuments } from 'vscode-languageserver/node.js';
 
-import onCompletion from '../../../server/connection/onCompletion';
-import { CurrentConnectionConfig, LanguageServerSettings } from '../../../types';
+import onCompletion from '../../../server/connection/onCompletion.js';
+import {
+  CurrentConnectionConfig,
+  LanguageServerSettings,
+} from '../../../types/index.js';
+import Logger from '../../../utils/logger.js';
 
 /**
  * Test suite for onCompletion connection handler
@@ -15,7 +19,7 @@ describe('connection/onCompletion', () => {
   const createMockConnection = () => ({
     console: {
       log: () => {}, // Mock console log
-      error: () => {} // Mock console error
+      error: () => {}, // Mock console error
     },
     workspace: {
       getConfiguration: () =>
@@ -23,29 +27,30 @@ describe('connection/onCompletion', () => {
           blazeHelpers: {
             hashColor: '#FF6B35',
             nameColor: '#007ACC',
-            extend: []
-          }
-        })
-    }
+            extend: [],
+          },
+        }),
+    },
   });
 
   const createMockConfig = (
     overrides?: Partial<CurrentConnectionConfig>
   ): CurrentConnectionConfig => ({
+    logger: new Logger(createMockConnection() as any),
     globalSettings: mockSettings,
     documentSettings: new Map(),
     fileAnalysis: {
       jsHelpers: new Map(),
       helperDetails: new Map(),
       cssClasses: new Map(),
-      templates: new Map()
+      templates: new Map(),
     },
     documents: new TextDocuments(TextDocument),
     connection: createMockConnection() as any,
     hasConfigurationCapability: false,
     hasWorkspaceFolderCapability: false,
     hasDiagnosticRelatedInformationCapability: false,
-    ...overrides
+    ...overrides,
   });
 
   it('should return completion handler function', () => {
@@ -60,7 +65,7 @@ describe('connection/onCompletion', () => {
       label: 'testHelper',
       kind: 3, // CompletionItemKind.Function
       detail: 'Template helper',
-      documentation: 'Test helper documentation'
+      documentation: 'Test helper documentation',
     };
 
     assert.strictEqual(typeof mockCompletionItem.label, 'string');
