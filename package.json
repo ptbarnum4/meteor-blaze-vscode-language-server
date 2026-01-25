@@ -180,6 +180,25 @@
         "superType": "variable"
       }
     ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "meteorBlaze",
+          "title": "Meteor/Blaze",
+          "icon": "resources/meteor-blaze-language-server-icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "meteorBlaze": [
+        {
+          "id": "meteorTemplates",
+          "name": "Templates",
+          "icon": "resources/template-icon.svg",
+          "contextualTitle": "Meteor Templates"
+        }
+      ]
+    },
     "commands": [
       {
         "command": "meteor-blaze-vscode-language-server.restart",
@@ -188,8 +207,58 @@
       {
         "command": "meteor-blaze-vscode-language-server.validateWorkspace",
         "title": "Meteor/Blaze: Validate All Templates in Workspace"
+      },
+      {
+        "command": "meteorBlaze.refreshTemplates",
+        "title": "Refresh Templates",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "meteorBlaze.toggleWorkspaceScan",
+        "title": "Toggle Workspace Scan",
+        "icon": "$(files)"
+      },
+      {
+        "command": "meteorBlaze.toggleWorkspaceScan.workspace",
+        "title": "Switch to Open Files Only",
+        "icon": "$(globe)"
+      },
+      {
+        "command": "meteorBlaze.showTemplateQuickPick",
+        "title": "Show Template Options"
+      },
+      {
+        "command": "meteorBlaze.navigateToTemplate",
+        "title": "Go to Template HTML"
+      },
+      {
+        "command": "meteorBlaze.navigateToHelper",
+        "title": "Go to Helper"
+      },
+      {
+        "command": "meteorBlaze.navigateToEvent",
+        "title": "Go to Event"
       }
     ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "meteorBlaze.refreshTemplates",
+          "when": "view == meteorTemplates",
+          "group": "navigation"
+        },
+        {
+          "command": "meteorBlaze.toggleWorkspaceScan",
+          "when": "view == meteorTemplates && !meteorBlaze.scanWorkspace",
+          "group": "navigation"
+        },
+        {
+          "command": "meteorBlaze.toggleWorkspaceScan.workspace",
+          "when": "view == meteorTemplates && meteorBlaze.scanWorkspace",
+          "group": "navigation"
+        }
+      ]
+    },
     "colors": [
       {
         "id": "blazeBlockHash.defaultColor",
