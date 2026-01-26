@@ -29,6 +29,21 @@ export class TemplateTreeDataProvider implements vscode.TreeDataProvider<vscode.
   refresh(analysis?: WorkspaceAnalysis): void {
     if (analysis) {
       this.templates = analysis.templates;
+      console.log(
+        `[Sidebar Client] Refreshing with ${analysis.templates.length} templates`
+      );
+      // Log enhanced data for debugging
+      analysis.templates.forEach((template) => {
+        console.log(`[Sidebar Client] Template ${template.name}:`, {
+          hasDataProps: !!template.dataProperties,
+          dataPropsCount: template.dataProperties?.length || 0,
+          hasEnhancedDataProps: !!template.dataPropertiesEnhanced,
+          enhancedDataPropsCount: template.dataPropertiesEnhanced?.length || 0,
+          enhancedSample: template.dataPropertiesEnhanced
+            ?.slice(0, 3)
+            .map((p) => `${p.name}:${p.type}`),
+        });
+      });
     }
     this.isLoading = false;
     this._onDidChangeTreeData.fire();
@@ -89,6 +104,8 @@ export class TemplateTreeDataProvider implements vscode.TreeDataProvider<vscode.
             template.helpers.length > 0 ||
             template.events.length > 0 ||
             (template.dataProperties && template.dataProperties.length > 0) ||
+            (template.dataPropertiesEnhanced &&
+              template.dataPropertiesEnhanced.length > 0) ||
             (template.lifecycle && template.lifecycle.length > 0) ||
             (template.instanceProperties &&
               template.instanceProperties.length > 0);
@@ -121,13 +138,21 @@ export class TemplateTreeDataProvider implements vscode.TreeDataProvider<vscode.
       });
 
       // Add data properties container
-      if (template.dataProperties && template.dataProperties.length > 0) {
+      if (
+        (template.dataProperties && template.dataProperties.length > 0) ||
+        (template.dataPropertiesEnhanced &&
+          template.dataPropertiesEnhanced.length > 0)
+      ) {
+        const dataCount =
+          template.dataPropertiesEnhanced?.length ||
+          template.dataProperties?.length ||
+          0;
         children.push(
           new TemplateContainerTreeItem(
             'Data Properties',
             template,
             'data',
-            template.dataProperties.length
+            dataCount
           )
         );
       }

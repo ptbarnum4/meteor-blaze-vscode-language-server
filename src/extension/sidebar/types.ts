@@ -231,7 +231,7 @@ export class TemplateDetailTreeItem extends vscode.TreeItem {
       this.command = {
         command: commandMap[type],
         title: `Go to ${type}`,
-        arguments: [template, value],
+        arguments: [template, value, metadata],
       };
     }
   }

@@ -607,10 +607,60 @@ export const analyzeTemplateData = (
  */
 export function analyzeTemplateDocumentation(
   htmlFilePaths: string[],
-  supportedTags: string[] = ['param', 'template', 'description']
+  supportedTags?: string[]
+): Map<string, TemplateDocumentation>;
+
+/**
+ * Analyze HTML content for TSDoc template comments
+ * @param htmlContent - HTML content string
+ * @param supportedTags - Custom TSDoc tags to support
+ * @param isContent - Must be true to indicate content mode
+ * @returns Map of template name to documentation
+ */
+export function analyzeTemplateDocumentation(
+  htmlContent: string,
+  supportedTags: string[],
+  isContent: true
+): Map<string, TemplateDocumentation>;
+
+export function analyzeTemplateDocumentation(
+  htmlFilePathsOrContent: string[] | string,
+  supportedTags: string[] = ['param', 'template', 'description'],
+  isContent: boolean = false
 ): Map<string, TemplateDocumentation> {
+  console.log('[TSDoc analyzeTemplateDocumentation] Called with:', {
+    isContent,
+    isString: typeof htmlFilePathsOrContent === 'string',
+    contentLength:
+      typeof htmlFilePathsOrContent === 'string'
+        ? htmlFilePathsOrContent.length
+        : htmlFilePathsOrContent.length,
+    supportedTags,
+  });
+
   const allDocumentation = new Map<string, TemplateDocumentation>();
 
+  // Handle direct content
+  if (isContent && typeof htmlFilePathsOrContent === 'string') {
+    console.log('[TSDoc] Processing HTML content directly');
+    const templateDocs = extractAllTemplateComments(
+      htmlFilePathsOrContent,
+      supportedTags
+    );
+    console.log(
+      `[TSDoc] Extracted ${templateDocs.size} template docs from content`
+    );
+    for (const [templateName, doc] of templateDocs.entries()) {
+      console.log(
+        `[TSDoc] Template ${templateName} has ${doc.parameters.size} params`
+      );
+      allDocumentation.set(templateName, doc);
+    }
+    return allDocumentation;
+  }
+
+  // Handle file paths
+  const htmlFilePaths = htmlFilePathsOrContent as string[];
   for (const filePath of htmlFilePaths) {
     try {
       if (!fs.existsSync(filePath)) {

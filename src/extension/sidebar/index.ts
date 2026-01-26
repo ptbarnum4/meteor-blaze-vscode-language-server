@@ -179,6 +179,13 @@ export class SidebarManager {
             events: string[];
             file: string;
             dataProperties?: string[];
+            dataPropertiesEnhanced?: Array<{
+              name: string;
+              type: string;
+              description?: string;
+              optional: boolean;
+              sources: string[];
+            }>;
             props?: string[];
             lifecycle?: string[];
             instanceProperties?: string[];
@@ -207,16 +214,28 @@ export class SidebarManager {
       );
 
       // Convert to our format
-      const templates: TemplateInfo[] = result.templates.map((t) => ({
-        name: t.name,
-        helpers: t.helpers,
-        events: t.events,
-        file: t.file,
-        dataProperties: t.dataProperties,
-        props: t.props,
-        lifecycle: t.lifecycle,
-        instanceProperties: t.instanceProperties,
-      }));
+      const templates: TemplateInfo[] = result.templates.map<TemplateInfo>(
+        (t) => {
+          console.log(`[Sidebar Client] Mapping template ${t.name}:`, {
+            hasDataPropertiesEnhanced: !!t.dataPropertiesEnhanced,
+            enhancedCount: t.dataPropertiesEnhanced?.length || 0,
+            enhancedSample: t.dataPropertiesEnhanced
+              ?.slice(0, 3)
+              .map((p) => `${p.name}:${p.type}`),
+          });
+          return {
+            name: t.name,
+            helpers: t.helpers,
+            events: t.events,
+            file: t.file,
+            dataProperties: t.dataProperties,
+            dataPropertiesEnhanced: t.dataPropertiesEnhanced,
+            props: t.props,
+            lifecycle: t.lifecycle,
+            instanceProperties: t.instanceProperties,
+          } as TemplateInfo;
+        }
+      );
 
       const globalHelpers: HelperInfo[] = result.globalHelpers.map((h) => ({
         name: h.name,

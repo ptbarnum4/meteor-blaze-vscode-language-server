@@ -1,4 +1,12 @@
 <template name="parentWithController">
+  {{!--
+    @template parentWithController
+    @description A parent template that passes parameters to a child template without its own controller.
+    @param {string} userName - The name of the user.
+    @param {number} age - The age of the user.
+    @param {boolean} isActive - Indicates if the user is active.
+    @param {AddressType} address - The address object containing street, city, state, and zip.
+   --}}
   <div>
     {{> childWithoutController
       userName=userName
@@ -19,13 +27,14 @@
     @param {AddressType} address - The address object containing street, city, state, and zip.
     @param {{ url: string; altText?: string }[]} images - An array of image objects with url and altText
     @param {{ title: string, description: string }[]} thing - An array of thing objects with title and description.
-
+    @param {string} anotherThing - test
   --}}
   <div class="user-card">
     <h2>{{userName}}</h2>
     <p>Age: {{userAge}}</p>
     <p>Active: {{this.isActive}}</p>
     <p>Formatted: {{formatText userDescription}}</p>
+
 
     {{#if isActive}}
       <p>The user is active.</p>

@@ -572,10 +572,11 @@ connection.onRequest(
             ...(settings?.templateComments?.customTags || []),
           ];
 
-          // Extract TSDoc from the current HTML file
+          // Extract TSDoc from the current HTML content (not file on disk)
           const tsDocMap = analyzeTemplateDocumentation(
-            [filePath],
-            supportedTags
+            content,
+            supportedTags,
+            true
           );
           const tsDocInfo = tsDocMap.get(templateName);
 
@@ -600,8 +601,20 @@ connection.onRequest(
           }
 
           // NEW: Merge parameter data from all sources
-          let dataPropertiesEnhanced;
-          let templateDescription;
+          let dataPropertiesEnhanced:
+            | Array<{
+                name: string;
+                type: string;
+                description?: string;
+                optional: boolean;
+                sources: Array<'controller' | 'tsdoc' | 'inferred'>;
+              }>
+            | undefined;
+          let templateDescription: string | undefined;
+
+          logger.log(
+            `[TSDoc] Template ${templateName}: tsDocInfo=${!!tsDocInfo}, dataProperties=${dataProperties.length}`
+          );
 
           if (tsDocInfo || dataProperties.length > 0) {
             // Build controller params map
@@ -621,10 +634,16 @@ connection.onRequest(
               { type: string; description?: string; optional: boolean }
             >();
             if (tsDocInfo) {
+              logger.log(
+                `[TSDoc] Found TSDoc for ${templateName} with ${tsDocInfo.parameters.size} params`
+              );
               for (const [
                 paramName,
                 paramInfo,
               ] of tsDocInfo.parameters.entries()) {
+                logger.log(
+                  `[TSDoc] - ${paramName}: ${paramInfo.type} (${paramInfo.description?.substring(0, 50)}...)`
+                );
                 tsDocParams.set(paramName, paramInfo);
               }
               templateDescription = tsDocInfo.description;
@@ -640,6 +659,10 @@ connection.onRequest(
                 globalHelpers
               );
 
+              logger.log(
+                `[TSDoc] Extracted ${inferredParams.length} inferred params for ${templateName}`
+              );
+
               // Merge all sources
               const mergedParams = mergeTemplateParameters(
                 templateName,
@@ -648,7 +671,20 @@ connection.onRequest(
                 inferredParams
               );
 
+              logger.log(
+                `[TSDoc] Merged ${mergedParams.size} total params for ${templateName}`
+              );
+
               dataPropertiesEnhanced = mergedParametersToEnhanced(mergedParams);
+
+              logger.log(
+                `[TSDoc] Enhanced properties for ${templateName}: ${dataPropertiesEnhanced.length} items`
+              );
+              dataPropertiesEnhanced.forEach((prop) => {
+                logger.log(
+                  `[TSDoc]   - ${prop.name}: ${prop.type} [${prop.sources.join(',')}]`
+                );
+              });
             } catch (err) {
               logger.error(
                 `Error merging template parameters for ${templateName}: ${err}`
@@ -679,11 +715,15 @@ connection.onRequest(
             `Template ${templateName}: ` +
               `helpers=${helpers.length}, events=${events.length}, ` +
               `data=${dataProperties.length}, ` +
+              `enhancedData=${dataPropertiesEnhanced?.length || 0}, ` +
               `lifecycle=${lifecycle.length}, instance=${instanceProperties.length}`
           );
           logger.log(`- Helpers: ${helpers.join(', ') || 'none'}`);
           logger.log(`- Events: ${events.join(', ') || 'none'}`);
           logger.log(`- Data: ${dataProperties.join(', ') || 'none'}`);
+          logger.log(
+            `- Enhanced Data: ${dataPropertiesEnhanced?.map((p) => p.name).join(', ') || 'none'}`
+          );
           logger.log(`- Lifecycle: ${lifecycle.join(', ') || 'none'}`);
           logger.log(`- Instance: ${instanceProperties.join(', ') || 'none'}`);
           logger.log(`================================`);
@@ -761,7 +801,7 @@ connection.onRequest(
           const filePath = document.uri.replace('file://', '');
           processedFiles.add(filePath);
           logger.log(`Processing tracked file: ${filePath}`);
-          processFile(filePath, text);
+          await processFile(filePath, text);
         }
 
         // Then, process any visible files that weren't already tracked
@@ -788,7 +828,7 @@ connection.onRequest(
               if (fs.existsSync(filePath)) {
                 const content = fs.readFileSync(filePath, 'utf8');
                 logger.log(`Processing visible file: ${filePath}`);
-                processFile(filePath, content);
+                await processFile(filePath, content);
                 processedFiles.add(filePath);
               }
             } catch (err) {

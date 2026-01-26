@@ -95,8 +95,16 @@ export class SidebarCommands {
     disposables.push(
       vscode.commands.registerCommand(
         'meteorBlaze.navigateToDataProperty',
-        async (template: TemplateInfo, propName: string) => {
-          await this.navigateToDataProperty(template, propName);
+        async (
+          template: TemplateInfo,
+          propName: string,
+          metadata?: {
+            type?: string;
+            description?: string;
+            sources?: Array<'controller' | 'tsdoc' | 'inferred'>;
+          }
+        ) => {
+          await this.navigateToDataProperty(template, propName, metadata);
         }
       )
     );
@@ -316,12 +324,116 @@ export class SidebarCommands {
 
   private async navigateToDataProperty(
     template: TemplateInfo,
-    propName: string
+    propName: string,
+    metadata?: {
+      type?: string;
+      description?: string;
+      sources?: Array<'controller' | 'tsdoc' | 'inferred'>;
+    }
   ): Promise<void> {
     console.log(
-      `[navigateToDataProperty] Template: ${template.name}, Property: ${propName}`
+      `[navigateToDataProperty] Template: ${template.name}, Property: ${propName}, Sources: ${metadata?.sources?.join(', ')}`
     );
-    await this.navigateToTemplateCode(template, 'data', propName);
+
+    // Priority 1: Navigate to controller/TypeScript file if it exists
+    if (metadata?.sources?.includes('controller')) {
+      await this.navigateToTemplateCode(template, 'data', propName);
+    }
+    // Priority 2: Navigate to TSDoc @param in HTML file
+    else if (metadata?.sources?.includes('tsdoc')) {
+      await this.navigateToTsDocParam(template, propName);
+    }
+    // Fallback: Try TypeScript file for inferred properties
+    else {
+      await this.navigateToTemplateCode(template, 'data', propName);
+    }
+  }
+
+  /**
+   * Navigate to a TSDoc @param line in the template HTML file
+   */
+  private async navigateToTsDocParam(
+    template: TemplateInfo,
+    propName: string
+  ): Promise<void> {
+    try {
+      const htmlPath = template.file;
+      const uri = vscode.Uri.file(htmlPath);
+      const document = await vscode.workspace.openTextDocument(uri);
+      const text = document.getText();
+
+      // Find the template definition
+      const templatePattern = new RegExp(
+        `<template\\s+name=["']${template.name}["']`,
+        'i'
+      );
+      const templateMatch = templatePattern.exec(text);
+
+      if (!templateMatch) {
+        console.error(
+          `[navigateToTsDocParam] Could not find template ${template.name}`
+        );
+        await vscode.window.showTextDocument(document);
+        return;
+      }
+
+      // Find the first comment block after the template tag
+      const commentStart = text.indexOf('{{!--', templateMatch.index);
+      if (commentStart === -1) {
+        console.error(
+          `[navigateToTsDocParam] No TSDoc comment found for template ${template.name}`
+        );
+        await vscode.window.showTextDocument(document);
+        return;
+      }
+
+      const commentEnd = text.indexOf('--}}', commentStart);
+      if (commentEnd === -1) {
+        console.error(
+          `[navigateToTsDocParam] Malformed TSDoc comment for template ${template.name}`
+        );
+        await vscode.window.showTextDocument(document);
+        return;
+      }
+
+      const commentText = text.substring(commentStart, commentEnd + 4);
+
+      // Find the @param line for this property
+      const paramPattern = new RegExp(
+        `@param\\s+\\{[^}]+\\}\\s+${propName}\\b`,
+        'i'
+      );
+      const paramMatch = paramPattern.exec(commentText);
+
+      if (!paramMatch) {
+        console.error(
+          `[navigateToTsDocParam] Could not find @param ${propName} in TSDoc comment`
+        );
+        // Fall back to opening the comment start
+        const position = document.positionAt(commentStart);
+        await vscode.window.showTextDocument(document, {
+          selection: new vscode.Range(position, position),
+        });
+        return;
+      }
+
+      // Navigate to the @param line
+      const absoluteParamPosition = commentStart + paramMatch.index;
+      const position = document.positionAt(absoluteParamPosition);
+
+      console.log(
+        `[navigateToTsDocParam] Found @param ${propName} at line ${position.line + 1}`
+      );
+
+      await vscode.window.showTextDocument(document, {
+        selection: new vscode.Range(position, position),
+      });
+    } catch (error) {
+      console.error('[navigateToTsDocParam] Error:', error);
+      vscode.window.showErrorMessage(
+        `Could not navigate to parameter ${propName}: ${error}`
+      );
+    }
   }
 
   private async navigateToLifecycle(

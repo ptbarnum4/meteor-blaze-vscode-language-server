@@ -3,6 +3,7 @@
   "name": "Meteor HTML",
   "scopeName": "text.html.meteor",
   "patterns": [
+    { "include": "#tsdoc-comments" },
     { "include": "#template-blocks" },
     { "include": "text.html.handlebars" }
   ],
