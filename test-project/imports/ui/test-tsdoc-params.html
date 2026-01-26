@@ -1,0 +1,70 @@
+<template name="testTsDocParams">
+  {{!--
+    @template testTsDocParams
+    @description A test template demonstrating TSDoc parameter documentation
+    @param {string} userName - The user's full name
+    @param {number} userAge - The user's age in years
+    @param {{ street: string; city: string }} address - User address object
+    @param {string[]} hobbies - List of user's hobbies
+    @param {boolean} [isActive] - Optional: whether the user account is active
+  --}}
+  <div class="user-profile">
+    <h2>{{userName}}</h2>
+    <p>Age: {{userAge}}</p>
+    <address>
+      {{address.street}}<br>
+      {{address.city}}
+    </address>
+    <h3>Hobbies:</h3>
+    <ul>
+      {{#each hobby in hobbies}}
+        <li>{{hobby}}</li>
+      {{/each}}
+    </ul>
+    {{#if isActive}}
+      <span class="badge-active">Active</span>
+    {{/if}}
+  </div>
+</template>
+
+<template name="simpleTemplate">
+  {{!--
+    @description A simple template with basic parameters
+    @param {string} title - The title to display
+    @param {number} count - The count value
+  --}}
+  <div>
+    <h1>{{title}}</h1>
+    <p>Count: {{count}}</p>
+  </div>
+</template>
+
+<template name="complexTypes">
+  {{!--
+    @description Template showcasing complex TypeScript types
+    @param {Promise<User>} userPromise - Promise resolving to a User object
+    @param {Record<string, any>} metadata - Metadata object with arbitrary properties
+    @param {Array<{ id: number; name: string }>} items - Array of item objects
+    @param {string | number} identifier - User identifier (string or number)
+    @param {User & { verified: boolean }} enrichedUser - User with verification status
+  --}}
+  <div>
+    <p>Complex types demonstration</p>
+    {{#each item in items}}
+      <div>{{item.id}}: {{item.name}}</div>
+    {{/each}}
+  </div>
+</template>
+
+<template name="noController">
+  {{!--
+    @description Template without a TypeScript controller
+    @param {string} message - Message to display
+    @param {number} priority - Priority level (1-5)
+    @param {Date} timestamp - When the message was created
+  --}}
+  <div class="message">
+    <span class="priority-{{priority}}">{{message}}</span>
+    <small>{{timestamp}}</small>
+  </div>
+</template>

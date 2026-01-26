@@ -1,12 +1,16 @@
 {
   "compilerOptions": {
+    "target": "es2018",
     "module": "nodenext",
-    "target": "ES2022",
+    "lib": ["esnext", "dom"],
+    "moduleResolution": "nodenext",
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
     // "sourceMap": true,
-    "rootDir": "src",
+    "rootDir": ".",
     "outDir": "out",
     // "paths": {
-    //   "/*": ["./src/*"]
+    //   "@this/*": ["./src/*"]
     // },
     // "allowJs": true,
     "skipLibCheck": true,
@@ -19,6 +23,6 @@
     // "noFallthroughCasesInSwitch": true, /* Report errors for fallthrough cases in switch statement. */
     // "noUnusedParameters": true,  /* Report errors on unused parameters. */
   },
-  "include": ["src/**/*", "./.prettierc.ts", "../esbuild.js"],
-  "exclude": ["test-project/**/*", "dist/**/*", "node_modules/**/*"]
+  "include": ["src/**/*", "./.prettierc.ts"],
+  "exclude": ["test-project/**/*", "dist/**/*", "out/**/*", "node_modules/**/*"]
 }
