@@ -30,8 +30,6 @@ import { findEnclosingIfOrUnlessBlock } from '../helpers/findEnclosingIfOrUnless
 import getDocumentSettings from '../helpers/getDocumentSettings.js';
 import { isWithinComment } from '../helpers/isWithinComment.js';
 import { isWithinHandlebarsExpression } from '../helpers/isWithinHandlebarsExpression.js';
-import { getTemplateCommentContext } from '../helpers/isWithinTemplateComment.js';
-import { parseTemplateDocTags } from '../helpers/parseTemplateComments.js';
 
 const onCompletion = (config: CurrentConnectionConfig) => {
   const { connection, documents } = config;
@@ -52,29 +50,6 @@ const onCompletion = (config: CurrentConnectionConfig) => {
 
     const text = document.getText();
     const offset = document.offsetAt(textDocumentPosition.position);
-
-    // Check if we're inside a template comment (TSDoc)
-    const templateCommentContext = getTemplateCommentContext(text, offset);
-    if (
-      templateCommentContext.isWithin &&
-      templateCommentContext.isFirstComment
-    ) {
-      // Check if autocomplete is enabled for template comments
-      const settings = await getDocumentSettings(config, document.uri);
-      const enableAutocomplete =
-        settings?.templateComments?.enableAutocomplete !== false; // Default to true
-
-      if (enableAutocomplete) {
-        // Provide TSDoc completions
-        return getTemplateCommentCompletions(
-          config,
-          document,
-          offset,
-          templateCommentContext
-        );
-      }
-      return []; // Autocomplete disabled, return empty
-    }
 
     // Check if we're inside any type of comment (HTML, Handlebars, JS/TS)
     const commentInfo = isWithinComment(text, offset);
@@ -102,12 +77,14 @@ const onCompletion = (config: CurrentConnectionConfig) => {
 
     // Check if we're inside template inclusion parameters ({{> templateName [cursor is here] }})
     // Look for the most recent {{> templateName that hasn't been closed yet
+    // This pattern supports both single-line and multi-line template invocations
     const templateParameterMatch = textBeforeCursor.match(
       /\{\{\s*>\s*([a-zA-Z0-9_]+)(?:[^{}])*$/
     );
 
     // Check if we're positioned after an equals sign (for value completion)
     // Match: paramName=|cursor or paramName=partial|cursor
+    // This pattern supports whitespace/newlines between = and cursor
     const afterEqualsMatch = textBeforeCursor.match(
       /([a-zA-Z_$][a-zA-Z0-9_$]*)\s*=\s*([a-zA-Z0-9_$]*)$/
     );
@@ -1408,128 +1385,6 @@ function parseUsedParameters(
   }
 
   return usedParams;
-}
-
-/**
- * Get TSDoc tag completions within template comments
- */
-async function getTemplateCommentCompletions(
-  config: CurrentConnectionConfig,
-  document: TextDocument,
-  offset: number,
-  context: ReturnType<typeof getTemplateCommentContext>
-): Promise<CompletionItem[]> {
-  const completions: CompletionItem[] = [];
-
-  // Get settings for custom tags
-  const settings = await getDocumentSettings(config, document.uri);
-  const customTags = settings?.templateComments?.customTags || [];
-  const supportedTags = ['param', 'template', 'description', ...customTags];
-
-  // Check if we just typed @ or are typing a tag
-  const text = document.getText();
-  const charBefore = text[offset - 1];
-  const shouldShowTagCompletions = context.cursorInTag || charBefore === '@';
-
-  // If cursor is after @ symbol or typing a tag
-  if (shouldShowTagCompletions) {
-    // Suggest standard tags
-    completions.push({
-      label: '@param',
-      kind: CompletionItemKind.Keyword,
-      detail: 'Parameter documentation',
-      documentation: {
-        kind: MarkupKind.Markdown,
-        value:
-          "Document a template parameter with type and description\n\nExample: `@param {string} userName - The user's name`",
-      },
-      insertText: 'param {${1:Type}} ${2:paramName} - ${3:Description}',
-      insertTextFormat: 2, // Snippet format
-    });
-
-    completions.push({
-      label: '@template',
-      kind: CompletionItemKind.Keyword,
-      detail: 'Template name',
-      documentation: {
-        kind: MarkupKind.Markdown,
-        value: 'Specify the template name (should match <template name>)',
-      },
-      insertText: `template ${context.templateName || '${1:templateName}'}`,
-      insertTextFormat: context.templateName ? 1 : 2,
-    });
-
-    completions.push({
-      label: '@description',
-      kind: CompletionItemKind.Keyword,
-      detail: 'Template description',
-      documentation: {
-        kind: MarkupKind.Markdown,
-        value: 'Describe the purpose of this template',
-      },
-      insertText: 'description ${1:Description of the template}',
-      insertTextFormat: 2,
-    });
-
-    // Add custom tags
-    for (const customTag of customTags) {
-      completions.push({
-        label: `@${customTag}`,
-        kind: CompletionItemKind.Keyword,
-        detail: `Custom tag: ${customTag}`,
-        insertText: `${customTag} \${1:value}`,
-        insertTextFormat: 2,
-      });
-    }
-  }
-
-  // Suggest parameter names from template usage if typing @param
-  const currentLine = context.currentLine.trim();
-  if (currentLine.startsWith('@param') && context.templateName) {
-    const filePath = document.uri.replace('file://', '');
-    const dir = path.dirname(filePath);
-    const globalHelpers = config.globalHelpers || [];
-
-    try {
-      const inferredParams = extractParametersFromTemplate(
-        context.templateName,
-        document.uri,
-        dir,
-        globalHelpers
-      );
-
-      // Get existing params from the comment
-      const commentText = document
-        .getText()
-        .substring(context.commentStart, context.commentEnd);
-      const existingTags = parseTemplateDocTags(commentText, supportedTags);
-      const existingParamNames = existingTags
-        .filter((t) => t.tag === 'param' && t.name)
-        .map((t) => t.name!);
-
-      // Only suggest params that aren't already documented
-      for (const param of inferredParams) {
-        if (!existingParamNames.includes(param.name)) {
-          completions.push({
-            label: param.name,
-            kind: CompletionItemKind.Field,
-            detail: `Inferred type: ${param.inferredType || 'any'}`,
-            documentation: {
-              kind: MarkupKind.Markdown,
-              value: 'Parameter found in template usage',
-            },
-            insertText: `{${param.inferredType || 'any'}} ${param.name} - \${1:Description}`,
-            insertTextFormat: 2,
-            sortText: '0_' + param.name, // Sort to top
-          });
-        }
-      }
-    } catch (_error) {
-      // Silently fail if extraction doesn't work
-    }
-  }
-
-  return completions;
 }
 
 export default onCompletion;
