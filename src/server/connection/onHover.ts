@@ -650,6 +650,38 @@ const onHover = (config: CurrentConnectionConfig) => {
 
       // Data property hover (includes #each value in list context awareness)
       if (dataProps.includes(word)) {
+        // NEW: Check TSDoc comments for parameter documentation
+        const templateTsDocData =
+          config.fileAnalysis.templateTsDocParams?.[currentTemplateName];
+        const tsDocParam = templateTsDocData?.[word];
+
+        if (tsDocParam) {
+          const settings = await getDocumentSettings(config, document.uri);
+          if (settings?.templateComments?.preferTsDocDescriptions !== false) {
+            const hoverContent = [
+              `\`\`\`typescript`,
+              `(parameter) ${word}${tsDocParam.optional ? '?' : ''}: ${tsDocParam.type}`,
+              `\`\`\``,
+            ];
+
+            if (tsDocParam.description) {
+              hoverContent.push('');
+              hoverContent.push(tsDocParam.description);
+            }
+
+            hoverContent.push('');
+            hoverContent.push('**Source:** Template comment documentation');
+
+            return {
+              contents: {
+                kind: MarkupKind.Markdown,
+                value: hoverContent.join('\n'),
+              },
+              range: wordRange,
+            };
+          }
+        }
+
         const propType = typeMap[word];
         const jsDoc = jsDocMap[word];
 

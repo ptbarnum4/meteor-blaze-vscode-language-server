@@ -683,6 +683,49 @@
               "description": "Maximum number of classes to display (0 = unlimited)"
             }
           }
+        },
+        "meteorLanguageServer.templateComments": {
+          "type": "object",
+          "default": {
+            "enableAutocomplete": true,
+            "validationLevel": "info",
+            "preferTsDocDescriptions": true,
+            "customTags": []
+          },
+          "description": "Settings for TSDoc-style template comment documentation.",
+          "properties": {
+            "enableAutocomplete": {
+              "type": "boolean",
+              "default": true,
+              "description": "Enable TSDoc-style autocomplete in template comments ({{!-- @param ... --}})"
+            },
+            "validationLevel": {
+              "type": "string",
+              "enum": [
+                "off",
+                "info",
+                "warning",
+                "error"
+              ],
+              "default": "info",
+              "description": "Validation level for TSDoc syntax in template comments: off (no validation), info (informational hints), warning (show warnings), error (show errors)"
+            },
+            "preferTsDocDescriptions": {
+              "type": "boolean",
+              "default": true,
+              "description": "Prefer descriptions from TSDoc comments over controller JSDoc when both are available"
+            },
+            "customTags": {
+              "type": "array",
+              "default": [],
+              "description": "Additional custom @ tags to support in template comments (e.g., ['author', 'since', 'example']). Built-in tags are: param, template, description",
+              "items": {
+                "type": "string",
+                "pattern": "^[a-zA-Z][a-zA-Z0-9]*$",
+                "description": "Custom tag name (alphanumeric, no @symbol)"
+              }
+            }
+          }
         }
       }
     }

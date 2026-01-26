@@ -32,9 +32,76 @@
             "1": { "name": "punctuation.definition.tag.html" }
           },
           "patterns": [
+            { "include": "#tsdoc-comments" },
             { "include": "#blaze-helpers" },
             { "include": "#meteor-events" },
             { "include": "text.html.handlebars" }
+          ]
+        }
+      ]
+    },
+    "tsdoc-comments": {
+      "patterns": [
+        {
+          "name": "comment.block.handlebars.tsdoc.meteor",
+          "begin": "\\{\\{!--",
+          "end": "--\\}\\}",
+          "patterns": [
+            {
+              "name": "storage.type.class.tsdoc.meteor",
+              "match": "(@)(param|template|description|returns|example|see|author|since|deprecated)\\b",
+              "captures": {
+                "1": { "name": "punctuation.definition.tag.tsdoc.meteor" },
+                "2": { "name": "keyword.other.tsdoc.meteor" }
+              }
+            },
+            {
+              "name": "meta.type.annotation.tsdoc.meteor",
+              "begin": "\\{",
+              "end": "\\}",
+              "patterns": [
+                {
+                  "name": "support.type.primitive.tsdoc.meteor",
+                  "match": "\\b(string|number|boolean|any|void|null|undefined|never|unknown)\\b"
+                },
+                {
+                  "name": "entity.name.type.tsdoc.meteor",
+                  "match": "\\b[A-Z][a-zA-Z0-9]*\\b"
+                },
+                {
+                  "name": "keyword.operator.type.tsdoc.meteor",
+                  "match": "[|&<>\\[\\]:]"
+                }
+              ]
+            },
+            {
+              "name": "variable.parameter.tsdoc.meteor",
+              "match": "(?<=@param\\s+\\{[^}]+\\}\\s+)(\\[)?([a-zA-Z_$][\\w$]*)(\\]|\\?)?",
+              "captures": {
+                "1": { "name": "punctuation.definition.optional.tsdoc.meteor" },
+                "2": { "name": "variable.parameter.name.tsdoc.meteor" },
+                "3": { "name": "punctuation.definition.optional.tsdoc.meteor" }
+              }
+            },
+            {
+              "name": "meta.description.tsdoc.meteor",
+              "match": "(-\\s*)(.*)$",
+              "captures": {
+                "1": { "name": "punctuation.separator.tsdoc.meteor" },
+                "2": { "name": "comment.line.tsdoc.meteor" }
+              }
+            }
+          ]
+        },
+        {
+          "name": "comment.line.handlebars.meteor",
+          "begin": "\\{\\{!",
+          "end": "\\}\\}",
+          "patterns": [
+            {
+              "name": "comment.line.content.handlebars.meteor",
+              "match": ".*"
+            }
           ]
         }
       ]

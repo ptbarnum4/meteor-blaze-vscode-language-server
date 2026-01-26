@@ -84,7 +84,7 @@ async function main() {
       bundle: true,
       format: 'cjs',
       minify: false,
-      sourcemap: true,
+      sourcemap: 'inline',
       sourcesContent: true,
       platform: 'node',
       outdir: 'out/test',

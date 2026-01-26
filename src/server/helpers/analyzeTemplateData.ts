@@ -2,6 +2,10 @@ import fs from 'fs';
 import path from 'path';
 import ts from 'typescript';
 import { TsConfig } from '../../types';
+import {
+  extractAllTemplateComments,
+  TemplateDocumentation,
+} from './parseTemplateComments.js';
 import { safeParse } from './strings.js';
 
 export type TemplateDataAnalysis = {
@@ -11,6 +15,19 @@ export type TemplateDataAnalysis = {
   typedefs: Record<string, string[]>; // JSDoc typedef name -> properties
   templateTypeMap: Record<string, string>; // template name -> data type name
   templateInstanceTypeMap: Record<string, string>; // template name -> instance type name (T parameter)
+  // NEW: TSDoc parameter information
+  templateTsDocParams?: Record<
+    string,
+    {
+      // template name -> params
+      [paramName: string]: {
+        type: string;
+        description?: string;
+        optional: boolean;
+      };
+    }
+  >;
+  templateDescriptions?: Record<string, string>; // template name -> description
 };
 
 // Extract properties from types and interfaces in a TypeScript file
@@ -581,3 +598,74 @@ export const analyzeTemplateData = (
     templateInstanceTypeMap,
   };
 };
+
+/**
+ * Analyze HTML files for TSDoc template comments
+ * @param htmlFilePaths - Array of HTML file paths to analyze
+ * @param supportedTags - Custom TSDoc tags to support (beyond param, template, description)
+ * @returns Map of template name to documentation
+ */
+export function analyzeTemplateDocumentation(
+  htmlFilePaths: string[],
+  supportedTags: string[] = ['param', 'template', 'description']
+): Map<string, TemplateDocumentation> {
+  const allDocumentation = new Map<string, TemplateDocumentation>();
+
+  for (const filePath of htmlFilePaths) {
+    try {
+      if (!fs.existsSync(filePath)) {
+        continue;
+      }
+
+      const content = fs.readFileSync(filePath, 'utf8');
+      const templateDocs = extractAllTemplateComments(content, supportedTags);
+
+      // Merge into main map
+      for (const [templateName, doc] of templateDocs.entries()) {
+        allDocumentation.set(templateName, doc);
+      }
+    } catch (error) {
+      console.error(`Error analyzing HTML file ${filePath}:`, error);
+    }
+  }
+
+  return allDocumentation;
+}
+
+/**
+ * Find all HTML files in a directory recursively
+ */
+export function findHTMLFilesInDir(dir: string): string[] {
+  const htmlFiles: string[] = [];
+
+  if (!fs.existsSync(dir)) {
+    return htmlFiles;
+  }
+
+  function walk(currentDir: string) {
+    try {
+      const entries = fs.readdirSync(currentDir, { withFileTypes: true });
+
+      for (const entry of entries) {
+        const fullPath = path.join(currentDir, entry.name);
+
+        if (entry.isDirectory()) {
+          // Skip node_modules and hidden directories
+          if (entry.name !== 'node_modules' && !entry.name.startsWith('.')) {
+            walk(fullPath);
+          }
+        } else if (entry.isFile()) {
+          // Look for .html files
+          if (entry.name.endsWith('.html')) {
+            htmlFiles.push(fullPath);
+          }
+        }
+      }
+    } catch {
+      // Skip directories we can't read
+    }
+  }
+
+  walk(dir);
+  return htmlFiles;
+}

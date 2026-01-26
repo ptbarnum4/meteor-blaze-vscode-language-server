@@ -205,9 +205,29 @@ export class TemplateTreeDataProvider implements vscode.TreeDataProvider<vscode.
           (event) => new TemplateDetailTreeItem(event, template, 'event', event)
         );
       } else if (element.type === 'data') {
-        return (template.dataProperties || []).map(
-          (prop) => new TemplateDetailTreeItem(prop, template, 'data', prop)
-        );
+        // Use enhanced data properties if available
+        if (template.dataPropertiesEnhanced) {
+          return template.dataPropertiesEnhanced.map(
+            (prop) =>
+              new TemplateDetailTreeItem(
+                prop.name,
+                template,
+                'data',
+                prop.name,
+                {
+                  // NEW: pass metadata
+                  type: prop.type,
+                  description: prop.description,
+                  sources: prop.sources,
+                }
+              )
+          );
+        } else {
+          // Fallback to old format
+          return (template.dataProperties || []).map(
+            (prop) => new TemplateDetailTreeItem(prop, template, 'data', prop)
+          );
+        }
       } else if (element.type === 'lifecycle') {
         return (template.lifecycle || []).map(
           (method) =>

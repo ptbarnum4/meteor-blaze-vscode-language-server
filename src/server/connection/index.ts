@@ -6,6 +6,8 @@
  * connection and documents manager for use by the extension bootstrap.
  */
 
+import path from 'path';
+
 // External LSP types
 import { TextDocument } from 'vscode-languageserver-textdocument';
 import {
@@ -20,8 +22,16 @@ import { CurrentConnectionConfig } from '../../types';
 // Request/notification handlers
 import Logger from '../../utils/logger.js';
 import { analyzeGlobalHelpers } from '../helpers/analyzeGlobalHelpers.js';
-import { analyzeTemplateData } from '../helpers/analyzeTemplateData.js';
+import {
+  analyzeTemplateData,
+  analyzeTemplateDocumentation,
+} from '../helpers/analyzeTemplateData.js';
+import { extractParametersFromTemplate } from '../helpers/extractTemplateParameters.js';
 import getDocumentSettings from '../helpers/getDocumentSettings.js';
+import {
+  mergedParametersToEnhanced,
+  mergeTemplateParameters,
+} from '../helpers/mergeTemplateParameters.js';
 import { validateWorkspace } from '../helpers/validateWorkspace.js';
 import onCompletion from './onCompletion.js';
 import onCompletionResolve from './onCompletionResolve.js';
@@ -139,8 +149,29 @@ connection.onRequest(
           props?: string[];
           lifecycle?: string[];
           instanceProperties?: string[];
+          dataPropertiesEnhanced?: Array<{
+            name: string;
+            type: string;
+            description?: string;
+            optional: boolean;
+            sources: Array<'controller' | 'tsdoc' | 'inferred'>;
+          }>;
+          templateDescription?: string;
         }
       >();
+
+      // NEW: Initialize TSDoc storage
+      const templateTsDocParams: Record<
+        string,
+        {
+          [paramName: string]: {
+            type: string;
+            description?: string;
+            optional: boolean;
+          };
+        }
+      > = {};
+      const templateDescriptions: Record<string, string> = {};
 
       // Collect global helpers once before processing templates
       let allGlobalHelpers = new Set<string>();
@@ -153,7 +184,6 @@ connection.onRequest(
           // Convert file:// URI to path
           const uriPath = firstUri.replace(/^file:\/\//, '');
           // Get directory path and navigate up to likely workspace root
-          const path = require('path');
           const dirPath = path.dirname(uriPath);
           // Try to find workspace root by looking for common markers
           // For now, just use the directory several levels up
@@ -230,7 +260,7 @@ connection.onRequest(
 
           // Look for corresponding JS/TS file and extract helpers, events, and data types
           // Try both the filename-based path (e.g., template.ts) and template-name-based path (e.g., alumniList.ts)
-          const path = require('path');
+
           const dirPath = path.dirname(basePath);
           const candidatePaths: string[] = [];
 
@@ -529,6 +559,103 @@ connection.onRequest(
           );
           logger.log(`Template helpers: ${helpers.join(', ')}`);
 
+          // NEW: Get TSDoc documentation for this template
+
+          const settings = await getDocumentSettings(
+            config,
+            `file://${filePath}`
+          );
+          const supportedTags = [
+            'param',
+            'template',
+            'description',
+            ...(settings?.templateComments?.customTags || []),
+          ];
+
+          // Extract TSDoc from the current HTML file
+          const tsDocMap = analyzeTemplateDocumentation(
+            [filePath],
+            supportedTags
+          );
+          const tsDocInfo = tsDocMap.get(templateName);
+
+          // NEW: Store TSDoc data in global storage
+          if (tsDocInfo) {
+            if (tsDocInfo.description) {
+              templateDescriptions[templateName] = tsDocInfo.description;
+            }
+            if (tsDocInfo.parameters.size > 0) {
+              templateTsDocParams[templateName] = {};
+              for (const [
+                paramName,
+                paramInfo,
+              ] of tsDocInfo.parameters.entries()) {
+                templateTsDocParams[templateName][paramName] = {
+                  type: paramInfo.type,
+                  description: paramInfo.description,
+                  optional: paramInfo.optional,
+                };
+              }
+            }
+          }
+
+          // NEW: Merge parameter data from all sources
+          let dataPropertiesEnhanced;
+          let templateDescription;
+
+          if (tsDocInfo || dataProperties.length > 0) {
+            // Build controller params map
+            const controllerParams = new Map<
+              string,
+              { type: string; doc?: string }
+            >();
+            // Note: We don't have detailed type info here, so we'll use 'any' for now
+            // The full type resolution happens in analyzeTemplateData
+            for (const prop of dataProperties) {
+              controllerParams.set(prop, { type: 'any' });
+            }
+
+            // Build TSDoc params map
+            const tsDocParams = new Map<
+              string,
+              { type: string; description?: string; optional: boolean }
+            >();
+            if (tsDocInfo) {
+              for (const [
+                paramName,
+                paramInfo,
+              ] of tsDocInfo.parameters.entries()) {
+                tsDocParams.set(paramName, paramInfo);
+              }
+              templateDescription = tsDocInfo.description;
+            }
+
+            // Extract inferred params from template
+            try {
+              const globalHelpers = config.globalHelpers || [];
+              const inferredParams = extractParametersFromTemplate(
+                templateName,
+                `file://${filePath}`,
+                path.dirname(filePath),
+                globalHelpers
+              );
+
+              // Merge all sources
+              const mergedParams = mergeTemplateParameters(
+                templateName,
+                controllerParams,
+                tsDocParams,
+                inferredParams
+              );
+
+              dataPropertiesEnhanced = mergedParametersToEnhanced(mergedParams);
+            } catch (err) {
+              logger.error(
+                `Error merging template parameters for ${templateName}: ${err}`
+              );
+            }
+          }
+
           templatesMap.set(templateName, {
             name: templateName,
             helpers,
@@ -536,9 +663,15 @@ connection.onRequest(
             file: filePath,
             dataProperties:
               dataProperties.length > 0 ? dataProperties : undefined,
+            props: undefined,
             lifecycle: lifecycle.length > 0 ? lifecycle : undefined,
             instanceProperties:
               instanceProperties.length > 0 ? instanceProperties : undefined,
+            dataPropertiesEnhanced:
+              dataPropertiesEnhanced && dataPropertiesEnhanced.length > 0
+                ? dataPropertiesEnhanced
+                : undefined,
+            templateDescription: templateDescription,
           });
 
           logger.log(`===== FINAL TEMPLATE ${templateName} =====`);
@@ -669,7 +802,14 @@ connection.onRequest(
 
       templates.push(...templatesMap.values());
 
+      // NEW: Store TSDoc data in config.fileAnalysis
+      config.fileAnalysis.templateTsDocParams = templateTsDocParams;
+      config.fileAnalysis.templateDescriptions = templateDescriptions;
+
       logger.log(`Found ${templates.length} templates`);
+      logger.log(
+        `Found TSDoc documentation for ${Object.keys(templateTsDocParams).length} templates`
+      );
 
       return {
         templates,
