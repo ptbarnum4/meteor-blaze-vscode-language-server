@@ -827,5 +827,450 @@ param2=value2
 
       assert.strictEqual(edits[0].newText, expectedFormatted);
     });
+
+    it('should separate closing block condition from opening block condition on same line', async () => {
+      const content = `
+<template name="test">
+  {{#if isActive}}
+  <p>Active</p>
+  {{/if}} {{#each image in images}}
+  <img src="{{image.url}}" />
+  {{/each}} {{#with address}}
+  <p>{{street}}</p>
+  {{/with}}
+</template>`;
+
+      const document = TextDocument.create(
+        'file:///test.html',
+        'html',
+        1,
+        content
+      );
+      const mockDocuments = {
+        get: () => document,
+      } as any;
+
+      const config = createMockConfig({ documents: mockDocuments });
+      const handler = onDocumentFormatting(config);
+
+      const params = {
+        textDocument: { uri: 'file:///test.html' },
+        options: {
+          tabSize: 2,
+          insertSpaces: true,
+        } as FormattingOptions,
+      };
+
+      const edits = await handler(params);
+
+      // Should have edits for separating block conditions
+      assert.ok(edits.length > 0);
+
+      // Apply edits to see result
+      let result = content;
+      if (
+        edits.length === 1 &&
+        edits[0].range.start.line === 0 &&
+        edits[0].range.start.character === 0
+      ) {
+        // Full document replacement
+        result = edits[0].newText;
+      } else {
+        // Multiple edits
+        for (const edit of edits.sort(
+          (a, b) => b.range.start.line - a.range.start.line
+        )) {
+          const lines = result.split('\n');
+          const startLine = edit.range.start.line;
+          const startChar = edit.range.start.character;
+          const endLine = edit.range.end.line;
+          const endChar = edit.range.end.character;
+
+          if (startLine === endLine) {
+            const line = lines[startLine];
+            lines[startLine] =
+              line.substring(0, startChar) +
+              edit.newText +
+              line.substring(endChar);
+          }
+          result = lines.join('\n');
+        }
+      }
+
+      // Verify that closing and opening tags are on separate lines
+      assert.ok(!result.includes('{{/if}} {{#each'));
+      assert.ok(!result.includes('{{/each}} {{#with'));
+    });
+
+    it('should not separate block conditions within HTML attribute strings', async () => {
+      const content = `
+<template name="test">
+  <div class="{{#if address}}addtrss.id{{/if}}{{#if address.googleId}}address.googleId{{/if}}"></div>
+</template>`;
+
+      const document = TextDocument.create(
+        'file:///test.html',
+        'html',
+        1,
+        content
+      );
+      const mockDocuments = {
+        get: () => document,
+      } as any;
+
+      const config = createMockConfig({ documents: mockDocuments });
+      const handler = onDocumentFormatting(config);
+
+      const params = {
+        textDocument: { uri: 'file:///test.html' },
+        options: {
+          tabSize: 2,
+          insertSpaces: true,
+        } as FormattingOptions,
+      };
+
+      const edits = await handler(params);
+
+      // Should not modify content within attribute strings
+      // Apply edits to verify
+      let result = content;
+      if (
+        edits.length === 1 &&
+        edits[0].range.start.line === 0 &&
+        edits[0].range.start.character === 0
+      ) {
+        // Full document replacement
+        result = edits[0].newText;
+      } else if (edits.length > 0) {
+        for (const edit of edits) {
+          const lines = result.split('\n');
+          const startLine = edit.range.start.line;
+          const startChar = edit.range.start.character;
+          const endLine = edit.range.end.line;
+          const endChar = edit.range.end.character;
+
+          if (startLine === endLine) {
+            const line = lines[startLine];
+            lines[startLine] =
+              line.substring(0, startChar) +
+              edit.newText +
+              line.substring(endChar);
+          }
+          result = lines.join('\n');
+        }
+      }
+
+      // The attribute should remain unchanged
+      assert.ok(
+        result.includes(
+          'class="{{#if address}}addtrss.id{{/if}}{{#if address.googleId}}address.googleId{{/if}}"'
+        )
+      );
+    });
+
+    it('should handle multiple block conditions on the same line', async () => {
+      const content = `
+<template name="test">
+  {{#if condition1}}<p>Test1</p>{{/if}} {{#if condition2}}<p>Test2</p>{{/if}} {{#each items}}<span>{{this}}</span>{{/each}}
+</template>`;
+
+      const document = TextDocument.create(
+        'file:///test.html',
+        'html',
+        1,
+        content
+      );
+      const mockDocuments = {
+        get: () => document,
+      } as any;
+
+      const config = createMockConfig({ documents: mockDocuments });
+      const handler = onDocumentFormatting(config);
+
+      const params = {
+        textDocument: { uri: 'file:///test.html' },
+        options: {
+          tabSize: 2,
+          insertSpaces: true,
+        } as FormattingOptions,
+      };
+
+      const edits = await handler(params);
+
+      assert.ok(edits.length > 0);
+
+      // Apply edits
+      let result = content;
+      if (
+        edits.length === 1 &&
+        edits[0].range.start.line === 0 &&
+        edits[0].range.start.character === 0
+      ) {
+        // Full document replacement
+        result = edits[0].newText;
+      } else {
+        for (const edit of edits.sort(
+          (a, b) => b.range.start.line - a.range.start.line
+        )) {
+          const lines = result.split('\n');
+          const startLine = edit.range.start.line;
+          const startChar = edit.range.start.character;
+          const endLine = edit.range.end.line;
+          const endChar = edit.range.end.character;
+
+          if (startLine === endLine) {
+            const line = lines[startLine];
+            lines[startLine] =
+              line.substring(0, startChar) +
+              edit.newText +
+              line.substring(endChar);
+          }
+          result = lines.join('\n');
+        }
+      }
+
+      // Should separate all block conditions
+      assert.ok(!result.includes('{{/if}} {{#if'));
+      assert.ok(!result.includes('{{/if}} {{#each'));
+    });
+
+    it('should separate content from closing block conditions on same line', async () => {
+      const content = `
+<template name="test">
+  {{#each image in images}}
+    <img src="{{image.url}}" />
+    {{firstName}} - {{image.name}} {{/each}} {{#each thing}}
+    <div>{{thing.title}}</div>
+  {{/each}}
+</template>`;
+
+      const document = TextDocument.create(
+        'file:///test.html',
+        'html',
+        1,
+        content
+      );
+      const mockDocuments = {
+        get: () => document,
+      } as any;
+
+      const config = createMockConfig({ documents: mockDocuments });
+      const handler = onDocumentFormatting(config);
+
+      const params = {
+        textDocument: { uri: 'file:///test.html' },
+        options: {
+          tabSize: 2,
+          insertSpaces: true,
+        } as FormattingOptions,
+      };
+
+      const edits = await handler(params);
+
+      assert.ok(edits.length > 0);
+
+      // Apply edits
+      let result = content;
+      if (
+        edits.length === 1 &&
+        edits[0].range.start.line === 0 &&
+        edits[0].range.start.character === 0
+      ) {
+        // Full document replacement
+        result = edits[0].newText;
+      } else {
+        for (const edit of edits.sort(
+          (a, b) => b.range.start.line - a.range.start.line
+        )) {
+          const lines = result.split('\n');
+          const startLine = edit.range.start.line;
+          const startChar = edit.range.start.character;
+          const endLine = edit.range.end.line;
+          const endChar = edit.range.end.character;
+
+          if (startLine === endLine) {
+            const line = lines[startLine];
+            lines[startLine] =
+              line.substring(0, startChar) +
+              edit.newText +
+              line.substring(endChar);
+          }
+          result = lines.join('\n');
+        }
+      }
+
+      // Verify that content and closing tags are on separate lines
+      assert.ok(!result.includes('{{image.name}} {{/each}}'));
+      // Also verify closing and opening are separated
+      assert.ok(!result.includes('{{/each}} {{#each'));
+    });
+
+    it('should not separate single-line block conditions', async () => {
+      const content = `
+<template name="test">
+  {{#if isActive}}<p>Active</p>{{/if}}
+  {{#each items}}{{this}}{{/each}}
+</template>`;
+
+      const document = TextDocument.create(
+        'file:///test.html',
+        'html',
+        1,
+        content
+      );
+      const mockDocuments = {
+        get: () => document,
+      } as any;
+
+      const config = createMockConfig({ documents: mockDocuments });
+      const handler = onDocumentFormatting(config);
+
+      const params = {
+        textDocument: { uri: 'file:///test.html' },
+        options: {
+          tabSize: 2,
+          insertSpaces: true,
+        } as FormattingOptions,
+      };
+
+      const edits = await handler(params);
+
+      // Apply edits
+      let result = content;
+      if (edits.length > 0) {
+        if (
+          edits.length === 1 &&
+          edits[0].range.start.line === 0 &&
+          edits[0].range.start.character === 0
+        ) {
+          // Full document replacement
+          result = edits[0].newText;
+        } else {
+          for (const edit of edits.sort(
+            (a, b) => b.range.start.line - a.range.start.line
+          )) {
+            const lines = result.split('\n');
+            const startLine = edit.range.start.line;
+            const startChar = edit.range.start.character;
+            const endLine = edit.range.end.line;
+            const endChar = edit.range.end.character;
+
+            if (startLine === endLine) {
+              const line = lines[startLine];
+              lines[startLine] =
+                line.substring(0, startChar) +
+                edit.newText +
+                line.substring(endChar);
+            }
+            result = lines.join('\n');
+          }
+        }
+      }
+
+      // Should still contain single-line blocks (opening and closing on same line is okay)
+      // We only separate when there's other content OR when closing is followed by opening
+      assert.ok(result.includes('{{#if isActive}}<p>Active</p>{{/if}}'));
+      assert.ok(result.includes('{{#each items}}{{this}}{{/each}}'));
+    });
+
+    it('should handle complex multi-pattern cases in one formatting action', async () => {
+      const content = `
+<template name="test">
+  {{#each image in images}}
+    <img src="{{image.url}}" alt="{{image.altText}}" />
+    {{firstName}} - {{image.name}} {{/each}} {{#each thing}}
+    <div class="thing-item">
+      <h3>{{thing.title}}</h3>
+      <p>{{thing.description}}</p>
+    </div>
+  {{/each}} {{#with address}}
+    <div class="address">
+      {{firstName}}
+      <p>{{street}}, {{city}}, {{state}} {{zip}}</p>
+    </div>
+  {{/with}}
+</template>`;
+
+      const document = TextDocument.create(
+        'file:///test.html',
+        'html',
+        1,
+        content
+      );
+      const mockDocuments = {
+        get: () => document,
+      } as any;
+
+      const config = createMockConfig({ documents: mockDocuments });
+      const handler = onDocumentFormatting(config);
+
+      const params = {
+        textDocument: { uri: 'file:///test.html' },
+        options: {
+          tabSize: 2,
+          insertSpaces: true,
+        } as FormattingOptions,
+      };
+
+      const edits = await handler(params);
+
+      assert.ok(edits.length > 0);
+
+      // Apply edits
+      let result = content;
+      if (
+        edits.length === 1 &&
+        edits[0].range.start.line === 0 &&
+        edits[0].range.start.character === 0
+      ) {
+        // Full document replacement
+        result = edits[0].newText;
+      } else {
+        for (const edit of edits.sort(
+          (a, b) => b.range.start.line - a.range.start.line
+        )) {
+          const lines = result.split('\n');
+          const startLine = edit.range.start.line;
+          const startChar = edit.range.start.character;
+          const endLine = edit.range.end.line;
+          const endChar = edit.range.end.character;
+
+          if (startLine === endLine) {
+            const line = lines[startLine];
+            lines[startLine] =
+              line.substring(0, startChar) +
+              edit.newText +
+              line.substring(endChar);
+          }
+          result = lines.join('\n');
+        }
+      }
+
+      // Verify all patterns are fixed in one go:
+      // 1. Content should be separated from closing tags
+      assert.ok(!result.includes('{{image.name}} {{/each}}'));
+
+      // 2. Closing tags should be separated from opening tags
+      assert.ok(!result.includes('{{/each}} {{#each'));
+      assert.ok(!result.includes('{{/each}} {{#with'));
+
+      // 3. All closing tags should be on their own lines (with proper indentation)
+      const lines = result.split('\n');
+      const eachClosingLines = lines.filter(
+        (line) => line.trim() === '{{/each}}'
+      );
+      assert.ok(
+        eachClosingLines.length >= 2,
+        'Should have separate lines for {{/each}}'
+      );
+
+      const withClosingLines = lines.filter(
+        (line) => line.trim() === '{{/with}}'
+      );
+      assert.ok(
+        withClosingLines.length >= 1,
+        'Should have separate line for {{/with}}'
+      );
+    });
   });
 });

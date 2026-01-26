@@ -21,6 +21,9 @@ Template.parentWithController.onCreated(function () {
     userName: new ReactiveVar('John Doe'),
   };
 });
+Template.parentWithController.onRendered(function () {
+  // Yes
+});
 Template.parentWithController.onDestroyed(function () {
   // Yes
 });

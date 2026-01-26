@@ -6,7 +6,8 @@ import {
   TextEdit,
 } from 'vscode-languageserver/node.js';
 
-import { CurrentConnectionConfig } from '../../types';
+import { TextDocument } from 'vscode-languageserver-textdocument';
+import { CurrentConnectionConfig, VSCodeServerConnection } from '../../types';
 import { containsMeteorTemplates } from '../helpers/containsMeteorTemplates.js';
 
 /**
@@ -275,6 +276,174 @@ function findTemplateInvocations(text: string): TemplateInvocation[] {
 }
 
 /**
+ * Checks if a position is within an HTML attribute string
+ */
+function isWithinAttributeString(text: string, offset: number): boolean {
+  // Find the line containing this offset
+  let lineStart = offset;
+  while (lineStart > 0 && text[lineStart - 1] !== '\n') {
+    lineStart--;
+  }
+  let lineEnd = offset;
+  while (lineEnd < text.length && text[lineEnd] !== '\n') {
+    lineEnd++;
+  }
+
+  const line = text.substring(lineStart, lineEnd);
+  const posInLine = offset - lineStart;
+
+  // Check if we're inside an HTML tag
+  let tagStart = -1;
+  for (let i = posInLine; i >= 0; i--) {
+    if (line[i] === '<') {
+      tagStart = i;
+      break;
+    }
+    if (line[i] === '>') {
+      return false; // Not in a tag
+    }
+  }
+
+  if (tagStart === -1) {
+    return false; // No opening < found
+  }
+
+  // Check if we're within quotes in the tag
+  const beforePos = line.substring(tagStart, posInLine);
+  let inDoubleQuote = false;
+  let inSingleQuote = false;
+
+  for (let i = 0; i < beforePos.length; i++) {
+    const char = beforePos[i];
+    const prevChar = i > 0 ? beforePos[i - 1] : '';
+
+    if (char === '"' && prevChar !== '\\') {
+      if (!inSingleQuote) {
+        inDoubleQuote = !inDoubleQuote;
+      }
+    } else if (char === "'" && prevChar !== '\\') {
+      if (!inDoubleQuote) {
+        inSingleQuote = !inSingleQuote;
+      }
+    }
+  }
+
+  return inDoubleQuote || inSingleQuote;
+}
+
+/**
+ * Separates blaze block conditions that appear on the same line as closing tags
+ * Example: {{/if}} {{#each ...}} becomes {{/if}}\n{{#each ...}}
+ * Also separates content from closing block tags on the same line
+ * Example: {{name}} {{/each}} becomes {{name}}\n{{/each}}
+ */
+function separateBlockConditions(text: string): TextEdit[] {
+  const edits: TextEdit[] = [];
+  const lines = text.split('\n');
+
+  // Pattern 1: closing block followed by opening block on same line
+  // Matches: {{/if}} {{#each...}}, {{/each}} {{#with...}}, etc.
+  const closeOpenPattern =
+    /(\{\{\/(?:if|each|unless|with|let|markdown)\}\})\s+(\{\{#(?:if|each|unless|with|let|markdown)\b)/g;
+
+  // Pattern 2: any non-whitespace content followed by closing block on same line
+  // This matches any character that's not whitespace, followed by spaces, then closing block
+  // We'll check afterwards if it's an opening block (which we want to skip)
+  const contentClosePattern =
+    /(\S)\s+(\{\{\/(?:if|each|unless|with|let|markdown)\}\})/g;
+
+  let currentOffset = 0;
+  for (let lineNum = 0; lineNum < lines.length; lineNum++) {
+    const line = lines[lineNum];
+
+    // Process Pattern 1: closing followed by opening
+    let match: RegExpExecArray | null;
+    closeOpenPattern.lastIndex = 0;
+
+    while ((match = closeOpenPattern.exec(line)) !== null) {
+      const matchOffset = currentOffset + match.index;
+      const closeTagEnd = matchOffset + match[1].length;
+
+      // Check if this match is within an HTML attribute string
+      if (isWithinAttributeString(text, matchOffset)) {
+        continue; // Skip if within attribute string
+      }
+
+      // Find the whitespace between the closing and opening tags
+      const whitespaceStart = closeTagEnd;
+      const whitespaceEnd = matchOffset + match[0].length - match[2].length;
+
+      // Create an edit to replace the whitespace with a newline
+      // Preserve the indentation of the original line for the new opening tag
+      const lineIndent = line.match(/^\s*/)?.[0] || '';
+
+      edits.push({
+        range: {
+          start: {
+            line: lineNum,
+            character: whitespaceStart - currentOffset,
+          },
+          end: {
+            line: lineNum,
+            character: whitespaceEnd - currentOffset,
+          },
+        },
+        newText: `\n${lineIndent}`,
+      });
+    }
+
+    // Process Pattern 2: content followed by closing block
+    contentClosePattern.lastIndex = 0;
+
+    while ((match = contentClosePattern.exec(line)) !== null) {
+      const matchOffset = currentOffset + match.index;
+
+      // Check if this match is within an HTML attribute string
+      if (isWithinAttributeString(text, matchOffset)) {
+        continue; // Skip if within attribute string
+      }
+
+      // Check if this closing tag is preceded by an opening block tag
+      // If so, skip it (e.g., {{#if ...}} {{/if}} should not be separated)
+      const beforeMatch = line.substring(0, match.index + match[1].length);
+      if (
+        /\{\{#(?:if|each|unless|with|let|markdown)\b[^}]*$/.test(beforeMatch)
+      ) {
+        continue; // Skip if opening block immediately precedes
+      }
+
+      // Find where the content actually ends (after the last non-whitespace before closing tag)
+      // match[1] is a single character, but we need to find the end of actual content
+      const contentEndPos = match.index + match[1].length;
+      const whitespaceStart = contentEndPos;
+      const whitespaceEnd = match.index + match[0].length - match[2].length;
+
+      // Create an edit to replace the whitespace with a newline
+      // Use the same indentation as the line for the closing tag
+      const lineIndent = line.match(/^\s*/)?.[0] || '';
+
+      edits.push({
+        range: {
+          start: {
+            line: lineNum,
+            character: whitespaceStart,
+          },
+          end: {
+            line: lineNum,
+            character: whitespaceEnd,
+          },
+        },
+        newText: `\n${lineIndent}`,
+      });
+    }
+
+    currentOffset += line.length + 1; // +1 for newline
+  }
+
+  return edits;
+}
+
+/**
  * Formats a template invocation with proper indentation
  */
 function formatTemplateInvocation(
@@ -312,6 +481,77 @@ function formatTemplateInvocation(
   return formatted;
 }
 
+function CreateBaseFormatter(options: {
+  connection: VSCodeServerConnection;
+  document: TextDocument;
+  params: DocumentFormattingParams;
+  baseFormatter: string;
+}): (
+  initWorkingText: string,
+  initBaseEdits?: TextEdit[]
+) => Promise<{ workingText: string; baseEdits: TextEdit[] }> {
+  const { connection, document, params, baseFormatter } = options;
+
+  return async (initWorkingText, initBaseEdits = []) => {
+    let workingText = initWorkingText;
+    let baseEdits = initBaseEdits;
+    // If base formatter is specified, request the client to apply it first
+
+    if (!baseFormatter) {
+      return { workingText, baseEdits };
+    }
+    try {
+      connection.console.info(
+        `Requesting base formatter '${baseFormatter}' for ${params.textDocument.uri}`
+      );
+      const folders = await connection.workspace.getWorkspaceFolders();
+      const projectRoot = folders && folders.length > 0 ? folders[0].uri : '';
+      const relativePath = document.uri.replace(projectRoot, '');
+
+      const formatterName = 'ptbarnum4.meteor-blaze-vscode-language-server';
+      const filename = document.uri.split('/').pop() || '';
+      const options = {
+        '1️⃣ Formatter 1 (Runs 1st)': baseFormatter,
+        '2️⃣ Formatter 2 (Runs 2nd)': formatterName,
+        '📁 Filename': filename,
+        '🗃️ Relative Path': relativePath,
+        ...params.options,
+      };
+
+      connection.console.info(
+        `\n🫧 Formatting file 📁 ${filename}\n⚙️ Options:\n${Object.entries(
+          options
+        )
+          .map(([k, v]) => `  - ${k}: ${v}`)
+          .join('\n')}`
+      );
+
+      const result = await connection.sendRequest<TextEdit[] | null>(
+        'meteor/applyBaseFormatter',
+        {
+          uri: params.textDocument.uri,
+          formatterId: baseFormatter,
+          options: params.options,
+        }
+      );
+
+      if (result && Array.isArray(result)) {
+        baseEdits = result;
+
+        // Apply base formatter edits to get updated text
+        workingText = applyTextEdits(workingText, baseEdits);
+      }
+      return { workingText, baseEdits };
+    } catch (error) {
+      // If base formatter fails, continue with just Meteor formatting
+      connection.console.warn(
+        `Failed to invoke base formatter '${baseFormatter}': ${error}`
+      );
+      return { workingText, baseEdits };
+    }
+  };
+}
+
 /**
  * Handler for document formatting
  */
@@ -344,63 +584,46 @@ export const onDocumentFormatting = (config: CurrentConnectionConfig) => {
       return [];
     }
 
+    const runBaseFormatter = CreateBaseFormatter({
+      connection,
+      document,
+      params,
+      baseFormatter,
+    });
+
     let workingText = document.getText();
     let baseEdits: TextEdit[] = [];
 
     // If base formatter is specified, request the client to apply it first
-    if (baseFormatter) {
-      try {
-        connection.console.info(
-          `Requesting base formatter '${baseFormatter}' for ${params.textDocument.uri}`
-        );
-        const folders = await connection.workspace.getWorkspaceFolders();
-        const projectRoot = folders && folders.length > 0 ? folders[0].uri : '';
-        const relativePath = document.uri.replace(projectRoot, '');
 
-        const formatterName = 'ptbarnum4.meteor-blaze-vscode-language-server';
-        const filename = document.uri.split('/').pop() || '';
-        const options = {
-          '1️⃣ Formatter 1 (Runs 1st)': baseFormatter,
-          '2️⃣ Formatter 2 (Runs 2nd)': formatterName,
-          '📁 Filename': filename,
-          '🗃️ Relative Path': relativePath,
-          ...params.options,
-        };
+    const formatResult1 = await runBaseFormatter(workingText, baseEdits);
 
-        connection.console.info(
-          `\n🫧 Formatting file 📁 ${filename}\n⚙️ Options:\n${Object.entries(
-            options
-          )
-            .map(([k, v]) => `  - ${k}: ${v}`)
-            .join('\n')}`
-        );
-
-        const result = await connection.sendRequest<TextEdit[] | null>(
-          'meteor/applyBaseFormatter',
-          {
-            uri: params.textDocument.uri,
-            formatterId: baseFormatter,
-            options: params.options,
-          }
-        );
-
-        if (result && Array.isArray(result)) {
-          baseEdits = result;
-
-          // Apply base formatter edits to get updated text
-          workingText = applyTextEdits(workingText, baseEdits);
-        }
-      } catch (error) {
-        // If base formatter fails, continue with just Meteor formatting
-        connection.console.warn(
-          `Failed to invoke base formatter '${baseFormatter}': ${error}`
-        );
-      }
-    }
+    workingText = formatResult1.workingText;
+    baseEdits = formatResult1.baseEdits;
 
     const indentSize =
       settings?.formatting?.indentSize ?? params.options.tabSize ?? 2;
     const useTabs = params.options.insertSpaces === false;
+
+    // Iteratively separate block conditions until no more changes are needed
+    // This ensures all patterns are caught even after previous edits create new opportunities
+    const allBlockConditionEdits: TextEdit[] = [];
+    let iterations = 0;
+    const maxIterations = 10; // Safety limit to prevent infinite loops
+
+    while (iterations < maxIterations) {
+      const blockConditionEdits = separateBlockConditions(workingText);
+      if (blockConditionEdits.length === 0) {
+        break; // No more changes needed
+      }
+
+      allBlockConditionEdits.push(...blockConditionEdits);
+      workingText = applyTextEdits(workingText, blockConditionEdits);
+
+      iterations++;
+    }
+
+    const hasBlockEdits = allBlockConditionEdits.length > 0;
 
     // Find all template invocations in the (potentially updated) text
     const invocations = findTemplateInvocations(workingText);
@@ -422,11 +645,15 @@ export const onDocumentFormatting = (config: CurrentConnectionConfig) => {
       }
     }
 
+    // If we have block condition edits or meteor edits, we need to return edits
+    // that transform the original document to the final state
+    const hasTemplateEdits = meteorEdits.length > 0;
+
     // If we have base edits, we need to return edits that transform the original
     // document to the final state. We can do this by applying both sets of edits
     // to the original text and creating a single edit that replaces everything.
-    if (baseEdits.length > 0 && meteorEdits.length > 0) {
-      // Apply Meteor edits on top of the already-modified text
+    if (baseEdits.length > 0 && (hasBlockEdits || hasTemplateEdits)) {
+      // Apply template edits on top of the already-modified text (which has block edits applied)
       const finalText = applyTextEdits(workingText, meteorEdits);
 
       // Return a single edit that replaces the entire document
@@ -445,12 +672,70 @@ export const onDocumentFormatting = (config: CurrentConnectionConfig) => {
       ];
     }
 
+    // If we have both block edits and template edits, return a single edit
+    if (hasBlockEdits && hasTemplateEdits) {
+      // Apply template edits on top of the already-modified text (which has block edits applied)
+      const finalText = applyTextEdits(workingText, meteorEdits);
+
+      // Return a single edit that replaces the entire document
+      const originalLines = document.getText().split('\n');
+      return [
+        {
+          range: {
+            start: { line: 0, character: 0 },
+            end: {
+              line: originalLines.length - 1,
+              character: originalLines[originalLines.length - 1].length,
+            },
+          },
+          newText: finalText,
+        },
+      ];
+    }
+
+    // If we only have block edits, return those (applied to original text)
+    if (hasBlockEdits) {
+      // Return a single edit with the modified text
+      const originalLines = document.getText().split('\n');
+      return [
+        {
+          range: {
+            start: { line: 0, character: 0 },
+            end: {
+              line: originalLines.length - 1,
+              character: originalLines[originalLines.length - 1].length,
+            },
+          },
+          newText: workingText,
+        },
+      ];
+    }
+
+    // If we only have block edits, return those (applied to original text)
+    if (hasBlockEdits) {
+      // Return a single edit with the modified text
+      const originalLines = document.getText().split('\n');
+      return [
+        {
+          range: {
+            start: { line: 0, character: 0 },
+            end: {
+              line: originalLines.length - 1,
+              character: originalLines[originalLines.length - 1].length,
+            },
+          },
+          newText: workingText,
+        },
+      ];
+    }
+
     // If we only have base edits, return those
     if (baseEdits.length > 0) {
       return baseEdits;
     }
 
-    // If we only have Meteor edits, return those
+    // If we only have template edits (and no block edits), return those
+    // These edits are already relative to the original document
     return meteorEdits;
   };
 };
@@ -492,6 +777,15 @@ export const onDocumentRangeFormatting = (config: CurrentConnectionConfig) => {
 
     const text = document.getText();
     const edits: TextEdit[] = [];
+
+    // First, separate block conditions in the selected range
+    const allBlockEdits = separateBlockConditions(text);
+    const rangeBlockEdits = allBlockEdits.filter(
+      (edit) =>
+        edit.range.start.line >= params.range.start.line &&
+        edit.range.end.line <= params.range.end.line
+    );
+    edits.push(...rangeBlockEdits);
 
     // Find all template invocations
     const invocations = findTemplateInvocations(text);
