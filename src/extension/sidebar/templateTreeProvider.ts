@@ -29,21 +29,6 @@ export class TemplateTreeDataProvider implements vscode.TreeDataProvider<vscode.
   refresh(analysis?: WorkspaceAnalysis): void {
     if (analysis) {
       this.templates = analysis.templates;
-      console.log(
-        `[Sidebar Client] Refreshing with ${analysis.templates.length} templates`
-      );
-      // Log enhanced data for debugging
-      analysis.templates.forEach((template) => {
-        console.log(`[Sidebar Client] Template ${template.name}:`, {
-          hasDataProps: !!template.dataProperties,
-          dataPropsCount: template.dataProperties?.length || 0,
-          hasEnhancedDataProps: !!template.dataPropertiesEnhanced,
-          enhancedDataPropsCount: template.dataPropertiesEnhanced?.length || 0,
-          enhancedSample: template.dataPropertiesEnhanced
-            ?.slice(0, 3)
-            .map((p) => `${p.name}:${p.type}`),
-        });
-      });
     }
     this.isLoading = false;
     this._onDidChangeTreeData.fire();
@@ -94,9 +79,6 @@ export class TemplateTreeDataProvider implements vscode.TreeDataProvider<vscode.
         return [emptyItem];
       }
 
-      console.log(
-        `[TreeProvider] Returning ${this.templates.length} templates`
-      );
       return this.templates
         .sort((a, b) => a.name.localeCompare(b.name))
         .map((template) => {
@@ -113,10 +95,6 @@ export class TemplateTreeDataProvider implements vscode.TreeDataProvider<vscode.
             ? vscode.TreeItemCollapsibleState.Collapsed
             : vscode.TreeItemCollapsibleState.None;
 
-          console.log(
-            `[TreeProvider] Template ${template.name}: hasContent=${hasContent}, state=${state}, helpers=${template.helpers.length}, events=${template.events.length}, data=${template.dataProperties?.length || 0}, lifecycle=${template.lifecycle?.length || 0}, instance=${template.instanceProperties?.length || 0}`
-          );
-
           return new TemplateTreeItem(template, state);
         });
     }
@@ -125,17 +103,6 @@ export class TemplateTreeDataProvider implements vscode.TreeDataProvider<vscode.
     if (element instanceof TemplateTreeItem) {
       const children: vscode.TreeItem[] = [];
       const template = element.template;
-
-      console.log(
-        `[TreeProvider] Getting children for template: ${template.name}`
-      );
-      console.log(`[TreeProvider] Template data:`, {
-        helpers: template.helpers.length,
-        events: template.events.length,
-        dataProperties: template.dataProperties?.length || 0,
-        lifecycle: template.lifecycle?.length || 0,
-        instanceProperties: template.instanceProperties?.length || 0,
-      });
 
       // Add data properties container
       if (
@@ -210,9 +177,6 @@ export class TemplateTreeDataProvider implements vscode.TreeDataProvider<vscode.
         );
       }
 
-      console.log(
-        `[TreeProvider] Returning ${children.length} children for ${template.name}`
-      );
       return children;
     }
 

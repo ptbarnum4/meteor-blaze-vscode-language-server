@@ -306,9 +306,6 @@ export class SidebarCommands {
     template: TemplateInfo,
     helperName: string
   ): Promise<void> {
-    console.log(
-      `[navigateToHelper] Template: ${template.name}, Helper: ${helperName}`
-    );
     await this.navigateToTemplateCode(template, 'helpers', helperName);
   }
 
@@ -316,9 +313,6 @@ export class SidebarCommands {
     template: TemplateInfo,
     eventName: string
   ): Promise<void> {
-    console.log(
-      `[navigateToEvent] Template: ${template.name}, Event: ${eventName}`
-    );
     await this.navigateToTemplateCode(template, 'events', eventName);
   }
 
@@ -331,10 +325,6 @@ export class SidebarCommands {
       sources?: Array<'controller' | 'tsdoc' | 'inferred'>;
     }
   ): Promise<void> {
-    console.log(
-      `[navigateToDataProperty] Template: ${template.name}, Property: ${propName}, Sources: ${metadata?.sources?.join(', ')}`
-    );
-
     // Priority 1: Navigate to controller/TypeScript file if it exists
     if (metadata?.sources?.includes('controller')) {
       await this.navigateToTemplateCode(template, 'data', propName);
@@ -421,10 +411,6 @@ export class SidebarCommands {
       const absoluteParamPosition = commentStart + paramMatch.index;
       const position = document.positionAt(absoluteParamPosition);
 
-      console.log(
-        `[navigateToTsDocParam] Found @param ${propName} at line ${position.line + 1}`
-      );
-
       await vscode.window.showTextDocument(document, {
         selection: new vscode.Range(position, position),
       });
@@ -440,9 +426,6 @@ export class SidebarCommands {
     template: TemplateInfo,
     methodName: string
   ): Promise<void> {
-    console.log(
-      `[navigateToLifecycle] Template: ${template.name}, Method: ${methodName}`
-    );
     await this.navigateToTemplateCode(template, 'lifecycle', methodName);
   }
 
@@ -450,9 +433,6 @@ export class SidebarCommands {
     template: TemplateInfo,
     propName: string
   ): Promise<void> {
-    console.log(
-      `[navigateToInstanceProperty] Template: ${template.name}, Property: ${propName}`
-    );
     await this.navigateToTemplateCode(template, 'instanceProps', propName);
   }
 
@@ -484,17 +464,11 @@ export class SidebarCommands {
         possiblePaths.push(path.join(dirPath, template.name + ext));
       }
 
-      console.log(`[navigateToTemplateCode] Looking for files:`, possiblePaths);
-
       for (const jsPath of possiblePaths) {
-        console.log(`[navigateToTemplateCode] Trying: ${jsPath}`);
         try {
           const uri = vscode.Uri.file(jsPath);
           const document = await vscode.workspace.openTextDocument(uri);
           const text = document.getText();
-          console.log(
-            `[navigateToTemplateCode] Found file: ${jsPath}, searching for ${type} ${specificItem || ''}`
-          );
 
           let match: RegExpExecArray | null = null;
           let position: vscode.Position | null = null;
@@ -599,10 +573,6 @@ export class SidebarCommands {
               '\\$&'
             );
 
-            console.log(
-              `[navigateToTemplateCode] Searching for instance property: ${specificItem} in template: ${template.name}`
-            );
-
             // Try to find the TemplateStaticTyped declaration for this template
             // This handles patterns like:
             // TemplateStaticTyped<'test', TestData, { props: TestProps }>
@@ -652,10 +622,6 @@ export class SidebarCommands {
               }
 
               const thirdParam = text.substring(startPos, endPos - 1).trim();
-              console.log(
-                `[navigateToTemplateCode] Found TemplateStaticTyped third param:`,
-                thirdParam
-              );
 
               // Check if third parameter is an inline object type
               if (thirdParam.startsWith('{')) {
@@ -666,10 +632,6 @@ export class SidebarCommands {
                 );
                 if (propsRefMatch) {
                   const propsTypeName = propsRefMatch[1];
-                  console.log(
-                    `[navigateToTemplateCode] Found props type reference:`,
-                    propsTypeName
-                  );
 
                   // Search for the props type definition
                   const propsTypePattern = new RegExp(
@@ -703,10 +665,7 @@ export class SidebarCommands {
                       match = {
                         index: startBrace + propMatch.index,
                       } as RegExpExecArray;
-                      console.log(
-                        `[navigateToTemplateCode] Found property in props type at index:`,
-                        match.index
-                      );
+
                       break;
                     }
                   }
@@ -718,19 +677,12 @@ export class SidebarCommands {
                     match = {
                       index: startPos + propMatch.index,
                     } as RegExpExecArray;
-                    console.log(
-                      `[navigateToTemplateCode] Found property in inline object at index:`,
-                      match.index
-                    );
+
                     break;
                   }
                 }
               } else {
                 // Third parameter is a named type, search for that type definition
-                console.log(
-                  `[navigateToTemplateCode] Looking for named type definition:`,
-                  thirdParam
-                );
                 const typeDefPattern = new RegExp(
                   `(?:type|interface)\\s+${thirdParam}\\s*=?\\s*\\{`,
                   'i'
@@ -760,10 +712,6 @@ export class SidebarCommands {
                     match = {
                       index: startBrace + propMatch.index,
                     } as RegExpExecArray;
-                    console.log(
-                      `[navigateToTemplateCode] Found property in named type at index:`,
-                      match.index
-                    );
                     break;
                   }
                 }
@@ -771,17 +719,9 @@ export class SidebarCommands {
             }
 
             // Don't use fallback patterns - if we didn't find it in the correct type, show an error
-            if (!match) {
-              console.log(
-                `[navigateToTemplateCode] Property not found in the correct type definition`
-              );
-            }
           }
 
           if (match) {
-            console.log(
-              `[navigateToTemplateCode] Found match at index ${match.index}`
-            );
             position = document.positionAt(match.index);
 
             if (specificItem && (type === 'helpers' || type === 'events')) {
@@ -813,18 +753,13 @@ export class SidebarCommands {
               }
             }
 
-            console.log(
-              `[navigateToTemplateCode] Opening document at line ${position.line + 1}`
-            );
             await vscode.window.showTextDocument(document, {
               selection: new vscode.Range(position, position),
             });
             return;
-          } else {
-            console.log(`[navigateToTemplateCode] No match found in ${jsPath}`);
           }
         } catch (err) {
-          console.log(
+          console.error(
             `[navigateToTemplateCode] Failed to open ${jsPath}:`,
             err
           );

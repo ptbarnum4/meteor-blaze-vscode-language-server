@@ -82,7 +82,7 @@ describe('connection/onInitialize', () => {
     );
     assert.deepStrictEqual(
       result.capabilities.completionProvider?.triggerCharacters,
-      ['{', '"', "'", '.', ' ', '}', '\n']
+      ['{', '"', "'", '.', ' ', '}', '\n', '@']
     );
     assert.strictEqual(result.capabilities.hoverProvider, true);
     assert.strictEqual(result.capabilities.definitionProvider, true);

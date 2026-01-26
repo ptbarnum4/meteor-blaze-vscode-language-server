@@ -59,13 +59,21 @@ const onCompletion = (config: CurrentConnectionConfig) => {
       templateCommentContext.isWithin &&
       templateCommentContext.isFirstComment
     ) {
-      // Provide TSDoc completions
-      return getTemplateCommentCompletions(
-        config,
-        document,
-        offset,
-        templateCommentContext
-      );
+      // Check if autocomplete is enabled for template comments
+      const settings = await getDocumentSettings(config, document.uri);
+      const enableAutocomplete =
+        settings?.templateComments?.enableAutocomplete !== false; // Default to true
+
+      if (enableAutocomplete) {
+        // Provide TSDoc completions
+        return getTemplateCommentCompletions(
+          config,
+          document,
+          offset,
+          templateCommentContext
+        );
+      }
+      return []; // Autocomplete disabled, return empty
     }
 
     // Check if we're inside any type of comment (HTML, Handlebars, JS/TS)
@@ -1418,8 +1426,13 @@ async function getTemplateCommentCompletions(
   const customTags = settings?.templateComments?.customTags || [];
   const supportedTags = ['param', 'template', 'description', ...customTags];
 
+  // Check if we just typed @ or are typing a tag
+  const text = document.getText();
+  const charBefore = text[offset - 1];
+  const shouldShowTagCompletions = context.cursorInTag || charBefore === '@';
+
   // If cursor is after @ symbol or typing a tag
-  if (context.cursorInTag) {
+  if (shouldShowTagCompletions) {
     // Suggest standard tags
     completions.push({
       label: '@param',

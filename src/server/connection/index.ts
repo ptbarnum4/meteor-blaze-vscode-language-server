@@ -66,8 +66,9 @@ const documents: TextDocuments<TextDocument> = new TextDocuments(TextDocument);
  * Central configuration object shared across all handler factories. Handlers
  * can read and update these fields to maintain server state.
  */
+
 const config: CurrentConnectionConfig = {
-  logger: new Logger(connection), //.disable(),
+  logger: new Logger(connection).disable(),
   globalSettings: { maxNumberOfProblems: 1000 },
   documentSettings: new Map(),
   fileAnalysis: {

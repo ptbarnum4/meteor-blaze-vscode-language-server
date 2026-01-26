@@ -189,22 +189,11 @@ const extractTemplateStaticTyped = (
     const dataTypeName = m[2];
     const instanceTypeParam = m[3]?.trim(); // May be undefined if only 2 params
 
-    // console.log(
-    //   `[analyzeTemplateData] Found TemplateStaticTyped for ${templateName}:`,
-    //   {
-    //     dataTypeName,
-    //     instanceTypeParam: instanceTypeParam?.substring(0, 100),
-    //   }
-    // );
-
     templateTypeMap[templateName] = dataTypeName;
 
     if (instanceTypeParam) {
       // Check if it's an inline object type (starts with '{')
       if (instanceTypeParam.startsWith('{')) {
-        // console.log(
-        //   `[analyzeTemplateData] ${templateName} has inline object type`
-        // );
         // Extract properties from inline object type
         // Create a synthetic type name for this inline type
         const syntheticTypeName = `__${templateName}_InstanceType__`;
@@ -229,10 +218,6 @@ const extractTemplateStaticTyped = (
           1,
           inlineTypeEnd - 1
         );
-        // console.log(
-        //   `[analyzeTemplateData] Inline type body for ${templateName}:`,
-        //   inlineTypeBody
-        // );
 
         // Extract property names and their types from the inline object type
         const propNames: string[] = [];
@@ -248,21 +233,13 @@ const extractTemplateStaticTyped = (
           if (propName === 'props' && types[propTypeName]) {
             // Use the properties of the referenced type instead
             const referencedProps = types[propTypeName];
-            // console.log(
-            //   `[analyzeTemplateData] Found 'props' property with type ${propTypeName}, which has ${referencedProps.length} properties:`,
-            //   referencedProps
-            // );
+
             propNames.push(...referencedProps);
           } else if (!propNames.includes(propName)) {
             // Regular property
             propNames.push(propName);
           }
         }
-
-        // console.log(
-        //   `[analyzeTemplateData] Extracted ${propNames.length} props from inline type:`,
-        //   propNames
-        // );
 
         // Store the inline type properties
         types[syntheticTypeName] = propNames;
@@ -628,32 +605,16 @@ export function analyzeTemplateDocumentation(
   supportedTags: string[] = ['param', 'template', 'description'],
   isContent: boolean = false
 ): Map<string, TemplateDocumentation> {
-  console.log('[TSDoc analyzeTemplateDocumentation] Called with:', {
-    isContent,
-    isString: typeof htmlFilePathsOrContent === 'string',
-    contentLength:
-      typeof htmlFilePathsOrContent === 'string'
-        ? htmlFilePathsOrContent.length
-        : htmlFilePathsOrContent.length,
-    supportedTags,
-  });
-
   const allDocumentation = new Map<string, TemplateDocumentation>();
 
   // Handle direct content
   if (isContent && typeof htmlFilePathsOrContent === 'string') {
-    console.log('[TSDoc] Processing HTML content directly');
     const templateDocs = extractAllTemplateComments(
       htmlFilePathsOrContent,
       supportedTags
     );
-    console.log(
-      `[TSDoc] Extracted ${templateDocs.size} template docs from content`
-    );
+
     for (const [templateName, doc] of templateDocs.entries()) {
-      console.log(
-        `[TSDoc] Template ${templateName} has ${doc.parameters.size} params`
-      );
       allDocumentation.set(templateName, doc);
     }
     return allDocumentation;

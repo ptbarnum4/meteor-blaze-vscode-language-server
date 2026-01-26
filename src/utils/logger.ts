@@ -84,7 +84,9 @@ class Logger {
   }
 
   public ctx(str: string): Logger {
-    return new Logger(this.connection, str);
+    const l = new Logger(this.connection, str);
+    l._disabled = this._disabled;
+    return l;
   }
 
   public log(...messages: unknown[]): Logger {

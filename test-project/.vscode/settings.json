@@ -19,6 +19,90 @@
       "delimiter": { "foreground": "#808080", "fontStyle": "bold" }
     }
   },
+
+  "editor.tokenColorCustomizations": {
+    "textMateRules": [
+      {
+        "scope": "storage.type.class.tsdoc.meteor",
+        "settings": {
+          "foreground": "#9CDCFE",
+          "fontStyle": ""
+        }
+      },
+      {
+        "scope": "keyword.other.tsdoc.meteor",
+        "settings": {
+          "foreground": "#888888",
+          "fontStyle": "italic"
+        }
+      },
+      {
+        "scope": "support.type.primitive.tsdoc.meteor",
+        "settings": {
+          "foreground": "#8c8c8c"
+        }
+      },
+      {
+        "scope": "variable.parameter.tsdoc.meteor",
+        "settings": {
+          "foreground": "#ffe895"
+        }
+      },
+      {
+        "scope": "comment.block.handlebars.tsdoc.meteor",
+        "settings": {
+          "foreground": "#0095ff"
+        }
+      }
+    ]
+  },
+
+  "meteorLanguageServer.templateComments": {
+    // ===================================================================
+    // Enable Autocomplete for TSDoc Tags
+    // ===================================================================
+    // When enabled, typing {{!-- @ will trigger autocomplete suggestions
+    // for TSDoc tags like @param, @template, @description, etc.
+    "enableAutocomplete": true,
+
+    // ===================================================================
+    // Validation Level
+    // ===================================================================
+    // Controls how strictly TSDoc syntax is validated in template comments.
+    // Options:
+    //   "off"     - No validation (comments are purely informational)
+    //   "info"    - Show informational hints (default, non-intrusive)
+    //   "warning" - Show warnings for incorrect syntax
+    //   "error"   - Show errors for incorrect syntax
+    "validationLevel": "info",
+
+    // ===================================================================
+    // Prefer TSDoc Descriptions
+    // ===================================================================
+    // When true, descriptions from {{!-- @template ... --}} comments
+    // take precedence over JSDoc comments in .js/.ts controller files.
+    // This allows you to document templates directly in the HTML.
+    "preferTsDocDescriptions": true,
+
+    // ===================================================================
+    // Custom Tags
+    // ===================================================================
+    // Add your own custom @ tags beyond the built-in ones.
+    // Built-in tags: @param, @template, @description
+    //
+    // Common custom tags to add:
+    "customTags": [
+      "author", // Document who created the template
+      "since", // Document when the template was added
+      "example", // Provide usage examples
+      "deprecated", // Mark templates as deprecated
+      "see", // Reference related templates or docs
+      "todo", // Note planned improvements
+      "note", // Add important notes
+      "version" // Track template version
+    ]
+  },
+
   "meteorLanguageServer.blockConditions": {
     "extend": [
       {
@@ -110,14 +194,44 @@
     "*.html": "handlebars"
   },
 
+  // ===================================================================
+  // IMPORTANT: Enable Autocomplete in Comments
+  // ===================================================================
+  // VS Code disables autocomplete inside comments by default.
+  // You MUST enable this for TSDoc autocomplete to work when typing @
+
   // Language-specific settings
   "[html]": {
+    "editor.quickSuggestions": {
+      "comments": true,
+      "strings": true,
+      "other": true
+    },
     "editor.defaultFormatter": "ptbarnum4.meteor-blaze-vscode-language-server",
     "editor.suggest.insertMode": "replace",
     "editor.bracketPairColorization.enabled": false // Disable bracket pair colorization for HTML
   },
   "[handlebars]": {
+    "editor.quickSuggestions": {
+      "comments": true,
+      "strings": true,
+      "other": true
+    },
     "editor.defaultFormatter": "ptbarnum4.meteor-blaze-vscode-language-server"
+  },
+  "[meteor-html]": {
+    "editor.quickSuggestions": {
+      "comments": true,
+      "strings": true,
+      "other": true
+    }
+  },
+  "[meteor-handlebars]": {
+    "editor.quickSuggestions": {
+      "comments": true,
+      "strings": true,
+      "other": true
+    }
   },
   "html.format.indentHandlebars": true,
   "html.format.templating": true,

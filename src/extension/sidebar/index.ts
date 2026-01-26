@@ -155,19 +155,12 @@ export class SidebarManager {
     }
 
     try {
-      console.log(
-        `Requesting workspace analysis (scanWorkspace: ${scanWorkspace})...`
-      );
-
       // If not scanning workspace, collect all visible text editor URIs
       let visibleFileUris: string[] = [];
       if (!scanWorkspace) {
         visibleFileUris = vscode.window.visibleTextEditors
           .filter((editor) => editor.document.uri.scheme === 'file')
           .map((editor) => editor.document.uri.toString());
-        console.log(
-          `[Sidebar] Found ${visibleFileUris.length} visible editors`
-        );
       }
 
       // Request analysis from language server with timeout
@@ -209,20 +202,9 @@ export class SidebarManager {
         ),
       ]);
 
-      console.log(
-        `Received ${result.templates.length} templates from language server`
-      );
-
       // Convert to our format
       const templates: TemplateInfo[] = result.templates.map<TemplateInfo>(
         (t) => {
-          console.log(`[Sidebar Client] Mapping template ${t.name}:`, {
-            hasDataPropertiesEnhanced: !!t.dataPropertiesEnhanced,
-            enhancedCount: t.dataPropertiesEnhanced?.length || 0,
-            enhancedSample: t.dataPropertiesEnhanced
-              ?.slice(0, 3)
-              .map((p) => `${p.name}:${p.type}`),
-          });
           return {
             name: t.name,
             helpers: t.helpers,
