@@ -166,6 +166,10 @@ export function extractTemplateParameters(
     'Template',
     'Session',
     'Meteor',
+    // Logical operators
+    'or',
+    'and',
+    'not',
     // Built-in Handlebars helpers
     'log',
     'lookup',
@@ -270,19 +274,26 @@ export function extractTemplateParameters(
       continue;
     }
 
-    // Don't add @index, @key, or other special vars
-    if (!paramName.startsWith('@') && paramName !== 'this') {
-      // Check if inside an each-in block
-      const enclosingBlock = findEnclosingBlock(position, blocks);
+    // Skip if paramName is a logical operator or known helper
+    if (knownHelpers.has(paramName) || paramName.startsWith('@')) {
+      continue;
+    }
 
-      if (enclosingBlock && enclosingBlock.type === 'each-in') {
-        // Inside each-in: only add if it's not the alias
-        if (paramName !== enclosingBlock.alias) {
-          parameters.add(paramName);
-        }
-      } else {
+    // Don't add this keyword
+    if (paramName === 'this') {
+      continue;
+    }
+
+    // Check if inside an each-in block
+    const enclosingBlock = findEnclosingBlock(position, blocks);
+
+    if (enclosingBlock && enclosingBlock.type === 'each-in') {
+      // Inside each-in: only add if it's not the alias
+      if (paramName !== enclosingBlock.alias) {
         parameters.add(paramName);
       }
+    } else {
+      parameters.add(paramName);
     }
   }
 

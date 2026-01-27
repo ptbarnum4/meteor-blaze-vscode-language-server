@@ -77,12 +77,14 @@ const onCompletion = (config: CurrentConnectionConfig) => {
 
     // Check if we're inside template inclusion parameters ({{> templateName [cursor is here] }})
     // Look for the most recent {{> templateName that hasn't been closed yet
+    // This pattern supports both single-line and multi-line template invocations
     const templateParameterMatch = textBeforeCursor.match(
       /\{\{\s*>\s*([a-zA-Z0-9_]+)(?:[^{}])*$/
     );
 
     // Check if we're positioned after an equals sign (for value completion)
     // Match: paramName=|cursor or paramName=partial|cursor
+    // This pattern supports whitespace/newlines between = and cursor
     const afterEqualsMatch = textBeforeCursor.match(
       /([a-zA-Z_$][a-zA-Z0-9_$]*)\s*=\s*([a-zA-Z0-9_$]*)$/
     );
@@ -221,6 +223,34 @@ const onCompletion = (config: CurrentConnectionConfig) => {
           });
         }
       });
+
+      // Add TSDoc parameters if available for current template
+      if (currentTemplateName) {
+        const tsDocParams =
+          config.fileAnalysis.templateTsDocParams?.[currentTemplateName];
+        if (tsDocParams) {
+          Object.entries(tsDocParams).forEach(([paramName, paramInfo]) => {
+            if (!completions.find((c) => c.label === paramName)) {
+              const docParts: string[] = [];
+              if (paramInfo.description) {
+                docParts.push(paramInfo.description);
+              }
+              docParts.push('');
+              docParts.push('**Source:** TSDoc template comment');
+
+              completions.push({
+                label: paramName,
+                kind: CompletionItemKind.Field,
+                detail: `Type: ${paramInfo.type}${paramInfo.optional ? ' (optional)' : ''}`,
+                documentation: {
+                  kind: MarkupKind.Markdown,
+                  value: docParts.join('\n'),
+                },
+              });
+            }
+          });
+        }
+      }
 
       // Add global helpers from Template.registerHelper
       // Find workspace root by looking for package.json or .meteor directory
@@ -944,6 +974,19 @@ async function getTemplateParameterCompletions(
     // Parse already used parameters from the current template inclusion
     const usedParameters = parseUsedParameters(textBeforeCursor, templateName);
 
+    // NEW: Get TSDoc params for this template
+    const tsDocParams = new Map<
+      string,
+      { type: string; description?: string; optional: boolean }
+    >();
+    const templateTsDocData =
+      config.fileAnalysis.templateTsDocParams?.[templateName];
+    if (templateTsDocData) {
+      for (const [paramName, paramInfo] of Object.entries(templateTsDocData)) {
+        tsDocParams.set(paramName, paramInfo);
+      }
+    }
+
     // Use workspace analysis to find child template's data properties
     let childTemplateDataProps: string[] = [];
     const typedParams = new Map<string, { type: string; doc?: string }>();
@@ -1041,6 +1084,11 @@ async function getTemplateParameterCompletions(
       allPropertyNames = new Set<string>(extractedParams.map((p) => p.name));
     }
 
+    // NEW: Add TSDoc parameters (they take priority over extracted params)
+    for (const paramName of tsDocParams.keys()) {
+      allPropertyNames.add(paramName);
+    }
+
     // Filter out already used parameters
     const filteredProperties = Array.from(allPropertyNames)
       .filter((propName) => !usedParameters.includes(propName))
@@ -1051,13 +1099,33 @@ async function getTemplateParameterCompletions(
       name: string;
       type?: string;
       documentation?: string;
+      source?: 'controller' | 'tsdoc' | 'inferred';
     }> = filteredProperties.map((propName) => {
       const typedInfo = typedParams.get(propName);
+      const tsDocInfo = tsDocParams.get(propName);
+
+      // Prefer TSDoc info if available
+      if (tsDocInfo) {
+        const docParts: string[] = [];
+        if (tsDocInfo.description) {
+          docParts.push(tsDocInfo.description);
+        }
+        docParts.push('');
+        docParts.push('**Source:** TSDoc template comment');
+
+        return {
+          name: propName,
+          type: tsDocInfo.type,
+          documentation: docParts.join('\n'),
+          source: 'tsdoc' as const,
+        };
+      }
 
       return {
         name: propName,
         type: typedInfo?.type,
         documentation: typedInfo?.doc,
+        source: typedInfo ? ('controller' as const) : ('inferred' as const),
       };
     });
 
@@ -1067,7 +1135,10 @@ async function getTemplateParameterCompletions(
         label: prop.name,
         kind: CompletionItemKind.Property,
         detail: prop.type ? `Type: ${prop.type}` : undefined,
-        documentation: prop.documentation,
+        documentation:
+          prop.documentation && prop.source === 'tsdoc'
+            ? { kind: MarkupKind.Markdown, value: prop.documentation }
+            : prop.documentation,
         insertText: `${prop.name}=`,
       };
       completions.push(completion);

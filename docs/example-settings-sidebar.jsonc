@@ -1,0 +1,135 @@
+{
+  // ===================================================================
+  // Example Configuration for Meteor/Blaze Sidebar
+  // ===================================================================
+  // This file demonstrates all available sidebar settings and features.
+  // Copy relevant settings to your workspace or user settings.json file.
+  // ===================================================================
+
+  // Sidebar is automatically enabled when you open a Meteor project
+  // (any workspace containing a .meteor folder).
+
+  // Access the sidebar by clicking the Meteor/Blaze icon in the Activity Bar.
+
+  // ===================================================================
+  // Sidebar Commands (available in Command Palette)
+  // ===================================================================
+
+  // - "Meteor/Blaze: Refresh Templates" - Manually refresh the template list
+  //   Command ID: meteorBlaze.refreshTemplates
+
+  // - "Meteor/Blaze: Toggle Workspace Scan" - Switch between scanning
+  //   all files in the workspace vs. only open files
+  //   Command IDs:
+  //     - meteorBlaze.toggleWorkspaceScan (when in open files mode)
+  //     - meteorBlaze.toggleWorkspaceScan.workspace (when in workspace mode)
+
+  // ===================================================================
+  // Sidebar Features
+  // ===================================================================
+
+  // The sidebar automatically displays:
+  // 1. All Meteor/Blaze templates found in your workspace
+  // 2. Template helpers (with counts and individual helper names)
+  // 3. Template events (with counts and individual event handlers)
+  // 4. Template data properties (onCreated, onRendered, onDestroyed)
+
+  // Template Navigation:
+  // - Click any template to see a quick-pick menu with navigation options:
+  //   * Go to HTML Template - Navigate to template definition
+  //   * Go to Helpers - Navigate to Template.helpers()
+  //   * Go to Events - Navigate to Template.events()
+  //   * Go to Data - Navigate to Template.onCreated/onRendered/onDestroyed
+
+  // Template Icons (color-coded by completeness):
+  // - Green: Template has HTML, helpers, and events
+  // - Yellow: Template has HTML and either helpers or events
+  // - Default: Template has HTML only
+
+  // ===================================================================
+  // Automatic Refresh
+  // ===================================================================
+
+  // The sidebar automatically refreshes when you:
+  // - Save a .html, .hbs, .js, .ts, .jsx, or .tsx file
+  // - Create or delete template files
+  // - Modify Template.helpers() or Template.events()
+
+  // Auto-refresh is debounced by 500ms to avoid excessive updates.
+
+  // ===================================================================
+  // Workspace Scanning Modes
+  // ===================================================================
+
+  // By default, the sidebar shows only templates from currently open files.
+  // Click the "Toggle Workspace Scan" button (folder icon) in the sidebar
+  // toolbar to switch between modes:
+
+  // Mode 1: Open Files Only (default, faster)
+  // - Shows templates from files currently open in the editor
+  // - Best for large projects or when working on specific features
+  // - Less memory usage and faster refresh times
+
+  // Mode 2: Full Workspace Scan
+  // - Shows all templates in the entire workspace
+  // - Best for smaller projects or when you need a complete overview
+  // - May be slower on very large codebases
+
+  // Your preference is saved in workspace state and persists across sessions.
+
+  // ===================================================================
+  // Tips for Best Performance
+  // ===================================================================
+
+  // 1. Use "Open Files Only" mode for large projects
+  // 2. Keep your template files organized in dedicated folders
+  // 3. Use consistent naming: myTemplate.html, myTemplate.js
+  // 4. Close unused files to reduce the scope of "Open Files Only" mode
+
+  // ===================================================================
+  // Related Settings
+  // ===================================================================
+
+  // The sidebar works with other extension features. Consider configuring:
+
+  // Validate workspace on startup (helps sidebar accuracy)
+  "meteorLanguageServer.validateWorkspaceOnStartup": true,
+
+  // Enable TSDoc-style template comments (shown in sidebar tooltips)
+  "meteorLanguageServer.templateComments": {
+    "enableAutocomplete": true,
+    "validationLevel": "info",
+    "preferTsDocDescriptions": true,
+  },
+
+  // ===================================================================
+  // Keyboard Shortcuts (Optional)
+  // ===================================================================
+
+  // You can add custom keyboard shortcuts in keybindings.json:
+
+  // {
+  //   "key": "ctrl+shift+m r",
+  //   "command": "meteorBlaze.refreshTemplates",
+  //   "when": "view == meteorTemplates"
+  // },
+  // {
+  //   "key": "ctrl+shift+m s",
+  //   "command": "meteorBlaze.toggleWorkspaceScan",
+  //   "when": "view == meteorTemplates"
+  // }
+
+  // ===================================================================
+  // Troubleshooting
+  // ===================================================================
+
+  // If templates don't appear:
+  // 1. Make sure your workspace contains a .meteor folder
+  // 2. Try manually refreshing with the refresh button
+  // 3. Toggle workspace scan mode
+  // 4. Check that template files follow naming patterns (e.g., myTemplate.html)
+  // 5. Restart the language server: "Restart Meteor/Blaze HTML Language Server"
+
+  // Enable debug logging to troubleshoot:
+  "meteorLanguageServer.trace.server": "verbose",
+}

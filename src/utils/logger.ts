@@ -5,6 +5,7 @@
 import { VSCodeServerConnection } from '../types';
 
 class Logger {
+  private _disabled = false;
   private connection: VSCodeServerConnection;
   private console: VSCodeServerConnection['console'];
   private _ctx: string | undefined;
@@ -42,6 +43,19 @@ class Logger {
       .join('\n');
     return messageStrings;
   }
+  private static get timestamp(): string {
+    const now = new Date();
+
+    const date = now.toISOString().split('T')[0];
+    const time = now
+      .toTimeString()
+      .split(' ')[0]
+      .split(':')
+      .map((v) => v.padStart(2, '0'))
+      .join(':');
+
+    return `${date} ${time}`;
+  }
   private static get now(): string {
     return new Date().toISOString();
   }
@@ -49,7 +63,11 @@ class Logger {
   private logWithContext(
     level: 'log' | 'error' | 'warn' | 'info',
     ...messages: unknown[]
-  ): void {
+  ): Logger {
+    if (this._disabled) {
+      return this;
+    }
+
     const logFnMap = {
       log: this.console.log,
       error: this.console.error,
@@ -59,26 +77,38 @@ class Logger {
     const logFn = logFnMap[level];
 
     const message = Logger.toMsgString(...messages);
-    const ctx = `[${Logger.now}] [${this._ctx || level}]`;
+    const ctx = `[${Logger.timestamp}] [${this._ctx || level}]`;
 
     logFn.call(this.console, `${ctx} ${message}`);
+    return this;
   }
 
   public ctx(str: string): Logger {
-    return new Logger(this.connection, str);
+    const l = new Logger(this.connection, str);
+    l._disabled = this._disabled;
+    return l;
   }
 
-  public log(...messages: unknown[]): void {
+  public log(...messages: unknown[]): Logger {
     return this.logWithContext('log', ...messages);
   }
-  public info(...messages: unknown[]): void {
+  public info(...messages: unknown[]): Logger {
     return this.logWithContext('info', ...messages);
   }
-  public warn(...messages: unknown[]): void {
+  public warn(...messages: unknown[]): Logger {
     return this.logWithContext('warn', ...messages);
   }
-  public error(...messages: unknown[]): void {
+  public error(...messages: unknown[]): Logger {
     return this.logWithContext('error', ...messages);
+  }
+
+  public disable(): Logger {
+    this._disabled = true;
+    return this;
+  }
+  public enable(): Logger {
+    this._disabled = false;
+    return this;
   }
 }
 

@@ -15,6 +15,26 @@ export type TemplateInfo = {
   events: string[];
   /** The file path where the template is defined. */
   file: string;
+  /** Template data properties (from this.data in onCreated/onRendered). */
+  dataProperties?: string[];
+  /** Template properties passed as parameters. */
+  props?: string[];
+  /** Lifecycle methods defined for this template. */
+  lifecycle?: string[];
+  /** Template instance properties (from T parameter in TemplateStaticTyped<N, D, T>). */
+  instanceProperties?: string[];
+
+  /** NEW: Enhanced data properties with source information */
+  dataPropertiesEnhanced?: Array<{
+    name: string;
+    type: string;
+    description?: string;
+    optional: boolean;
+    sources: Array<'controller' | 'tsdoc' | 'inferred'>;
+  }>;
+
+  /** NEW: Template-level documentation from @description tag */
+  templateDescription?: string;
 };
 
 /**
@@ -53,6 +73,21 @@ export type FileAnalysis = {
   dataPropertyTypesByKey?: Map<string, Record<string, string>>;
   /** Map of data property JSDoc comments by key (property -> JSDoc string). */
   dataPropertyJsDocsByKey?: Map<string, Record<string, string>>;
+
+  /** NEW: Map of TSDoc parameter information by template name */
+  templateTsDocParams?: Record<
+    string,
+    {
+      [paramName: string]: {
+        type: string;
+        description?: string;
+        optional: boolean;
+      };
+    }
+  >;
+
+  /** NEW: Map of template descriptions from @description tags */
+  templateDescriptions?: Record<string, string>;
 };
 
 /**
@@ -180,6 +215,17 @@ export type LanguageServerSettings = {
     /** Minimum usage count to suggest parameters inferred from template usage patterns. */
     parameterInferenceMinUsage?: number;
   };
+  /** Settings for TSDoc-style template comments. */
+  templateComments?: {
+    /** Enable autocomplete for TSDoc tags in template comments. */
+    enableAutocomplete?: boolean;
+    /** Validation level for TSDoc comments. */
+    validationLevel?: 'off' | 'info' | 'warning' | 'error';
+    /** Prefer TSDoc descriptions over controller descriptions in hover tooltips. */
+    preferTsDocDescriptions?: boolean;
+    /** Custom @ tags to allow in template comments (in addition to standard tags). */
+    customTags?: string[];
+  };
 };
 
 /**
@@ -217,6 +263,8 @@ export type CurrentConnectionConfig = {
   hasWorkspaceFolderCapability: boolean;
   /** Whether the server supports diagnostic-related information capabilities. */
   hasDiagnosticRelatedInformationCapability: boolean;
+  /** Global helpers registry. */
+  globalHelpers?: string[];
 };
 
 export type ExtensionConfig = {

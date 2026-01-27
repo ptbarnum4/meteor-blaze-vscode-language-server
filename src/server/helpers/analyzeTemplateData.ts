@@ -1,7 +1,11 @@
 import fs from 'fs';
 import path from 'path';
-import * as ts from 'typescript';
+import ts from 'typescript';
 import { TsConfig } from '../../types';
+import {
+  extractAllTemplateComments,
+  TemplateDocumentation,
+} from './parseTemplateComments.js';
 import { safeParse } from './strings.js';
 
 export type TemplateDataAnalysis = {
@@ -10,6 +14,20 @@ export type TemplateDataAnalysis = {
   typePropertyJsDocs: Record<string, Record<string, string>>; // Type name -> property -> JSDoc comment
   typedefs: Record<string, string[]>; // JSDoc typedef name -> properties
   templateTypeMap: Record<string, string>; // template name -> data type name
+  templateInstanceTypeMap: Record<string, string>; // template name -> instance type name (T parameter)
+  // NEW: TSDoc parameter information
+  templateTsDocParams?: Record<
+    string,
+    {
+      // template name -> params
+      [paramName: string]: {
+        type: string;
+        description?: string;
+        optional: boolean;
+      };
+    }
+  >;
+  templateDescriptions?: Record<string, string>; // template name -> description
 };
 
 // Extract properties from types and interfaces in a TypeScript file
@@ -146,20 +164,94 @@ const extractTypedefs = (content: string): Record<string, string[]> => {
   return out;
 };
 
-// Extract TemplateStaticTyped<'name', TypeName, ...>
+// Extract TemplateStaticTyped<'name', DataType, InstanceType>
+// Also extracts properties from inline object types in the third parameter
 const extractTemplateStaticTyped = (
-  content: string
-): Record<string, string> => {
-  const map: Record<string, string> = {};
+  content: string,
+  types: Record<string, string[]>
+): {
+  templateTypeMap: Record<string, string>;
+  templateInstanceTypeMap: Record<string, string>;
+} => {
+  const templateTypeMap: Record<string, string> = {};
+  const templateInstanceTypeMap: Record<string, string> = {};
+
+  // Match TemplateStaticTyped with 2 or 3 type parameters
+  // Handles:
+  // - TemplateStaticTyped<'name', DataType>
+  // - TemplateStaticTyped<'name', DataType, InstanceType> (named type)
+  // - TemplateStaticTyped<'name', DataType, { props: ... }> (inline object type)
   const regex =
-    /TemplateStaticTyped\s*<\s*['\"]([^'\"]+)['\"]\s*,\s*([A-Za-z_][A-Za-z0-9_]*)/g;
+    /TemplateStaticTyped\s*<\s*['\"]([^'\"]+)['\"]\s*,\s*([A-Za-z_][\w.]*(?:\s*\|\s*[A-Za-z_][\w.]*)*)\s*(?:,\s*(.+?))?\s*>/gs;
   let m;
   while ((m = regex.exec(content)) !== null) {
     const templateName = m[1];
-    const typeName = m[2];
-    map[templateName] = typeName;
+    const dataTypeName = m[2];
+    const instanceTypeParam = m[3]?.trim(); // May be undefined if only 2 params
+
+    templateTypeMap[templateName] = dataTypeName;
+
+    if (instanceTypeParam) {
+      // Check if it's an inline object type (starts with '{')
+      if (instanceTypeParam.startsWith('{')) {
+        // Extract properties from inline object type
+        // Create a synthetic type name for this inline type
+        const syntheticTypeName = `__${templateName}_InstanceType__`;
+
+        // Find the complete object literal by matching braces
+        let braceCount = 0;
+        let inlineTypeEnd = 0;
+        for (let i = 0; i < instanceTypeParam.length; i++) {
+          const char = instanceTypeParam[i];
+          if (char === '{') {
+            braceCount++;
+          } else if (char === '}') {
+            braceCount--;
+            if (braceCount === 0) {
+              inlineTypeEnd = i + 1;
+              break;
+            }
+          }
+        }
+
+        const inlineTypeBody = instanceTypeParam.substring(
+          1,
+          inlineTypeEnd - 1
+        );
+
+        // Extract property names and their types from the inline object type
+        const propNames: string[] = [];
+        // Updated regex to capture both property name and type
+        const propRegex =
+          /^\s*(?:\/\*\*[\s\S]*?\*\/\s*)?([a-zA-Z_$][\w$]*)\s*[?:]\s*([A-Za-z_][\w.]*)/gm;
+        let propMatch;
+        while ((propMatch = propRegex.exec(inlineTypeBody)) !== null) {
+          const propName = propMatch[1];
+          const propTypeName = propMatch[2];
+
+          // Check if this property is named 'props' and its type exists in our types map
+          if (propName === 'props' && types[propTypeName]) {
+            // Use the properties of the referenced type instead
+            const referencedProps = types[propTypeName];
+
+            propNames.push(...referencedProps);
+          } else if (!propNames.includes(propName)) {
+            // Regular property
+            propNames.push(propName);
+          }
+        }
+
+        // Store the inline type properties
+        types[syntheticTypeName] = propNames;
+        templateInstanceTypeMap[templateName] = syntheticTypeName;
+      } else {
+        // It's a named type reference
+        templateInstanceTypeMap[templateName] = instanceTypeParam;
+      }
+    }
   }
-  return map;
+
+  return { templateTypeMap, templateInstanceTypeMap };
 };
 
 // Helper function to find tsconfig.json for TypeScript path resolution
@@ -425,7 +517,12 @@ export const analyzeTemplateData = (
   const typePropertyJsDocs: Record<string, Record<string, string>> = {};
   const typedefs: Record<string, string[]> = {};
   const templateTypeMap: Record<string, string> = {};
+  const templateInstanceTypeMap: Record<string, string> = {};
 
+  // Store file contents for second pass
+  const fileContents: Map<string, string> = new Map();
+
+  // FIRST PASS: Collect all files and extract ALL types
   const queue: string[] = [entryFilePath];
   while (queue.length) {
     const filePath = queue.shift()!;
@@ -440,6 +537,9 @@ export const analyzeTemplateData = (
       continue;
     }
 
+    // Store content for second pass
+    fileContents.set(filePath, content);
+
     // Extract types and interfaces from the entire file using TypeScript AST
     const extracted = extractTypesFromFile(content);
     Object.assign(types, extracted.types);
@@ -450,10 +550,6 @@ export const analyzeTemplateData = (
     const td = extractTypedefs(content);
     Object.assign(typedefs, td);
 
-    // TemplateStaticTyped mappings
-    const tmap = extractTemplateStaticTyped(content);
-    Object.assign(templateTypeMap, tmap);
-
     // Follow imports (one level recursive breadth-first)
     const imported = findImportedFiles(content, filePath);
     for (const f of imported) {
@@ -463,11 +559,124 @@ export const analyzeTemplateData = (
     }
   }
 
+  // SECOND PASS: Now that we have ALL types, extract TemplateStaticTyped with type resolution
+  for (const [_filePath, content] of fileContents.entries()) {
+    const tmaps = extractTemplateStaticTyped(content, types);
+    Object.assign(templateTypeMap, tmaps.templateTypeMap);
+    Object.assign(templateInstanceTypeMap, tmaps.templateInstanceTypeMap);
+  }
+
   return {
     types,
     typePropertyTypes,
     typePropertyJsDocs,
     typedefs,
     templateTypeMap,
+    templateInstanceTypeMap,
   };
 };
+
+/**
+ * Analyze HTML files for TSDoc template comments
+ * @param htmlFilePaths - Array of HTML file paths to analyze
+ * @param supportedTags - Custom TSDoc tags to support (beyond param, template, description)
+ * @returns Map of template name to documentation
+ */
+export function analyzeTemplateDocumentation(
+  htmlFilePaths: string[],
+  supportedTags?: string[]
+): Map<string, TemplateDocumentation>;
+
+/**
+ * Analyze HTML content for TSDoc template comments
+ * @param htmlContent - HTML content string
+ * @param supportedTags - Custom TSDoc tags to support
+ * @param isContent - Must be true to indicate content mode
+ * @returns Map of template name to documentation
+ */
+export function analyzeTemplateDocumentation(
+  htmlContent: string,
+  supportedTags: string[],
+  isContent: true
+): Map<string, TemplateDocumentation>;
+
+export function analyzeTemplateDocumentation(
+  htmlFilePathsOrContent: string[] | string,
+  supportedTags: string[] = ['param', 'template', 'description'],
+  isContent: boolean = false
+): Map<string, TemplateDocumentation> {
+  const allDocumentation = new Map<string, TemplateDocumentation>();
+
+  // Handle direct content
+  if (isContent && typeof htmlFilePathsOrContent === 'string') {
+    const templateDocs = extractAllTemplateComments(
+      htmlFilePathsOrContent,
+      supportedTags
+    );
+
+    for (const [templateName, doc] of templateDocs.entries()) {
+      allDocumentation.set(templateName, doc);
+    }
+    return allDocumentation;
+  }
+
+  // Handle file paths
+  const htmlFilePaths = htmlFilePathsOrContent as string[];
+  for (const filePath of htmlFilePaths) {
+    try {
+      if (!fs.existsSync(filePath)) {
+        continue;
+      }
+
+      const content = fs.readFileSync(filePath, 'utf8');
+      const templateDocs = extractAllTemplateComments(content, supportedTags);
+
+      // Merge into main map
+      for (const [templateName, doc] of templateDocs.entries()) {
+        allDocumentation.set(templateName, doc);
+      }
+    } catch (error) {
+      console.error(`Error analyzing HTML file ${filePath}:`, error);
+    }
+  }
+
+  return allDocumentation;
+}
+
+/**
+ * Find all HTML files in a directory recursively
+ */
+export function findHTMLFilesInDir(dir: string): string[] {
+  const htmlFiles: string[] = [];
+
+  if (!fs.existsSync(dir)) {
+    return htmlFiles;
+  }
+
+  function walk(currentDir: string) {
+    try {
+      const entries = fs.readdirSync(currentDir, { withFileTypes: true });
+
+      for (const entry of entries) {
+        const fullPath = path.join(currentDir, entry.name);
+
+        if (entry.isDirectory()) {
+          // Skip node_modules and hidden directories
+          if (entry.name !== 'node_modules' && !entry.name.startsWith('.')) {
+            walk(fullPath);
+          }
+        } else if (entry.isFile()) {
+          // Look for .html files
+          if (entry.name.endsWith('.html')) {
+            htmlFiles.push(fullPath);
+          }
+        }
+      }
+    } catch {
+      // Skip directories we can't read
+    }
+  }
+
+  walk(dir);
+  return htmlFiles;
+}

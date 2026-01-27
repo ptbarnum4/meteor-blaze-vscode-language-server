@@ -22,6 +22,7 @@ import {
   updateHtmlElementDecorations,
 } from './helpers/htmlElements/decorationType';
 import { isMeteorProject } from './helpers/meteor';
+import { SidebarManager } from './sidebar/index';
 
 const ACTIVATE_CONFIGS = {
   LEGEND: [
@@ -118,6 +119,20 @@ export const createActivate = (extConfig: ExtensionConfig) => {
           vscode.workspace.createFileSystemWatcher(pattern)
         ),
       },
+      // Middleware to ensure completions work in comments (for TSDoc)
+      middleware: {
+        provideCompletionItem: async (
+          document,
+          position,
+          context,
+          token,
+          next
+        ) => {
+          // Always allow completion requests to go through to the server
+          // The server will decide if it should provide completions based on context
+          return await next(document, position, context, token);
+        },
+      },
     };
 
     // Create the language client and start the client
@@ -176,8 +191,16 @@ export const createActivate = (extConfig: ExtensionConfig) => {
 
     // Start the client. This will also launch the server
     console.info('Meteor/Blaze Language Server: Starting language client...');
-    extConfig.client.start();
+    await extConfig.client.start();
     console.info('Meteor/Blaze Language Server: Language client started.');
+
+    // Wait a moment for the server to fully initialize
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    // Initialize sidebar after client starts and is ready
+    const sidebarManager = new SidebarManager(context);
+    await sidebarManager.initialize(extConfig.client);
+    console.info('Meteor/Blaze Language Server: Sidebar initialized.');
 
     // Set up request handler for base formatter execution
     extConfig.client.onRequest(

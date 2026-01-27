@@ -212,7 +212,7 @@ export const createHtmlElementDecorationType =
     );
 
     // Get settings with fallbacks
-    const colorSetting = config.get<string>('color', '#72727280');
+    const colorSetting = config.get<string>('color', '#727272c5');
     const fontStyle = config.get<string>('fontStyle', 'italic');
     const margin = config.get<string>('margin', '0 0 0 0.75em');
 

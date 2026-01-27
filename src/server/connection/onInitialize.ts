@@ -27,7 +27,7 @@ const onInitialize = (config: CurrentConnectionConfig) => {
         textDocumentSync: TextDocumentSyncKind.Incremental,
         completionProvider: {
           resolveProvider: true,
-          triggerCharacters: ['{', '"', "'", '.', ' ', '}', '\n'],
+          triggerCharacters: ['{', '"', "'", '.', ' ', '}', '\n', '@'],
         },
         hoverProvider: true,
         definitionProvider: true,

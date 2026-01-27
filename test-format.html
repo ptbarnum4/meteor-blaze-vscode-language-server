@@ -1,0 +1,14 @@
+<template name="test">
+  {{#if isActive}}
+  <p>Active</p>
+  {{/if}} {{#each image in images}}
+  <img src="{{image.url}}" />
+  {{firstName}} - {{image.name}} {{/each}} {{#with address}}
+  <p>{{street}}</p>
+  {{/with}}
+
+  <!-- This should not be changed (within attribute) -->
+  <div
+    class="{{#if address}}addtrss.id{{/if}}{{#if address.googleId}}address.googleId{{/if}}"
+  ></div>
+</template>

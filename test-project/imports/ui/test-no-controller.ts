@@ -18,8 +18,14 @@ const Template = _Template as ParentWithControllerTemplate;
 
 Template.parentWithController.onCreated(function () {
   this.props = {
-    userName: new ReactiveVar('John Doe')
+    userName: new ReactiveVar('John Doe'),
   };
+});
+Template.parentWithController.onRendered(function () {
+  // Yes
+});
+Template.parentWithController.onDestroyed(function () {
+  // Yes
 });
 
 Template.parentWithController.helpers({
@@ -34,5 +40,5 @@ Template.parentWithController.helpers({
   active() {
     const age = Template.instance().data.age;
     return age >= 18;
-  }
+  },
 });
