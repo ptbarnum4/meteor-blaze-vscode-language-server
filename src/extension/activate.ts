@@ -119,6 +119,20 @@ export const createActivate = (extConfig: ExtensionConfig) => {
           vscode.workspace.createFileSystemWatcher(pattern)
         ),
       },
+      // Middleware to ensure completions work in comments (for TSDoc)
+      middleware: {
+        provideCompletionItem: async (
+          document,
+          position,
+          context,
+          token,
+          next
+        ) => {
+          // Always allow completion requests to go through to the server
+          // The server will decide if it should provide completions based on context
+          return await next(document, position, context, token);
+        },
+      },
     };
 
     // Create the language client and start the client

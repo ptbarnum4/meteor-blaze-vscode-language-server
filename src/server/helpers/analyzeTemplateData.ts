@@ -2,6 +2,10 @@ import fs from 'fs';
 import path from 'path';
 import ts from 'typescript';
 import { TsConfig } from '../../types';
+import {
+  extractAllTemplateComments,
+  TemplateDocumentation,
+} from './parseTemplateComments.js';
 import { safeParse } from './strings.js';
 
 export type TemplateDataAnalysis = {
@@ -11,6 +15,19 @@ export type TemplateDataAnalysis = {
   typedefs: Record<string, string[]>; // JSDoc typedef name -> properties
   templateTypeMap: Record<string, string>; // template name -> data type name
   templateInstanceTypeMap: Record<string, string>; // template name -> instance type name (T parameter)
+  // NEW: TSDoc parameter information
+  templateTsDocParams?: Record<
+    string,
+    {
+      // template name -> params
+      [paramName: string]: {
+        type: string;
+        description?: string;
+        optional: boolean;
+      };
+    }
+  >;
+  templateDescriptions?: Record<string, string>; // template name -> description
 };
 
 // Extract properties from types and interfaces in a TypeScript file
@@ -172,22 +189,11 @@ const extractTemplateStaticTyped = (
     const dataTypeName = m[2];
     const instanceTypeParam = m[3]?.trim(); // May be undefined if only 2 params
 
-    // console.log(
-    //   `[analyzeTemplateData] Found TemplateStaticTyped for ${templateName}:`,
-    //   {
-    //     dataTypeName,
-    //     instanceTypeParam: instanceTypeParam?.substring(0, 100),
-    //   }
-    // );
-
     templateTypeMap[templateName] = dataTypeName;
 
     if (instanceTypeParam) {
       // Check if it's an inline object type (starts with '{')
       if (instanceTypeParam.startsWith('{')) {
-        // console.log(
-        //   `[analyzeTemplateData] ${templateName} has inline object type`
-        // );
         // Extract properties from inline object type
         // Create a synthetic type name for this inline type
         const syntheticTypeName = `__${templateName}_InstanceType__`;
@@ -212,10 +218,6 @@ const extractTemplateStaticTyped = (
           1,
           inlineTypeEnd - 1
         );
-        // console.log(
-        //   `[analyzeTemplateData] Inline type body for ${templateName}:`,
-        //   inlineTypeBody
-        // );
 
         // Extract property names and their types from the inline object type
         const propNames: string[] = [];
@@ -231,21 +233,13 @@ const extractTemplateStaticTyped = (
           if (propName === 'props' && types[propTypeName]) {
             // Use the properties of the referenced type instead
             const referencedProps = types[propTypeName];
-            // console.log(
-            //   `[analyzeTemplateData] Found 'props' property with type ${propTypeName}, which has ${referencedProps.length} properties:`,
-            //   referencedProps
-            // );
+
             propNames.push(...referencedProps);
           } else if (!propNames.includes(propName)) {
             // Regular property
             propNames.push(propName);
           }
         }
-
-        // console.log(
-        //   `[analyzeTemplateData] Extracted ${propNames.length} props from inline type:`,
-        //   propNames
-        // );
 
         // Store the inline type properties
         types[syntheticTypeName] = propNames;
@@ -581,3 +575,108 @@ export const analyzeTemplateData = (
     templateInstanceTypeMap,
   };
 };
+
+/**
+ * Analyze HTML files for TSDoc template comments
+ * @param htmlFilePaths - Array of HTML file paths to analyze
+ * @param supportedTags - Custom TSDoc tags to support (beyond param, template, description)
+ * @returns Map of template name to documentation
+ */
+export function analyzeTemplateDocumentation(
+  htmlFilePaths: string[],
+  supportedTags?: string[]
+): Map<string, TemplateDocumentation>;
+
+/**
+ * Analyze HTML content for TSDoc template comments
+ * @param htmlContent - HTML content string
+ * @param supportedTags - Custom TSDoc tags to support
+ * @param isContent - Must be true to indicate content mode
+ * @returns Map of template name to documentation
+ */
+export function analyzeTemplateDocumentation(
+  htmlContent: string,
+  supportedTags: string[],
+  isContent: true
+): Map<string, TemplateDocumentation>;
+
+export function analyzeTemplateDocumentation(
+  htmlFilePathsOrContent: string[] | string,
+  supportedTags: string[] = ['param', 'template', 'description'],
+  isContent: boolean = false
+): Map<string, TemplateDocumentation> {
+  const allDocumentation = new Map<string, TemplateDocumentation>();
+
+  // Handle direct content
+  if (isContent && typeof htmlFilePathsOrContent === 'string') {
+    const templateDocs = extractAllTemplateComments(
+      htmlFilePathsOrContent,
+      supportedTags
+    );
+
+    for (const [templateName, doc] of templateDocs.entries()) {
+      allDocumentation.set(templateName, doc);
+    }
+    return allDocumentation;
+  }
+
+  // Handle file paths
+  const htmlFilePaths = htmlFilePathsOrContent as string[];
+  for (const filePath of htmlFilePaths) {
+    try {
+      if (!fs.existsSync(filePath)) {
+        continue;
+      }
+
+      const content = fs.readFileSync(filePath, 'utf8');
+      const templateDocs = extractAllTemplateComments(content, supportedTags);
+
+      // Merge into main map
+      for (const [templateName, doc] of templateDocs.entries()) {
+        allDocumentation.set(templateName, doc);
+      }
+    } catch (error) {
+      console.error(`Error analyzing HTML file ${filePath}:`, error);
+    }
+  }
+
+  return allDocumentation;
+}
+
+/**
+ * Find all HTML files in a directory recursively
+ */
+export function findHTMLFilesInDir(dir: string): string[] {
+  const htmlFiles: string[] = [];
+
+  if (!fs.existsSync(dir)) {
+    return htmlFiles;
+  }
+
+  function walk(currentDir: string) {
+    try {
+      const entries = fs.readdirSync(currentDir, { withFileTypes: true });
+
+      for (const entry of entries) {
+        const fullPath = path.join(currentDir, entry.name);
+
+        if (entry.isDirectory()) {
+          // Skip node_modules and hidden directories
+          if (entry.name !== 'node_modules' && !entry.name.startsWith('.')) {
+            walk(fullPath);
+          }
+        } else if (entry.isFile()) {
+          // Look for .html files
+          if (entry.name.endsWith('.html')) {
+            htmlFiles.push(fullPath);
+          }
+        }
+      }
+    } catch {
+      // Skip directories we can't read
+    }
+  }
+
+  walk(dir);
+  return htmlFiles;
+}

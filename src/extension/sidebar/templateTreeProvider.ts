@@ -79,9 +79,6 @@ export class TemplateTreeDataProvider implements vscode.TreeDataProvider<vscode.
         return [emptyItem];
       }
 
-      console.log(
-        `[TreeProvider] Returning ${this.templates.length} templates`
-      );
       return this.templates
         .sort((a, b) => a.name.localeCompare(b.name))
         .map((template) => {
@@ -89,16 +86,14 @@ export class TemplateTreeDataProvider implements vscode.TreeDataProvider<vscode.
             template.helpers.length > 0 ||
             template.events.length > 0 ||
             (template.dataProperties && template.dataProperties.length > 0) ||
+            (template.dataPropertiesEnhanced &&
+              template.dataPropertiesEnhanced.length > 0) ||
             (template.lifecycle && template.lifecycle.length > 0) ||
             (template.instanceProperties &&
               template.instanceProperties.length > 0);
           const state = hasContent
             ? vscode.TreeItemCollapsibleState.Collapsed
             : vscode.TreeItemCollapsibleState.None;
-
-          console.log(
-            `[TreeProvider] Template ${template.name}: hasContent=${hasContent}, state=${state}, helpers=${template.helpers.length}, events=${template.events.length}, data=${template.dataProperties?.length || 0}, lifecycle=${template.lifecycle?.length || 0}, instance=${template.instanceProperties?.length || 0}`
-          );
 
           return new TemplateTreeItem(template, state);
         });
@@ -109,25 +104,22 @@ export class TemplateTreeDataProvider implements vscode.TreeDataProvider<vscode.
       const children: vscode.TreeItem[] = [];
       const template = element.template;
 
-      console.log(
-        `[TreeProvider] Getting children for template: ${template.name}`
-      );
-      console.log(`[TreeProvider] Template data:`, {
-        helpers: template.helpers.length,
-        events: template.events.length,
-        dataProperties: template.dataProperties?.length || 0,
-        lifecycle: template.lifecycle?.length || 0,
-        instanceProperties: template.instanceProperties?.length || 0,
-      });
-
       // Add data properties container
-      if (template.dataProperties && template.dataProperties.length > 0) {
+      if (
+        (template.dataProperties && template.dataProperties.length > 0) ||
+        (template.dataPropertiesEnhanced &&
+          template.dataPropertiesEnhanced.length > 0)
+      ) {
+        const dataCount =
+          template.dataPropertiesEnhanced?.length ||
+          template.dataProperties?.length ||
+          0;
         children.push(
           new TemplateContainerTreeItem(
             'Data Properties',
             template,
             'data',
-            template.dataProperties.length
+            dataCount
           )
         );
       }
@@ -185,9 +177,6 @@ export class TemplateTreeDataProvider implements vscode.TreeDataProvider<vscode.
         );
       }
 
-      console.log(
-        `[TreeProvider] Returning ${children.length} children for ${template.name}`
-      );
       return children;
     }
 
@@ -205,9 +194,29 @@ export class TemplateTreeDataProvider implements vscode.TreeDataProvider<vscode.
           (event) => new TemplateDetailTreeItem(event, template, 'event', event)
         );
       } else if (element.type === 'data') {
-        return (template.dataProperties || []).map(
-          (prop) => new TemplateDetailTreeItem(prop, template, 'data', prop)
-        );
+        // Use enhanced data properties if available
+        if (template.dataPropertiesEnhanced) {
+          return template.dataPropertiesEnhanced.map(
+            (prop) =>
+              new TemplateDetailTreeItem(
+                prop.name,
+                template,
+                'data',
+                prop.name,
+                {
+                  // NEW: pass metadata
+                  type: prop.type,
+                  description: prop.description,
+                  sources: prop.sources,
+                }
+              )
+          );
+        } else {
+          // Fallback to old format
+          return (template.dataProperties || []).map(
+            (prop) => new TemplateDetailTreeItem(prop, template, 'data', prop)
+          );
+        }
       } else if (element.type === 'lifecycle') {
         return (template.lifecycle || []).map(
           (method) =>

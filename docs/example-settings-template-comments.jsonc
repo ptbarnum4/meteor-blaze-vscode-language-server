@@ -1,0 +1,350 @@
+{
+  // ===================================================================
+  // Example Configuration for Handlebars TSDoc-Style Template Comments
+  // ===================================================================
+  // This file demonstrates how to use TSDoc-style comments in your
+  // Meteor/Blaze templates for better documentation and autocomplete.
+  // Copy relevant settings to your workspace or user settings.json file.
+  // ===================================================================
+
+  // ===================================================================
+  // IMPORTANT: Enable Autocomplete in Comments
+  // ===================================================================
+  // VS Code disables autocomplete inside comments by default.
+  // You MUST enable this for TSDoc autocomplete to work when typing @
+  "[html]": {
+    "editor.quickSuggestions": {
+      "comments": true,
+      "strings": true,
+      "other": true,
+    },
+  },
+  "[handlebars]": {
+    "editor.quickSuggestions": {
+      "comments": true,
+      "strings": true,
+      "other": true,
+    },
+  },
+
+  "meteorLanguageServer.templateComments": {
+    // ===================================================================
+    // Enable Autocomplete for TSDoc Tags
+    // ===================================================================
+    // When enabled, typing {{!-- @ will trigger autocomplete suggestions
+    // for TSDoc tags like @param, @template, @description, etc.
+    // NOTE: You also need to enable "editor.quickSuggestions.comments" above!
+    "enableAutocomplete": true,
+
+    // ===================================================================
+    // Validation Level
+    // ===================================================================
+    // Controls how strictly TSDoc syntax is validated in template comments.
+    // Options:
+    //   "off"     - No validation (comments are purely informational)
+    //   "info"    - Show informational hints (default, non-intrusive)
+    //   "warning" - Show warnings for incorrect syntax
+    //   "error"   - Show errors for incorrect syntax
+    "validationLevel": "info",
+
+    // ===================================================================
+    // Prefer TSDoc Descriptions
+    // ===================================================================
+    // When true, descriptions from {{!-- @template ... --}} comments
+    // take precedence over JSDoc comments in .js/.ts controller files.
+    // This allows you to document templates directly in the HTML.
+    "preferTsDocDescriptions": true,
+
+    // ===================================================================
+    // Custom Tags
+    // ===================================================================
+    // Add your own custom @ tags beyond the built-in ones.
+    // Built-in tags: @param, @template, @description
+    //
+    // Common custom tags to add:
+    "customTags": [
+      "author", // Document who created the template
+      "since", // Document when the template was added
+      "example", // Provide usage examples
+      "deprecated", // Mark templates as deprecated
+      "see", // Reference related templates or docs
+      "todo", // Note planned improvements
+      "note", // Add important notes
+      "version", // Track template version
+    ],
+  },
+
+  // ===================================================================
+  // TSDoc-Style Comment Examples
+  // ===================================================================
+
+  // Example 1: Basic Template Documentation
+  // -----------------------------------------------
+  // {{!--
+  // @template userProfile
+  // @description Displays a user's profile information including avatar,
+  // name, email, and bio. Supports both compact and expanded views.
+  // --}}
+  // <template name="userProfile">
+  //   <div class="profile">
+  //     <img src="{{avatar}}" alt="{{name}}">
+  //     <h2>{{name}}</h2>
+  //     <p>{{email}}</p>
+  //   </div>
+  // </template>
+
+  // Example 2: Documenting Template Parameters
+  // -----------------------------------------------
+  // {{!--
+  // @template userCard
+  // @description A card component for displaying user information
+  // @param {string} name - The user's full name
+  // @param {string} [avatar] - Optional URL to user's avatar image
+  // @param {boolean} [compact=false] - Whether to show compact view
+  // @param {function} [onClick] - Callback when card is clicked
+  // --}}
+  // <template name="userCard">
+  //   {{> Template.dynamic template="userCardContent" data=this}}
+  // </template>
+
+  // Example 3: Advanced Documentation with Custom Tags
+  // -----------------------------------------------
+  // {{!--
+  // @template paymentForm
+  // @description Secure payment form with credit card validation
+  // @param {number} amount - Payment amount in cents
+  // @param {string} currency - Currency code (USD, EUR, etc.)
+  // @param {function} onSubmit - Called when form is submitted
+  // @param {function} [onCancel] - Called when user cancels
+  // @author Jane Doe
+  // @since 1.2.0
+  // @version 2.0.0
+  // @see checkoutPage
+  // @note This template requires the Stripe.js library
+  // @example
+  // {{> paymentForm amount=5000 currency="USD" onSubmit=handlePayment}}
+  // --}}
+  // <template name="paymentForm">
+  //   <form class="payment-form">
+  //     <!-- form fields -->
+  //   </form>
+  // </template>
+
+  // Example 4: Deprecated Template
+  // -----------------------------------------------
+  // {{!--
+  // @template oldUserList
+  // @deprecated Use {{> userListV2}} instead. This template will be
+  // removed in version 3.0.0.
+  // @see userListV2
+  // --}}
+  // <template name="oldUserList">
+  //   <!-- legacy template code -->
+  // </template>
+
+  // Example 5: Template with Complex Data Structure
+  // -----------------------------------------------
+  // {{!--
+  // @template productGrid
+  // @description Responsive grid of product cards with filtering
+  // @param {Array<Product>} products - Array of product objects
+  // @param {Object} filters - Current filter settings
+  // @param {string} [filters.category] - Category filter
+  // @param {number} [filters.minPrice] - Minimum price filter
+  // @param {number} [filters.maxPrice] - Maximum price filter
+  // @param {string} [sortBy="name"] - Sort field (name, price, date)
+  // @param {function} onFilterChange - Called when filters change
+  // @example
+  // {{> productGrid products=allProducts filters=currentFilters onFilterChange=updateFilters}}
+  // --}}
+  // <template name="productGrid">
+  //   <div class="product-grid">
+  //     {{#each products}}
+  //       {{> productCard}}
+  //     {{/each}}
+  //   </div>
+  // </template>
+
+  // ===================================================================
+  // Syntax Highlighting for TSDoc Comments
+  // ===================================================================
+
+  // The extension automatically provides syntax highlighting for:
+  // - @ tags (e.g., @param, @template)
+  // - Type annotations (e.g., {string}, {number}, {Array<string>})
+  // - Parameter names
+  // - Optional parameters marked with []
+  // - Default values (e.g., [compact=false])
+
+  // To customize the colors, see example-blaze-token-theme.jsonc for examples
+  // or add TextMate scope overrides in your settings.json:
+
+  // ===================================================================
+  // Customizing Tag Colors via TextMate Scopes
+  // ===================================================================
+
+  // To customize colors for TSDoc comment elements, add this to your
+  // settings.json (modify colors as desired):
+
+  "editor.tokenColorCustomizations": {
+    "textMateRules": [
+      {
+        "scope": "storage.type.class.tsdoc.meteor",
+        "settings": {
+          "foreground": "#9CDCFE",
+          "fontStyle": "",
+        },
+      },
+      {
+        "scope": "keyword.other.tsdoc.meteor",
+        "settings": {
+          "foreground": "#4EC9B0",
+          "fontStyle": "italic",
+        },
+      },
+      {
+        "scope": "support.type.primitive.tsdoc.meteor",
+        "settings": {
+          "foreground": "#4FC1FF",
+        },
+      },
+      {
+        "scope": "variable.parameter.tsdoc.meteor",
+        "settings": {
+          "foreground": "#DCDCAA",
+        },
+      },
+      {
+        "scope": "comment.block.handlebars.tsdoc.meteor",
+        "settings": {
+          "foreground": "#6A9955",
+        },
+      },
+    ],
+  },
+
+  // Note: All tag names (@param, @author, @deprecated, etc.) currently
+  // use the same "keyword.other.tsdoc.meteor" scope, so they'll have the
+  // same color. This is a limitation of the current TextMate grammar.
+
+  // ===================================================================
+  // Autocomplete Behavior
+  // ===================================================================
+
+  // When typing in a template comment:
+
+  // 1. Type {{!-- @ to trigger tag suggestions
+  //    Available tags: @param, @template, @description, + custom tags
+
+  // 2. After @param, type { to trigger type suggestions
+  //    Common types: string, number, boolean, Array, Object, function
+
+  // 3. Type parameter names and descriptions naturally
+  //    The extension parses them for hover info and completion
+
+  // 4. Use [] for optional parameters:
+  //    @param {string} [optionalParam] - Description
+
+  // 5. Specify default values:
+  //    @param {number} [count=10] - Description
+
+  // ===================================================================
+  // Integration with Sidebar
+  // ===================================================================
+
+  // TSDoc comments appear in:
+  // - Template tooltips in the sidebar
+  // - Hover info when using tyou can override the TextMate scopes in your
+  // settings.json or color theme. See example-blaze-token-theme.jsonc for
+  // the available scopes:
+  //   - "storage.type.class.tsdoc.meteor" - @ tags
+  //   - "keyword.other.tsdoc.meteor" - tag names (param, template, etc.)
+  //   - "support.type.primitive.tsdoc.meteor" - primitive types
+  //   - "entity.name.type.tsdoc.meteor" - custom types
+  //   - "variable.parameter.tsdoc.meteor" - parameter names
+  //   - "comment.block.handlebars.tsdoc.meteor" - comment background
+  // - Completion item documentation
+  // - Template parameter hints
+
+  // The sidebar shows parameter counts and names from TSDoc comments.
+
+  // ===================================================================
+  // Best Practices
+  // ===================================================================
+
+  // 1. Document all template parameters
+  //    - Include types, descriptions, and whether they're optional
+  //    - Specify default values when applicable
+
+  // 2. Write clear template descriptions
+  //    - Explain what the template does
+  //    - Mention any special requirements or dependencies
+
+  // 3. Use @example tags for complex templates
+  //    - Show typical usage patterns
+  //    - Include multiple examples if needed
+
+  // 4. Mark deprecated templates immediately
+  //    - Use @deprecated tag
+  //    - Suggest alternatives with @see
+
+  // 5. Keep comments up-to-date
+  //    - Update TSDoc when template API changes
+  //    - Remove obsolete comments
+
+  // 6. Use custom tags consistently
+  //    - Establish project-wide conventions
+  //    - Document your custom tag meanings
+
+  // 7. Leverage type annotations
+  //    - Be specific: use Array<string> instead of Array
+  //    - Use union types: {string|number}
+  //    - Document object shapes when possible
+
+  // ===================================================================
+  // Related Settings
+  // ===================================================================
+
+  // Combine template comments with other features:
+
+  // Enable global helpers documentation
+  "meteorLanguageServer.globalHelpers": {
+    "extend": [
+      {
+        "name": "formatDate",
+        "doc": "Formats a date string",
+        "params": [
+          {
+            "name": "date",
+            "type": "string",
+            "doc": "Date to format",
+          },
+        ],
+      },
+    ],
+  },
+
+  // Enable template parameter completion
+  "meteorLanguageServer.completion": {
+    "suggestTemplateParams": true,
+    "suggestTemplateValues": true,
+    "parameterInferenceMinUsage": 2,
+  },
+
+  // Enable workspace validation to catch issues
+  "meteorLanguageServer.validateWorkspaceOnStartup": true,
+
+  // ===================================================================
+  // Troubleshooting
+  // ===================================================================
+
+  // If TSDoc features aren't working:
+  // 1. Check that enableAutocomplete is true
+  // 2. Make sure you're using {{!-- --}} comment syntax
+  // 3. Verify @ tags are spelled correctly
+  // 4. Restart the language server if needed
+  // 5. Check for syntax errors in your TSDoc comments
+
+  // Enable debug logging:
+  "meteorLanguageServer.trace.server": "verbose",
+}

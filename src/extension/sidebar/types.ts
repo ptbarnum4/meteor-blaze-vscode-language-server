@@ -41,17 +41,48 @@ export class TemplateTreeItem extends vscode.TreeItem {
   private createTooltip(): vscode.MarkdownString {
     const md = new vscode.MarkdownString();
     md.appendMarkdown(`### ${this.template.name}\n\n`);
+
+    // NEW: Show template description from TSDoc
+    if (this.template.templateDescription) {
+      md.appendMarkdown(`${this.template.templateDescription}\n\n`);
+      md.appendMarkdown('---\n\n');
+    }
+
     md.appendMarkdown(`**File:** ${this.template.file}\n\n`);
     md.appendMarkdown(`**Helpers:** ${this.template.helpers.length}\n\n`);
     md.appendMarkdown(`**Events:** ${this.template.events.length}\n\n`);
+
+    // Enhanced data properties display
     if (
+      this.template.dataPropertiesEnhanced &&
+      this.template.dataPropertiesEnhanced.length > 0
+    ) {
+      md.appendMarkdown(
+        `**Data Properties (${this.template.dataPropertiesEnhanced.length}):**\n`
+      );
+
+      this.template.dataPropertiesEnhanced.forEach((param) => {
+        const sourceIcon = param.sources.includes('controller')
+          ? '📘'
+          : param.sources.includes('tsdoc')
+            ? '📝'
+            : '🔍';
+        const optionalText = param.optional ? '?' : '';
+        md.appendMarkdown(
+          `- ${sourceIcon} \`${param.name}${optionalText}: ${param.type}\`\n`
+        );
+      });
+      md.appendMarkdown('\n');
+    } else if (
       this.template.dataProperties &&
       this.template.dataProperties.length > 0
     ) {
+      // Fallback to old format
       md.appendMarkdown(
         `**Data Properties:** ${this.template.dataProperties.length}\n\n`
       );
     }
+
     if (
       this.template.instanceProperties &&
       this.template.instanceProperties.length > 0
@@ -98,6 +129,22 @@ export class TemplateTreeItem extends vscode.TreeItem {
     }
 
     if (
+      this.template.dataPropertiesEnhanced &&
+      this.template.dataPropertiesEnhanced.length > 0
+    ) {
+      const controllerCount = this.template.dataPropertiesEnhanced.filter((p) =>
+        p.sources.includes('controller')
+      ).length;
+      const tsDocCount = this.template.dataPropertiesEnhanced.filter(
+        (p) => p.sources.includes('tsdoc') && !p.sources.includes('controller')
+      ).length;
+
+      parts.push(`${controllerCount + tsDocCount}d`);
+
+      if (tsDocCount > 0) {
+        parts.push(`(${tsDocCount}📝)`); // Show TSDoc-only count
+      }
+    } else if (
       this.template.dataProperties &&
       this.template.dataProperties.length > 0
     ) {
@@ -152,12 +199,24 @@ export class TemplateDetailTreeItem extends vscode.TreeItem {
       | 'data'
       | 'lifecycle'
       | 'instanceProp',
-    public readonly value: string
+    public readonly value: string,
+    public readonly metadata?: {
+      // NEW: additional metadata for enhanced data properties
+      type?: string;
+      description?: string;
+      sources?: Array<'controller' | 'tsdoc' | 'inferred'>;
+    }
   ) {
     super(label, vscode.TreeItemCollapsibleState.None);
 
     this.contextValue = type;
     this.iconPath = this.getIcon();
+
+    // NEW: Enhanced tooltip for data properties
+    if (type === 'data' && metadata) {
+      this.tooltip = this.createEnhancedTooltip();
+      this.description = metadata.type;
+    }
 
     // Set command to navigate to definition for all types
     const commandMap: Record<string, string> = {
@@ -172,9 +231,41 @@ export class TemplateDetailTreeItem extends vscode.TreeItem {
       this.command = {
         command: commandMap[type],
         title: `Go to ${type}`,
-        arguments: [template, value],
+        arguments: [template, value, metadata],
       };
     }
+  }
+
+  private createEnhancedTooltip(): vscode.MarkdownString {
+    const md = new vscode.MarkdownString();
+    md.appendMarkdown(`### ${this.label}\n\n`);
+
+    if (this.metadata?.type) {
+      md.appendMarkdown(`**Type:** \`${this.metadata.type}\`\n\n`);
+    }
+
+    if (this.metadata?.description) {
+      md.appendMarkdown(`${this.metadata.description}\n\n`);
+    }
+
+    if (this.metadata?.sources && this.metadata.sources.length > 0) {
+      const sourceNames = this.metadata.sources
+        .map((s) => {
+          switch (s) {
+            case 'controller':
+              return '📘 TypeScript';
+            case 'tsdoc':
+              return '📝 Template Comment';
+            case 'inferred':
+              return '🔍 Inferred';
+          }
+        })
+        .join(', ');
+      md.appendMarkdown(`**Sources:** ${sourceNames}\n\n`);
+    }
+
+    md.isTrusted = true;
+    return md;
   }
 
   private getIcon(): vscode.ThemeIcon {
@@ -184,7 +275,14 @@ export class TemplateDetailTreeItem extends vscode.TreeItem {
       case 'event':
         return new vscode.ThemeIcon('debug-stackframe');
       case 'data':
-        return new vscode.ThemeIcon('symbol-property');
+        // NEW: Different icons based on source
+        if (this.metadata?.sources?.includes('controller')) {
+          return new vscode.ThemeIcon('symbol-property');
+        } else if (this.metadata?.sources?.includes('tsdoc')) {
+          return new vscode.ThemeIcon('note');
+        } else {
+          return new vscode.ThemeIcon('symbol-field');
+        }
       case 'lifecycle':
         return new vscode.ThemeIcon('symbol-event');
       case 'instanceProp':

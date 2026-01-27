@@ -150,7 +150,7 @@ Located in `src/test/suite/extension.test.ts`, these tests verify the extension 
 Use the `suite()` and `test()` functions from VS Code's testing framework:
 
 ```typescript
-import assert from 'assert';
+import { assert } from 'chai';
 import { yourFunction } from '../../../path/to/function';
 
 suite('Your Function Name', () => {

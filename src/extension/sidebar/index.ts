@@ -155,19 +155,12 @@ export class SidebarManager {
     }
 
     try {
-      console.log(
-        `Requesting workspace analysis (scanWorkspace: ${scanWorkspace})...`
-      );
-
       // If not scanning workspace, collect all visible text editor URIs
       let visibleFileUris: string[] = [];
       if (!scanWorkspace) {
         visibleFileUris = vscode.window.visibleTextEditors
           .filter((editor) => editor.document.uri.scheme === 'file')
           .map((editor) => editor.document.uri.toString());
-        console.log(
-          `[Sidebar] Found ${visibleFileUris.length} visible editors`
-        );
       }
 
       // Request analysis from language server with timeout
@@ -179,6 +172,13 @@ export class SidebarManager {
             events: string[];
             file: string;
             dataProperties?: string[];
+            dataPropertiesEnhanced?: Array<{
+              name: string;
+              type: string;
+              description?: string;
+              optional: boolean;
+              sources: string[];
+            }>;
             props?: string[];
             lifecycle?: string[];
             instanceProperties?: string[];
@@ -202,21 +202,22 @@ export class SidebarManager {
         ),
       ]);
 
-      console.log(
-        `Received ${result.templates.length} templates from language server`
-      );
-
       // Convert to our format
-      const templates: TemplateInfo[] = result.templates.map((t) => ({
-        name: t.name,
-        helpers: t.helpers,
-        events: t.events,
-        file: t.file,
-        dataProperties: t.dataProperties,
-        props: t.props,
-        lifecycle: t.lifecycle,
-        instanceProperties: t.instanceProperties,
-      }));
+      const templates: TemplateInfo[] = result.templates.map<TemplateInfo>(
+        (t) => {
+          return {
+            name: t.name,
+            helpers: t.helpers,
+            events: t.events,
+            file: t.file,
+            dataProperties: t.dataProperties,
+            dataPropertiesEnhanced: t.dataPropertiesEnhanced,
+            props: t.props,
+            lifecycle: t.lifecycle,
+            instanceProperties: t.instanceProperties,
+          } as TemplateInfo;
+        }
+      );
 
       const globalHelpers: HelperInfo[] = result.globalHelpers.map((h) => ({
         name: h.name,
