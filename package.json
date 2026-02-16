@@ -84,7 +84,7 @@
     "typescript-eslint": "^8.53.1"
   },
   "dependencies": {
-    "glob": "^13.0.0",
+    "glob": "^13.0.3",
     "vscode-languageclient": "^9.0.1",
     "vscode-languageserver": "^9.0.1",
     "vscode-languageserver-textdocument": "^1.0.8"
