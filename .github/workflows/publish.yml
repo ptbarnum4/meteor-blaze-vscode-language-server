@@ -47,7 +47,7 @@ jobs:
       # This makes the extension package downloadable directly from the GitHub release page
       - name: Attach VSIX to Release
         if: github.event_name == 'release'
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: meteor-blaze-vscode-language-server-${{ steps.package-version.outputs.version }}.vsix
         env:
